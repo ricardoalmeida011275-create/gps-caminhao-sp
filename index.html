@@ -26,6 +26,8 @@
   --aviso-texto: #1d2226;
   --foco: #0b5cad;
   --rota: #1565c0;         /* linha da rota */
+  --nav-fundo: #0f3557;    /* faixa da próxima manobra */
+  --nav-texto: #ffffff;
   --f-titulo: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;
   --f-texto: "Barlow", "Segoe UI", Roboto, Arial, sans-serif;
   color-scheme: light;
@@ -35,7 +37,7 @@
     --asfalto: #e9ecea; --fundo: #171b1e; --papel: #20262a; --linha: #343c41; --suave: #a3adb2;
     --proibido: #ff5a6e; --proibido-fundo: #3d1a20; --liberado: #5fd38a; --liberado-fundo: #16301f;
     --atencao: #ffb44d; --atencao-fundo: #3a2a10; --aviso: #ffcf33; --aviso-texto: #1d2226; --foco: #7db7ff;
-    --rota: #1565c0;
+    --rota: #1565c0; --nav-fundo: #0b2740; --nav-texto: #ffffff;
     color-scheme: dark;
   }
 }
@@ -43,7 +45,7 @@
   --asfalto: #e9ecea; --fundo: #171b1e; --papel: #20262a; --linha: #343c41; --suave: #a3adb2;
   --proibido: #ff5a6e; --proibido-fundo: #3d1a20; --liberado: #5fd38a; --liberado-fundo: #16301f;
   --atencao: #ffb44d; --atencao-fundo: #3a2a10; --aviso: #ffcf33; --aviso-texto: #1d2226; --foco: #7db7ff;
-  --rota: #1565c0;
+  --rota: #1565c0; --nav-fundo: #0b2740; --nav-texto: #ffffff;
   color-scheme: dark;
 }
 
@@ -69,7 +71,57 @@ button, select, input { font: inherit; color: inherit; }
 }
 
 .app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.mapa-caixa { flex: 1; min-height: 0; position: relative; display: flex; }
 #mapa { flex: 1; min-height: 0; background: var(--fundo); }
+
+/* Navegação */
+body.navegando .painel { display: none; }
+body.navegando .app { flex-direction: column; }
+.nav-topo {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--nav-fundo); color: var(--nav-texto);
+  padding-block: 12px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.nav-seta { font-size: 46px; line-height: 1; width: 52px; text-align: center; flex: none; font-weight: 700; }
+.nav-info { min-width: 0; }
+.nav-dist { margin: 0; font-family: var(--f-titulo); font-weight: 700; font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums; }
+.nav-texto { margin: 4px 0 0; font-size: 17px; font-weight: 600; line-height: 1.25; }
+.nav-alerta {
+  padding-block: 8px; font-weight: 600; font-size: 14.5px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--atencao-fundo); color: var(--atencao);
+}
+.nav-alerta.alerta { background: var(--proibido-fundo); color: var(--proibido); }
+.nav-base {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  background: var(--papel); border-top: 1px solid var(--linha);
+  padding-block: 10px; padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.nav-numero strong { display: block; font-family: var(--f-titulo); font-size: 24px; line-height: 1; font-variant-numeric: tabular-nums; }
+.nav-numero span { font-size: 12px; color: var(--suave); }
+.btn-encerrar {
+  margin-left: auto; border: 0; border-radius: 10px; padding: 10px 16px; cursor: pointer;
+  background: var(--proibido); color: #fff; font-family: var(--f-titulo); font-weight: 700; font-size: 17px;
+}
+.btn-centro {
+  position: absolute; z-index: 1000; right: max(12px, env(safe-area-inset-right, 0px)); bottom: 24px;
+  border: 1px solid var(--linha); background: var(--papel); border-radius: 999px; padding: 10px 16px;
+  font-weight: 600; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.25);
+}
+.btn-navegar { margin-top: 4px; background: var(--liberado); }
+.pos-seta {
+  width: 34px; height: 34px; border-radius: 50%; background: #1565c0; border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,.4); display: grid; place-items: center;
+}
+.pos-seta span {
+  width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent;
+  border-bottom: 13px solid #fff; transform: translateY(-2px);
+}
 #mapa.marcando { cursor: crosshair; }
 
 .painel {
@@ -222,7 +274,24 @@ button, select, input { font: inherit; color: inherit; }
 </div>
 
 <div class="app">
-  <div id="mapa" aria-label="Mapa de São Paulo com as restrições a caminhões"></div>
+  <div class="nav-topo" id="navTopo" hidden aria-live="polite">
+    <div class="nav-seta" id="navSeta" aria-hidden="true">↑</div>
+    <div class="nav-info">
+      <p class="nav-dist" id="navDist"></p>
+      <p class="nav-texto" id="navTexto">Buscando o sinal do GPS…</p>
+    </div>
+  </div>
+  <div class="nav-alerta" id="navAlerta" hidden role="alert"></div>
+  <div class="mapa-caixa">
+    <div id="mapa" aria-label="Mapa de São Paulo com as restrições a caminhões"></div>
+    <button class="btn-centro" type="button" id="btnCentro" hidden>Centralizar</button>
+  </div>
+  <div class="nav-base" id="navBase" hidden>
+    <div class="nav-numero"><strong id="navRestante">–</strong><span>faltam</span></div>
+    <div class="nav-numero"><strong id="navChegada">–</strong><span>chegada</span></div>
+    <button class="btn-pequeno" type="button" id="btnVoz" aria-pressed="true">Voz ligada</button>
+    <button class="btn-encerrar" type="button" id="btnEncerrar">Encerrar</button>
+  </div>
 
   <aside class="painel" id="painel">
     <div class="painel-topo">
@@ -829,9 +898,9 @@ button, select, input { font: inherit; color: inherit; }
     return turf.buffer(linha, 18, { units: "meters" });
   }
 
-  function pedirRota(desvios) {
+  function pedirRota(orig, dest, desvios) {
     var corpo = {
-      coordinates: [[estado.A.lon, estado.A.lat], [estado.B.lon, estado.B.lat]],
+      coordinates: [[orig.lon, orig.lat], [dest.lon, dest.lat]],
       instructions: true, language: "pt", units: "m", radiuses: [800, 800],
       options: { vehicle_type: "hgv" }
     };
@@ -844,14 +913,14 @@ button, select, input { font: inherit; color: inherit; }
   }
 
   var camadaRota = null;
-  function desenharRota(coords) {
+  function desenharRota(coords, ajustarMapa) {
     if (camadaRota) mapa.removeLayer(camadaRota);
     var linhas = coords.map(function (c) { return [c[1], c[0]]; });
     camadaRota = L.layerGroup([
       L.polyline(linhas, { color: "#ffffff", weight: 10, opacity: 0.9, interactive: false }),
       L.polyline(linhas, { color: cor("--rota"), weight: 6, opacity: 1, interactive: false })
     ]).addTo(mapa);
-    mapa.fitBounds(L.latLngBounds(linhas), { padding: [30, 30] });
+    if (ajustarMapa !== false) mapa.fitBounds(L.latLngBounds(linhas), { padding: [30, 30] });
   }
 
   function km(m) { return m >= 1000 ? (m / 1000).toFixed(1).replace(".", ",") + " km" : Math.round(m) + " m"; }
@@ -864,11 +933,8 @@ button, select, input { font: inherit; color: inherit; }
     r.hidden = false;
   }
 
-  document.getElementById("btnRota").addEventListener("click", function () {
-    if (!estado.chave) { mostrarMsg("Salve a chave do serviço de rotas no fim do painel para traçar rotas."); document.getElementById("txtChave").focus(); return; }
-    if (!estado.A || !estado.B) { mostrarMsg("Escolha a saída (A) e o destino (B): digite e toque numa sugestão, use sua localização ou toque no mapa."); return; }
-
-    var m = momentoAtual();
+  /* ---------- Cálculo da rota (usado no botão e na navegação) ---------- */
+  function calcularRota(orig, dest, m, aoTentar) {
     var avisos = [], desvios = [], ignorar = {};
 
     // Áreas proibidas no horário de saída
@@ -877,25 +943,21 @@ button, select, input { font: inherit; color: inherit; }
     [["rodizio", rodizioProibido], ["zmrc", zmrcProibida]].forEach(function (par) {
       var t = par[0];
       if (!par[1]) return;
-      var aDentro = dentroDe(t, estado.A.lon, estado.A.lat), bDentro = dentroDe(t, estado.B.lon, estado.B.lat);
+      var aDentro = dentroDe(t, orig.lon, orig.lat), bDentro = dentroDe(t, dest.lon, dest.lat);
       if (aDentro || bDentro) {
         ignorar[t] = true;
-        avisos.push((aDentro ? "A saída" : "O destino") + " fica dentro da " + CAMADAS[t].curto + ", que está proibida neste horário para este veículo (" + CAMADAS[t].hora + "). A rota abaixo entra nela.");
+        avisos.push((aDentro ? "A saída" : "O destino") + " fica dentro da " + CAMADAS[t].curto + ", que está proibida neste horário para este veículo (" + CAMADAS[t].hora + "). A rota entra nela.");
       }
     });
     if (rodizioProibido && !ignorar.rodizio) desvios = desvios.concat(areas.rodizio);          // a ZMRC fica dentro do rodízio
     else if (zmrcProibida && !ignorar.zmrc) desvios = desvios.concat(areas.zmrc);
     if (situacao("rodizio", m) === "atencao") avisos.push("Informe o final da placa: neste horário o rodízio pode valer para o seu caminhão.");
 
-    var btn = document.getElementById("btnRota");
-    btn.disabled = true; btn.textContent = "Calculando…"; mostrarMsg("");
-
     var tentativa = 0, maxTentativas = 4, primeiraDistancia = null;
     function rodar() {
       tentativa++;
-      btn.textContent = tentativa === 1 ? "Calculando…" : "Procurando desvio (tentativa " + tentativa + " de " + maxTentativas + ")…";
-      if (tentativa > 1) mostrarMsg("A rota encontrada passava por avenida proibida neste horário. Pedindo outro caminho; isso pode levar até 1 minuto.");
-      return pedirRota(desvios).then(function (r) {
+      if (aoTentar) aoTentar(tentativa, maxTentativas);
+      return pedirRota(orig, dest, desvios).then(function (r) {
         var f = r && r.features && r.features[0];
         if (!f) throw new Error("O serviço de rotas não devolveu nenhuma rota.");
         var coords = f.geometry.coordinates;
@@ -910,43 +972,75 @@ button, select, input { font: inherit; color: inherit; }
       });
     }
 
-    rodar().then(function (res) {
-      mostrarMsg("");
-      desenharRota(res.coords);
+    return rodar().then(function (res) {
       var sum = (res.f.properties && res.f.properties.summary) || {};
-      var dur = sum.duration || 0;
-      if (tentativa > 1 && primeiraDistancia && sum.distance > primeiraDistancia * 1.3) {
-        avisos.push("Para fugir das avenidas proibidas neste horário, a rota ficou " + km(sum.distance - primeiraDistancia) + " mais longa que o caminho mais curto (" + km(primeiraDistancia) + "). Talvez valha esperar o horário liberado.");
+      res.distancia = sum.distance || 0;
+      res.duracao = sum.duration || 0;
+      if (tentativa > 1 && primeiraDistancia && res.distancia > primeiraDistancia * 1.3) {
+        avisos.push("Para fugir das avenidas proibidas neste horário, a rota ficou " + km(res.distancia - primeiraDistancia) + " mais longa que o caminho mais curto (" + km(primeiraDistancia) + "). Talvez valha esperar o horário liberado.");
       }
-      var chegada = somarMinutos(m, dur / 60);
-      // Regras que mudam durante a viagem
+      res.chegada = somarMinutos(m, res.duracao / 60);
       ORDEM.forEach(function (t) {
-        if (situacao(t, m) !== "proibido" && situacao(t, chegada) === "proibido")
-          avisos.push("Durante a viagem começa a restrição de " + CAMADAS[t].curto + " (" + CAMADAS[t].hora + "). Chegada prevista às " + hhmm(chegada.minutos) + ": confira se a rota passa por ela.");
+        if (situacao(t, m) !== "proibido" && situacao(t, res.chegada) === "proibido")
+          avisos.push("Durante a viagem começa a restrição de " + CAMADAS[t].curto + " (" + CAMADAS[t].hora + "). Chegada prevista às " + hhmm(res.chegada.minutos) + ": confira se a rota passa por ela.");
       });
-
-      var numeros = '<div class="res-numeros"><div><strong>' + km(sum.distance || 0) + '</strong><span>distância</span></div><div><strong>' + tempo(dur) + '</strong><span>tempo sem trânsito</span></div><div><strong>' + hhmm(chegada.minutos) + '</strong><span>chegada prevista</span></div></div>';
-      var listaProb = res.problemas.map(function (p) {
-        return '<li>' + (p.area ? "Entra na " + escapar(CAMADAS[p.tipo].curto) : "Passa por " + km(p.metros) + " em " + escapar(p.nome)) +
-          ' — proibido agora (<a href="' + linkFonte(p.tipo) + '" target="_blank" rel="noopener">' + escapar(CAMADAS[p.tipo].fonte) + '</a>)</li>';
-      }).join("");
-      var listaAvisos = avisos.map(function (a) { return "<li>" + escapar(a) + "</li>"; }).join("");
-
-      var passos = [];
+      res.avisos = avisos; res.ignorar = ignorar; res.tentativa = tentativa; res.momento = m;
+      // Passos (manobras) com o ponto da rota onde cada um começa
+      res.passos = [];
       ((res.f.properties && res.f.properties.segments) || []).forEach(function (sg) {
-        (sg.steps || []).forEach(function (st) { passos.push('<li>' + escapar(st.instruction) + ' <span>' + km(st.distance) + '</span></li>'); });
+        (sg.steps || []).forEach(function (st) { res.passos.push(st); });
       });
-      var htmlPassos = passos.length ? '<details class="passos"><summary>Passo a passo (' + passos.length + ')</summary><ol>' + passos.join("") + '</ol></details>' : "";
-      var rodape = '<p class="nota" style="margin:0">Rota do OpenRouteService com mapas do OpenStreetMap, conferida com as restrições da CET no horário de saída. Siga sempre as placas.</p>';
+      return res;
+    });
+  }
 
-      if (res.problemas.length) {
-        mostrarResultado("alerta", "Atenção: esta rota passa por restrição",
-          numeros + '<ul class="res-lista">' + listaProb + listaAvisos + '</ul><p class="nota" style="margin:0">Não achei caminho melhor. Tente outro horário ou outro ponto de saída.</p>' + htmlPassos + rodape);
-      } else if (avisos.length) {
-        mostrarResultado("info", "Rota traçada, com avisos", numeros + '<ul class="res-lista">' + listaAvisos + '</ul>' + htmlPassos + rodape);
-      } else {
-        mostrarResultado("ok", "Rota respeita as restrições conhecidas", numeros + (tentativa > 1 ? '<p class="nota" style="margin:0">A rota foi ajustada ' + (tentativa - 1) + ' vez(es) para desviar de vias proibidas.</p>' : "") + htmlPassos + rodape);
-      }
+  function exibirResultado(res) {
+    var numeros = '<div class="res-numeros"><div><strong>' + km(res.distancia) + '</strong><span>distância</span></div><div><strong>' + tempo(res.duracao) + '</strong><span>tempo sem trânsito</span></div><div><strong>' + hhmm(res.chegada.minutos) + '</strong><span>chegada prevista</span></div></div>';
+    var listaProb = res.problemas.map(function (p) {
+      return '<li>' + (p.area ? "Entra na " + escapar(CAMADAS[p.tipo].curto) : "Passa por " + km(p.metros) + " em " + escapar(p.nome)) +
+        ' — proibido agora (<a href="' + linkFonte(p.tipo) + '" target="_blank" rel="noopener">' + escapar(CAMADAS[p.tipo].fonte) + '</a>)</li>';
+    }).join("");
+    var listaAvisos = res.avisos.map(function (a) { return "<li>" + escapar(a) + "</li>"; }).join("");
+    var passos = res.passos.map(function (st) { return '<li>' + escapar(st.instruction) + ' <span>' + km(st.distance) + '</span></li>'; });
+    var htmlPassos = passos.length ? '<details class="passos"><summary>Passo a passo (' + passos.length + ')</summary><ol>' + passos.join("") + '</ol></details>' : "";
+    var botaoNav = '<button class="btn-rota btn-navegar" type="button" id="btnNavegar">Iniciar navegação</button>';
+    var rodape = '<p class="nota" style="margin:0">Rota do OpenRouteService com mapas do OpenStreetMap, conferida com as restrições da CET no horário de saída. Siga sempre as placas.</p>';
+
+    if (res.problemas.length) {
+      mostrarResultado("alerta", "Atenção: esta rota passa por restrição",
+        numeros + '<ul class="res-lista">' + listaProb + listaAvisos + '</ul><p class="nota" style="margin:0">Não achei caminho melhor. Tente outro horário ou outro ponto de saída.</p>' + botaoNav + htmlPassos + rodape);
+    } else if (res.avisos.length) {
+      mostrarResultado("info", "Rota traçada, com avisos", numeros + '<ul class="res-lista">' + listaAvisos + '</ul>' + botaoNav + htmlPassos + rodape);
+    } else {
+      mostrarResultado("ok", "Rota respeita as restrições conhecidas", numeros + (res.tentativa > 1 ? '<p class="nota" style="margin:0">A rota foi ajustada ' + (res.tentativa - 1) + ' vez(es) para desviar de vias proibidas.</p>' : "") + botaoNav + htmlPassos + rodape);
+    }
+    document.getElementById("btnNavegar").addEventListener("click", iniciarNavegacao);
+  }
+
+  /* Prepara a rota para acompanhar a posição: pontos em metros e distância acumulada */
+  function prepararRota(res) {
+    var pts = res.coords.map(function (c) { return xy(c[0], c[1]); });
+    var acum = [0];
+    for (var i = 1; i < pts.length; i++) acum.push(acum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+    res.pts = pts; res.acum = acum; res.total = acum[acum.length - 1] || 0;
+    res.passos.forEach(function (st) { st.inicio = acum[(st.way_points && st.way_points[0]) || 0] || 0; });
+    estado.rota = res;
+  }
+
+  document.getElementById("btnRota").addEventListener("click", function () {
+    if (!estado.chave) { mostrarMsg("Salve a chave do serviço de rotas no fim do painel para traçar rotas."); document.getElementById("txtChave").focus(); return; }
+    if (!estado.A || !estado.B) { mostrarMsg("Escolha a saída (A) e o destino (B): digite e toque numa sugestão, use sua localização ou toque no mapa."); return; }
+
+    var btn = document.getElementById("btnRota");
+    btn.disabled = true; mostrarMsg("");
+    calcularRota(estado.A, estado.B, momentoAtual(), function (n, max) {
+      btn.textContent = n === 1 ? "Calculando…" : "Procurando desvio (tentativa " + n + " de " + max + ")…";
+      if (n > 1) mostrarMsg("A rota encontrada passava por avenida proibida neste horário. Pedindo outro caminho; isso pode levar até 1 minuto.");
+    }).then(function (res) {
+      mostrarMsg("");
+      prepararRota(res);
+      desenharRota(res.coords);
+      exibirResultado(res);
     }).catch(function (e) {
       mostrarMsg("");
       mostrarResultado("alerta", "Não consegui traçar a rota", '<p style="margin:0">' + escapar(e.message) + '</p>');
@@ -954,6 +1048,234 @@ button, select, input { font: inherit; color: inherit; }
       btn.disabled = false; btn.textContent = "Traçar rota";
     });
   });
+
+  /* ================= Navegação em tempo real ================= */
+  var nav = { ativo: false, watch: null, seguindo: true, voz: true, idx: 0, falados: {}, foraDesde: null,
+              ultimaRecalc: 0, recalculando: false, precisaRecalc: false, marcador: null, tela: null, ultimaPos: null, chegou: false };
+
+  var SETAS = { 0: "↰", 1: "↱", 2: "↰", 3: "↱", 4: "↖", 5: "↗", 6: "↑", 7: "⟳", 8: "⟳", 9: "↶", 10: "⚑", 11: "↑", 12: "↖", 13: "↗" };
+
+  function falar(texto) {
+    if (!nav.voz || !window.speechSynthesis) return;
+    try {
+      var u = new SpeechSynthesisUtterance(texto);
+      u.lang = "pt-BR"; u.rate = 1;
+      var vozes = speechSynthesis.getVoices().filter(function (v) { return /^pt(-|_)BR/i.test(v.lang); });
+      if (vozes.length) u.voice = vozes[0];
+      speechSynthesis.cancel();
+      speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+
+  function pedirTelaLigada() {
+    if (!("wakeLock" in navigator)) return;
+    navigator.wakeLock.request("screen").then(function (t) { nav.tela = t; }).catch(function () {});
+  }
+  document.addEventListener("visibilitychange", function () {
+    if (nav.ativo && document.visibilityState === "visible") pedirTelaLigada();
+  });
+
+  function mostrarAlertaNav(texto, tipo) {
+    var el = document.getElementById("navAlerta");
+    if (!texto) { el.hidden = true; return; }
+    el.textContent = texto;
+    el.className = "nav-alerta " + (tipo || "");
+    el.hidden = false;
+  }
+
+  /* Onde estou na rota: distância percorrida (s) e distância até a linha (d) */
+  function localizarNaRota(lon, lat) {
+    var r = estado.rota, p = xy(lon, lat), n = r.pts.length;
+    function procurar(de, ate) {
+      var melhor = { d: Infinity, s: 0, i: 0 };
+      for (var i = Math.max(0, de); i < Math.min(n - 1, ate); i++) {
+        var a = r.pts[i], b = r.pts[i + 1], dx = b[0] - a[0], dy = b[1] - a[1], L2 = dx * dx + dy * dy, t = 0;
+        if (L2 > 0) t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / L2));
+        var ex = a[0] + t * dx - p[0], ey = a[1] + t * dy - p[1], d = Math.sqrt(ex * ex + ey * ey);
+        if (d < melhor.d) melhor = { d: d, s: r.acum[i] + t * Math.sqrt(L2), i: i };
+      }
+      return melhor;
+    }
+    var m = procurar(nav.idx - 20, nav.idx + 400);
+    if (m.d > 80) m = procurar(0, n);
+    nav.idx = m.i;
+    return m;
+  }
+
+  function arredondar(m) { return m >= 1000 ? km(Math.round(m / 100) * 100) : (Math.round(m / 50) * 50 || 10) + " metros"; }
+
+  function atualizarInstrucao(s) {
+    var r = estado.rota, prox = null, k;
+    for (k = 0; k < r.passos.length; k++) { if (r.passos[k].inicio > s + 3) { prox = r.passos[k]; break; } }
+    var restanteFim = r.total - s;
+    if (!prox) {
+      document.getElementById("navSeta").textContent = SETAS[10];
+      document.getElementById("navDist").textContent = km(restanteFim);
+      document.getElementById("navTexto").textContent = "Destino à frente";
+      return;
+    }
+    var dist = prox.inicio - s;
+    document.getElementById("navSeta").textContent = SETAS[prox.type] || "↑";
+    document.getElementById("navDist").textContent = km(dist);
+    document.getElementById("navTexto").textContent = prox.instruction;
+    var f = nav.falados, frase = prox.instruction.charAt(0).toLowerCase() + prox.instruction.slice(1);
+    if (dist <= 40 && !f[k + "c"]) { f[k + "c"] = f[k + "b"] = f[k + "a"] = true; falar("Agora, " + frase); }
+    else if (dist <= 200 && dist > 40 && !f[k + "b"]) { f[k + "b"] = f[k + "a"] = true; falar("Em " + arredondar(dist) + ", " + frase); }
+    else if (dist <= 600 && dist > 200 && !f[k + "a"]) { f[k + "a"] = true; falar("Em " + arredondar(dist) + ", " + frase); }
+  }
+
+  function atualizarBase(s) {
+    var r = estado.rota, restante = Math.max(0, r.total - s);
+    var segundos = r.total > 0 ? r.duracao * (restante / r.total) : 0;
+    var agora = agoraSP();
+    document.getElementById("navRestante").textContent = km(restante);
+    document.getElementById("navChegada").textContent = hhmm(somarMinutos(agora, segundos / 60).minutos);
+  }
+
+  function iconePosicao(graus) {
+    return L.divIcon({ className: "", iconSize: [34, 34], iconAnchor: [17, 17],
+      html: '<div class="pos-seta" style="transform: rotate(' + Math.round(graus || 0) + 'deg)"><span></span></div>' });
+  }
+
+  function aoReceberPosicao(p) {
+    var lon = p.coords.longitude, lat = p.coords.latitude, prec = p.coords.accuracy || 20;
+    if (!nav.ativo) return;
+    // Direção da seta: a do GPS (se estiver andando) ou a da rota
+    var graus = (p.coords.heading !== null && !isNaN(p.coords.heading) && (p.coords.speed || 0) > 1) ? p.coords.heading : null;
+    nav.ultimaPos = { lon: lon, lat: lat };
+
+    if (nav.recalculando) { moverMarcador(lat, lon, graus); return; }
+    var pos = localizarNaRota(lon, lat);
+    if (graus === null && estado.rota.pts[pos.i + 1]) {
+      var a = estado.rota.pts[pos.i], b = estado.rota.pts[pos.i + 1];
+      graus = 90 - rumo(a, b) * 180 / Math.PI;
+    }
+    moverMarcador(lat, lon, graus);
+
+    // Chegada
+    var paraB = Math.hypot.apply(null, (function () { var q = xy(lon, lat), d = xy(estado.B.lon, estado.B.lat); return [q[0] - d[0], q[1] - d[1]]; })());
+    if (paraB < 40 || (estado.rota.total - pos.s < 25 && pos.d < 60)) { chegou(); return; }
+
+    // Fora da rota
+    var limite = Math.max(50, prec * 1.5);
+    if (pos.d > limite || nav.precisaRecalc) {
+      if (!nav.foraDesde) nav.foraDesde = Date.now();
+      if (nav.precisaRecalc || Date.now() - nav.foraDesde > 8000) {
+        recalcular(nav.precisaRecalc ? "Ajustando a rota a partir de onde você está…" : "Você saiu da rota. Recalculando…", lon, lat);
+        return;
+      }
+      mostrarAlertaNav("Fora da rota…", "info");
+    } else {
+      nav.foraDesde = null;
+      if (document.getElementById("navAlerta").className.indexOf("info") >= 0) mostrarAlertaNav("");
+    }
+    atualizarInstrucao(pos.s);
+    atualizarBase(pos.s);
+  }
+
+  function moverMarcador(lat, lon, graus) {
+    if (!nav.marcador) nav.marcador = L.marker([lat, lon], { icon: iconePosicao(graus), keyboard: false, interactive: false, zIndexOffset: 1000 }).addTo(mapa);
+    else { nav.marcador.setLatLng([lat, lon]); nav.marcador.setIcon(iconePosicao(graus)); }
+    if (nav.seguindo) mapa.setView([lat, lon], Math.max(mapa.getZoom(), 16), { animate: true });
+  }
+
+  function aoFalharPosicao(e) {
+    mostrarAlertaNav(e.code === 1
+      ? "A localização está bloqueada. No Chrome, toque no cadeado ao lado do endereço e permita a localização para este site."
+      : "Sem sinal de GPS agora. Continue seguindo as placas; a navegação volta quando o sinal voltar.", "alerta");
+  }
+
+  function recalcular(motivo, lon, lat) {
+    if (nav.recalculando || Date.now() - nav.ultimaRecalc < 20000) return;
+    nav.recalculando = true;
+    mostrarAlertaNav(motivo, "info");
+    falar(motivo.replace("…", ""));
+    var orig = { lon: lon, lat: lat, nome: "Posição atual" };
+    calcularRota(orig, estado.B, momentoAtual()).then(function (res) {
+      prepararRota(res);
+      desenharRota(res.coords, false);
+      exibirResultado(res);
+      nav.idx = 0; nav.falados = {}; nav.precisaRecalc = false;
+      if (res.problemas.length) {
+        mostrarAlertaNav("Atenção: não achei caminho livre. A rota passa por " + res.problemas.map(function (p) { return CAMADAS[p.tipo].curto; }).join(", ") + ", proibida agora.", "alerta");
+        falar("Atenção: não achei caminho livre de restrições.");
+      } else mostrarAlertaNav("");
+    }).catch(function (e) {
+      mostrarAlertaNav(e.message + " Siga as placas.", "alerta");
+    }).then(function () {
+      nav.recalculando = false; nav.ultimaRecalc = Date.now(); nav.foraDesde = null;
+    });
+  }
+
+  /* A cada minuto: alguma restrição começou no caminho que falta? */
+  function vigiarRestricoes() {
+    if (!nav.ativo || nav.recalculando || !estado.rota || !nav.ultimaPos) return;
+    var r = estado.rota, resto = r.coords.slice(Math.max(0, nav.idx));
+    if (resto.length < 2) return;
+    var problemas = conferir(resto, momentoAtual(), r.ignorar);
+    if (problemas.length && !r.problemas.length) {
+      var nomes = problemas.map(function (p) { return CAMADAS[p.tipo].curto; }).join(", ");
+      nav.ultimaRecalc = 0;
+      recalcular("Começou a restrição de " + nomes + " no seu caminho. Recalculando…", nav.ultimaPos.lon, nav.ultimaPos.lat);
+    }
+  }
+
+  function chegou() {
+    if (nav.chegou) return;
+    nav.chegou = true;
+    document.getElementById("navSeta").textContent = SETAS[10];
+    document.getElementById("navDist").textContent = "Chegou";
+    document.getElementById("navTexto").textContent = "Você chegou ao destino.";
+    document.getElementById("navRestante").textContent = "0 m";
+    falar("Você chegou ao destino.");
+  }
+
+  function iniciarNavegacao() {
+    if (!estado.rota) return;
+    if (!navigator.geolocation) { mostrarMsg("Este aparelho não informa a localização, então não dá para navegar."); return; }
+    // A navegação usa sempre o horário de agora
+    if (estado.modo !== "agora") { document.getElementById("mAgora").click(); nav.precisaRecalc = true; }
+    nav.ativo = true; nav.seguindo = true; nav.idx = 0; nav.falados = {}; nav.foraDesde = null; nav.chegou = false; nav.ultimaRecalc = 0;
+    document.body.classList.add("navegando");
+    ["navTopo", "navBase"].forEach(function (id) { document.getElementById(id).hidden = false; });
+    document.getElementById("btnCentro").hidden = true;
+    document.getElementById("navTexto").textContent = "Buscando o sinal do GPS…";
+    document.getElementById("navDist").textContent = "";
+    document.getElementById("navSeta").textContent = "↑";
+    mostrarAlertaNav(nav.precisaRecalc ? "A rota foi feita para outro horário. Vou ajustar para o horário de agora assim que o GPS achar você." : "");
+    setTimeout(function () { mapa.invalidateSize(); }, 50);
+    pedirTelaLigada();
+    falar("Navegação iniciada. Respeite sempre a sinalização.");
+    nav.watch = navigator.geolocation.watchPosition(aoReceberPosicao, aoFalharPosicao, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
+  }
+
+  function encerrarNavegacao() {
+    nav.ativo = false;
+    if (nav.watch !== null) { navigator.geolocation.clearWatch(nav.watch); nav.watch = null; }
+    if (nav.tela) { try { nav.tela.release(); } catch (e) {} nav.tela = null; }
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    if (nav.marcador) { mapa.removeLayer(nav.marcador); nav.marcador = null; }
+    document.body.classList.remove("navegando");
+    ["navTopo", "navBase", "navAlerta"].forEach(function (id) { document.getElementById(id).hidden = true; });
+    setTimeout(function () { mapa.invalidateSize(); if (estado.rota) desenharRota(estado.rota.coords); }, 50);
+  }
+
+  document.getElementById("btnEncerrar").addEventListener("click", encerrarNavegacao);
+  document.getElementById("btnCentro").addEventListener("click", function () {
+    nav.seguindo = true; document.getElementById("btnCentro").hidden = true;
+    if (nav.ultimaPos) mapa.setView([nav.ultimaPos.lat, nav.ultimaPos.lon], Math.max(mapa.getZoom(), 16));
+  });
+  document.getElementById("btnVoz").addEventListener("click", function () {
+    nav.voz = !nav.voz;
+    this.setAttribute("aria-pressed", nav.voz ? "true" : "false");
+    this.textContent = nav.voz ? "Voz ligada" : "Voz desligada";
+    if (!nav.voz && window.speechSynthesis) speechSynthesis.cancel();
+  });
+  mapa.on("dragstart", function () {
+    if (!nav.ativo) return;
+    nav.seguindo = false; document.getElementById("btnCentro").hidden = false;
+  });
+  setInterval(vigiarRestricoes, 60000);
 
   if (!dados.length) {
     document.getElementById("lista").insertAdjacentHTML("beforebegin", '<p class="nota">Não encontrei o arquivo dados-restricoes.js. Ele precisa ficar na mesma pasta desta página.</p>');
