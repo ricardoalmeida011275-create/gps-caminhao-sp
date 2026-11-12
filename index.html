@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rota Caminhão SP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+/* Layout: mapa ocupando a tela; painel embaixo no celular, na lateral direita no computador */
+:root {
+  --asfalto: #1d2226;      /* texto principal */
+  --fundo: #f3f4f2;        /* fundo do painel */
+  --papel: #ffffff;        /* cartões */
+  --linha: #d6dad6;        /* divisórias */
+  --suave: #5c666b;        /* texto secundário */
+  --proibido: #c8102e;     /* vermelho da placa R-9 */
+  --proibido-fundo: #fbe3e6;
+  --liberado: #1f7a3d;
+  --liberado-fundo: #ddf1e3;
+  --atencao: #b26a00;
+  --atencao-fundo: #fff0d1;
+  --aviso: #ffcf33;        /* amarelo de placa de advertência */
+  --aviso-texto: #1d2226;
+  --foco: #0b5cad;
+  --f-titulo: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;
+  --f-texto: "Barlow", "Segoe UI", Roboto, Arial, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --asfalto: #e9ecea; --fundo: #171b1e; --papel: #20262a; --linha: #343c41; --suave: #a3adb2;
+    --proibido: #ff5a6e; --proibido-fundo: #3d1a20; --liberado: #5fd38a; --liberado-fundo: #16301f;
+    --atencao: #ffb44d; --atencao-fundo: #3a2a10; --aviso: #ffcf33; --aviso-texto: #1d2226; --foco: #7db7ff;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --asfalto: #e9ecea; --fundo: #171b1e; --papel: #20262a; --linha: #343c41; --suave: #a3adb2;
+  --proibido: #ff5a6e; --proibido-fundo: #3d1a20; --liberado: #5fd38a; --liberado-fundo: #16301f;
+  --atencao: #ffb44d; --atencao-fundo: #3a2a10; --aviso: #ffcf33; --aviso-texto: #1d2226; --foco: #7db7ff;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--fundo); color: var(--asfalto);
+  font-family: var(--f-texto); font-size: 15px; line-height: 1.4;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+button, select, input { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+
+/* Aviso fixo no topo (aparece sempre) */
+.aviso {
+  background: var(--aviso); color: var(--aviso-texto);
+  padding-block: 8px; padding-top: max(8px, env(safe-area-inset-top, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  font-size: 13px; font-weight: 600; line-height: 1.3;
+  border-bottom: 2px solid var(--aviso-texto);
+}
+
+.app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+#mapa { flex: 1; min-height: 0; background: var(--fundo); }
+
+.painel {
+  background: var(--fundo); border-top: 1px solid var(--linha);
+  max-height: 48%; display: flex; flex-direction: column; min-height: 0;
+}
+.painel.fechado .painel-corpo { display: none; }
+.painel-topo {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding-block: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--papel); border-bottom: 1px solid var(--linha);
+}
+.marca { font-family: var(--f-titulo); font-weight: 700; font-size: 22px; letter-spacing: .02em; margin: 0; line-height: 1.1; }
+.marca small { display: block; font-family: var(--f-texto); font-weight: 500; font-size: 13px; color: var(--suave); letter-spacing: 0; }
+.btn-painel {
+  border: 1px solid var(--linha); background: var(--fundo); border-radius: 8px;
+  padding: 8px 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+.painel-corpo {
+  overflow-y: auto; min-height: 0;
+  padding-block: 12px 16px; padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 16px;
+}
+
+@media (min-width: 900px) {
+  .app { flex-direction: row; }
+  .painel { max-height: none; width: 380px; border-top: 0; border-left: 1px solid var(--linha); order: 2; }
+  .btn-painel { display: none; }
+  .painel.fechado .painel-corpo { display: flex; }
+}
+
+.rotulo { font-family: var(--f-titulo); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--suave); margin: 0 0 6px; }
+.grupo-botoes { display: flex; gap: 8px; flex-wrap: wrap; }
+.opcao {
+  flex: 1 1 140px; border: 2px solid var(--linha); background: var(--papel); border-radius: 10px;
+  padding: 10px 12px; text-align: left; cursor: pointer; font-weight: 600; min-width: 0;
+}
+.opcao small { display: block; font-weight: 400; color: var(--suave); font-size: 12.5px; }
+.opcao[aria-pressed="true"] { border-color: var(--asfalto); box-shadow: inset 0 0 0 1px var(--asfalto); }
+
+.linha-campos { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+.linha-campos select, .linha-campos input[type="time"] {
+  border: 1px solid var(--linha); background: var(--papel); border-radius: 8px; padding: 8px 10px; min-width: 0;
+}
+.check { display: flex; gap: 6px; align-items: center; font-size: 14px; }
+.momento { font-family: var(--f-titulo); font-size: 20px; font-weight: 600; margin: 8px 0 0; font-variant-numeric: tabular-nums; }
+.nota { font-size: 13px; color: var(--suave); margin: 4px 0 0; }
+
+.lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.item {
+  background: var(--papel); border: 1px solid var(--linha); border-radius: 10px; padding: 10px 12px;
+  display: grid; grid-template-columns: auto 1fr auto; gap: 4px 10px; align-items: start;
+}
+.item input { margin-top: 3px; width: 18px; height: 18px; }
+.item-nome { font-weight: 600; min-width: 0; }
+.item-hora { grid-column: 2 / 4; font-size: 13px; color: var(--suave); }
+.item-fonte { grid-column: 2 / 4; font-size: 12.5px; }
+.item-fonte a, .fontes a { color: var(--foco); }
+.chip {
+  font-family: var(--f-titulo); font-weight: 700; font-size: 13px; letter-spacing: .04em; text-transform: uppercase;
+  border-radius: 999px; padding: 2px 10px; white-space: nowrap;
+}
+.chip.proibido { background: var(--proibido-fundo); color: var(--proibido); }
+.chip.liberado { background: var(--liberado-fundo); color: var(--liberado); }
+.chip.atencao { background: var(--atencao-fundo); color: var(--atencao); }
+.amostra { display: inline-block; width: 22px; height: 0; border-top: 5px solid; vertical-align: middle; margin-right: 6px; border-radius: 2px; }
+
+.pendente { background: var(--papel); border: 1px dashed var(--linha); border-radius: 10px; padding: 10px 12px; font-size: 13.5px; }
+.fontes { font-size: 13px; color: var(--suave); margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+
+/* Janelinha que abre ao tocar numa via/área */
+.leaflet-popup-content { font-family: var(--f-texto); font-size: 14px; line-height: 1.4; margin: 12px 14px; }
+.leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--papel); color: var(--asfalto); }
+.leaflet-popup-content a { color: var(--foco); }
+.pop-titulo { font-weight: 600; margin: 0 0 4px; }
+.pop-status { font-family: var(--f-titulo); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.leaflet-control-attribution { font-size: 10px; }
+</style>
+</head>
+<body>
+
+<div class="aviso" role="note">
+  Ferramenta de apoio. Respeite sempre a sinalização e as regras oficiais da CET: as restrições podem mudar.
+</div>
+
+<div class="app">
+  <div id="mapa" aria-label="Mapa de São Paulo com as restrições a caminhões"></div>
+
+  <aside class="painel" id="painel">
+    <div class="painel-topo">
+      <h1 class="marca">Rota Caminhão SP<small>Onde o caminhão pode circular</small></h1>
+      <button class="btn-painel" id="btnPainel" type="button" aria-expanded="true" aria-controls="painelCorpo">Esconder</button>
+    </div>
+
+    <div class="painel-corpo" id="painelCorpo">
+
+      <section>
+        <p class="rotulo">Veículo</p>
+        <div class="grupo-botoes" role="group" aria-label="Tipo de veículo">
+          <button class="opcao" type="button" id="vCaminhao" data-veiculo="caminhao" aria-pressed="true">Caminhão<small>qualquer caminhão que não é VUC</small></button>
+          <button class="opcao" type="button" id="vVuc" data-veiculo="vuc" aria-pressed="false">VUC autorizado<small>até 2,20 m × 7,20 m, com AETC</small></button>
+        </div>
+      </section>
+
+      <section>
+        <p class="rotulo">Quando</p>
+        <div class="grupo-botoes" role="group" aria-label="Momento">
+          <button class="opcao" type="button" id="mAgora" aria-pressed="true">Agora</button>
+          <button class="opcao" type="button" id="mEscolher" aria-pressed="false">Escolher dia e hora</button>
+        </div>
+        <div class="linha-campos" id="camposEscolha" hidden>
+          <select id="selDia" aria-label="Dia da semana">
+            <option value="1">Segunda</option><option value="2">Terça</option><option value="3">Quarta</option>
+            <option value="4">Quinta</option><option value="5">Sexta</option><option value="6">Sábado</option><option value="0">Domingo</option>
+          </select>
+          <input type="time" id="selHora" value="08:00" step="900" aria-label="Horário">
+          <label class="check"><input type="checkbox" id="selFeriado"> É feriado</label>
+        </div>
+        <p class="momento" id="momento">…</p>
+        <p class="nota" id="notaFeriado" hidden></p>
+      </section>
+
+      <section>
+        <p class="rotulo">Final da placa (rodízio)</p>
+        <div class="linha-campos">
+          <select id="selPlaca" aria-label="Final da placa">
+            <option value="">Não informar</option>
+            <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+            <option>6</option><option>7</option><option>8</option><option>9</option><option>0</option>
+          </select>
+        </div>
+      </section>
+
+      <section>
+        <p class="rotulo">No mapa</p>
+        <ul class="lista" id="lista"></ul>
+      </section>
+
+      <section class="pendente">
+        <strong>Ainda não está no mapa:</strong> a ZERC (bairros residenciais, proibida para caminhão o dia todo, Portaria 137/18 art. 3º), as ruas com placa "Proibido caminhão" fora destes grupos, corredores de ônibus e calçadões. Siga as placas.
+      </section>
+
+      <section>
+        <p class="rotulo">Fontes</p>
+        <ol class="fontes">
+          <li>Horários e lista de vias: <a href="https://www.cetsp.com.br/media/722444/p-137_18.pdf" target="_blank" rel="noopener">Portaria 137/2018 SMT.GAB</a> (em vigor desde 03/10/2018).</li>
+          <li>Tabela de exceções: <a href="https://www.cetsp.com.br/consultas/caminhoes/resumo-das-restricoes.aspx" target="_blank" rel="noopener">CET, Resumo das restrições</a>.</li>
+          <li>Desenhos das áreas e vias: <a href="https://www.cetsp.com.br/consultas/caminhoes/mapa.aspx" target="_blank" rel="noopener">mapas oficiais da CET</a> (baixados em 12/11/2026).</li>
+          <li>Rodízio por placa: <a href="https://www.cetsp.com.br/consultas/rodizio-municipal.aspx" target="_blank" rel="noopener">CET, Rodízio Municipal</a>.</li>
+          <li>Mapa de fundo: © colaboradores do OpenStreetMap.</li>
+        </ol>
+      </section>
+
+    </div>
+  </aside>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="dados-restricoes.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  /* ===== Regras (Portaria 137/2018) ===== */
+  var PORTARIA = "https://www.cetsp.com.br/media/722444/p-137_18.pdf";
+  var CAMADAS = {
+    zmrc:    { nome: "ZMRC – Zona de Máxima Restrição", hora: "Seg a sex 5h–21h · Sáb 10h–14h · livre em feriados", fonte: "Portaria 137/18, art. 1º", area: true },
+    ver1:    { nome: "Avenidas grupo 1 (Paulista, Rebouças, 23 de Maio…)", hora: "Seg a sex 5h–21h · Sáb 10h–14h · proibido também para VUC", fonte: "Portaria 137/18, art. 2º §1º" },
+    ver2:    { nome: "Avenidas grupo 2 (Marg. Pinheiros, Bandeirantes…)", hora: "Seg a sex 5h–21h · Sáb 10h–14h", fonte: "Portaria 137/18, art. 2º §2º" },
+    ver3:    { nome: "Avenidas grupo 3 (região do Morumbi)", hora: "Seg a sex 5h–21h · Sáb 10h–14h", fonte: "Portaria 137/18, art. 2º §3º" },
+    ver4:    { nome: "Avenidas grupo 4 (Marg. Tietê, Av. do Estado…)", hora: "Seg a sex 5h–9h e 17h–21h · Sáb 10h–14h", fonte: "Portaria 137/18, art. 2º §4º" },
+    rodizio: { nome: "Rodízio por placa (Centro Expandido)", hora: "Seg a sex 7h–10h e 17h–20h, conforme o final da placa", fonte: "CET, Rodízio Municipal", area: true }
+  };
+  var ORDEM = ["zmrc", "ver1", "ver2", "ver3", "ver4", "rodizio"];
+  var FINAIS_RODIZIO = { 1: ["1", "2"], 2: ["3", "4"], 3: ["5", "6"], 4: ["7", "8"], 5: ["9", "0"] };
+  var DIAS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+
+  /* Feriados nacionais, estaduais (SP) e municipais (São Paulo) – confira a cada ano */
+  var FERIADOS = {
+    "01-01": "Confraternização Universal", "01-25": "Aniversário de São Paulo", "04-21": "Tiradentes",
+    "05-01": "Dia do Trabalho", "07-09": "Revolução Constitucionalista", "09-07": "Independência",
+    "10-12": "Nossa Senhora Aparecida", "11-02": "Finados", "11-15": "Proclamação da República",
+    "11-20": "Consciência Negra", "12-25": "Natal",
+    "2026-04-03": "Sexta-feira Santa", "2026-06-04": "Corpus Christi",
+    "2027-03-26": "Sexta-feira Santa", "2027-05-27": "Corpus Christi"
+  };
+
+  function entre(min, deH, ateH) { return min >= deH * 60 && min < ateH * 60; }
+
+  /* Devolve "proibido", "liberado" ou "atencao" (depende da placa) */
+  function situacao(tipo, m) {
+    var util = m.dia >= 1 && m.dia <= 5, sab = m.dia === 6, min = m.minutos;
+    var horarioCheio = (util && entre(min, 5, 21)) || (sab && entre(min, 10, 14));
+    if (tipo === "rodizio") {
+      if (m.veiculo === "vuc") return "liberado";            // VUC cadastrado é liberado do rodízio (Portaria DSV.G 09/19)
+      var noHorario = util && (entre(min, 7, 10) || entre(min, 17, 20));
+      if (!noHorario) return "liberado";
+      if (!m.placa) return "atencao";
+      return FINAIS_RODIZIO[m.dia].indexOf(m.placa) >= 0 ? "proibido" : "liberado";
+    }
+    if (m.feriado) return "liberado";                         // "excetuados os feriados" (art. 1º e 2º)
+    var proibido;
+    if (tipo === "ver4") proibido = (util && (entre(min, 5, 9) || entre(min, 17, 21))) || (sab && entre(min, 10, 14));
+    else proibido = horarioCheio;
+    if (m.veiculo === "vuc" && tipo !== "ver1") proibido = false;  // art. 18: VUC com AETC liberado, exceto grupo 1
+    return proibido ? "proibido" : "liberado";
+  }
+
+  var TEXTO = { proibido: "Proibido agora", liberado: "Liberado agora", atencao: "Depende da placa" };
+
+  /* ===== Estado ===== */
+  var estado = { veiculo: "caminhao", modo: "agora", placa: "", ligadas: {} };
+  ORDEM.forEach(function (t) { estado.ligadas[t] = true; });
+  try {
+    var salvo = JSON.parse(localStorage.getItem("rotaCaminhaoSP") || "{}");
+    if (salvo.veiculo) estado.veiculo = salvo.veiculo;
+    if (typeof salvo.placa === "string") estado.placa = salvo.placa;
+  } catch (e) {}
+
+  function agoraSP() {
+    var partes = {};
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", hourCycle: "h23", weekday: "short"
+    }).formatToParts(new Date()).forEach(function (p) { partes[p.type] = p.value; });
+    var dias = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+    var md = partes.month + "-" + partes.day, ymd = partes.year + "-" + md;
+    var nomeFeriado = FERIADOS[ymd] || FERIADOS[md] || "";
+    return {
+      dia: dias[partes.weekday], minutos: parseInt(partes.hour, 10) * 60 + parseInt(partes.minute, 10),
+      texto: partes.day + "/" + partes.month, feriado: !!nomeFeriado, nomeFeriado: nomeFeriado
+    };
+  }
+
+  function momentoAtual() {
+    var base;
+    if (estado.modo === "agora") base = agoraSP();
+    else {
+      var hm = (document.getElementById("selHora").value || "08:00").split(":");
+      base = {
+        dia: parseInt(document.getElementById("selDia").value, 10),
+        minutos: parseInt(hm[0], 10) * 60 + parseInt(hm[1] || "0", 10),
+        feriado: document.getElementById("selFeriado").checked, nomeFeriado: "", texto: ""
+      };
+    }
+    base.veiculo = estado.veiculo; base.placa = estado.placa;
+    return base;
+  }
+
+  /* ===== Mapa ===== */
+  var mapa = L.map("mapa", { zoomControl: true, preferCanvas: true }).setView([-23.56, -46.64], 12);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">colaboradores do OpenStreetMap</a>'
+  }).addTo(mapa);
+
+  function cor(nome) { return getComputedStyle(document.documentElement).getPropertyValue(nome).trim(); }
+
+  var grupos = {};
+  ORDEM.forEach(function (t) { grupos[t] = L.layerGroup(); });
+
+  var dados = (window.RESTRICOES && window.RESTRICOES.features) || [];
+  dados.forEach(function (f) {
+    var t = f.properties.tipo;
+    if (!grupos[t]) return;
+    var camada = L.geoJSON(f, {});
+    camada.eachLayer(function (l) { l._tipo = t; l._nome = f.properties.nome; });
+    camada.bindPopup(function (l) { return textoPopup(l._tipo, l._nome); });
+    grupos[t].addLayer(camada);
+  });
+  ["rodizio", "zmrc", "ver4", "ver3", "ver2", "ver1"].forEach(function (t) { grupos[t].addTo(mapa); });
+  try { mapa.fitBounds(L.featureGroup(grupos.rodizio.getLayers()).getBounds(), { padding: [8, 8] }); } catch (e) {}
+
+  function textoPopup(tipo, nome) {
+    var c = CAMADAS[tipo], s = situacao(tipo, momentoAtual());
+    var extra = tipo === "rodizio" ? "<br><span class=\"nota\">As vias que formam o contorno (minianel) são liberadas do rodízio para caminhão.</span>" : "";
+    return '<p class="pop-titulo">' + escapar(nome) + '</p>' +
+      '<span class="pop-status" style="color:' + cor(s === "proibido" ? "--proibido" : s === "liberado" ? "--liberado" : "--atencao") + '">' + TEXTO[s] + '</span><br>' +
+      c.hora + '<br>Fonte: <a href="' + (tipo === "rodizio" ? "https://www.cetsp.com.br/consultas/rodizio-municipal.aspx" : PORTARIA) + '" target="_blank" rel="noopener">' + c.fonte + '</a>' + extra;
+  }
+  function escapar(s) { return String(s).replace(/[&<>"]/g, function (ch) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]; }); }
+
+  function pintar(m) {
+    var vermelho = cor("--proibido"), verde = cor("--liberado"), laranja = cor("--atencao");
+    ORDEM.forEach(function (t) {
+      var s = situacao(t, m);
+      var c = s === "proibido" ? vermelho : s === "liberado" ? verde : laranja;
+      grupos[t].eachLayer(function (g) {
+        g.setStyle(CAMADAS[t].area
+          ? { color: c, weight: t === "rodizio" ? 2 : 3, dashArray: t === "rodizio" ? "8 6" : null,
+              fillColor: c, fillOpacity: s === "proibido" ? 0.16 : (t === "rodizio" ? 0.0 : 0.05), opacity: 0.9 }
+          : { color: c, weight: s === "proibido" ? 6 : 4, opacity: s === "proibido" ? 0.95 : 0.75, dashArray: s === "proibido" ? null : "6 6" });
+      });
+      if (estado.ligadas[t] && !mapa.hasLayer(grupos[t])) grupos[t].addTo(mapa);
+      if (!estado.ligadas[t] && mapa.hasLayer(grupos[t])) mapa.removeLayer(grupos[t]);
+    });
+    // linhas sempre por cima das áreas
+    ["ver4", "ver3", "ver2", "ver1"].forEach(function (t) { grupos[t].eachLayer(function (g) { g.bringToFront(); }); });
+  }
+
+  /* ===== Painel ===== */
+  var lista = document.getElementById("lista");
+  ORDEM.forEach(function (t) {
+    var c = CAMADAS[t];
+    var li = document.createElement("li");
+    li.className = "item";
+    li.innerHTML =
+      '<input type="checkbox" id="liga-' + t + '" checked aria-label="Mostrar ' + escapar(c.nome) + '">' +
+      '<label class="item-nome" for="liga-' + t + '">' + escapar(c.nome) + '</label>' +
+      '<span class="chip" id="chip-' + t + '"></span>' +
+      '<span class="item-hora">' + escapar(c.hora) + '</span>' +
+      '<span class="item-fonte">Fonte: <a href="' + (t === "rodizio" ? "https://www.cetsp.com.br/consultas/rodizio-municipal.aspx" : PORTARIA) + '" target="_blank" rel="noopener">' + escapar(c.fonte) + '</a></span>';
+    lista.appendChild(li);
+    li.querySelector("input").addEventListener("change", function (ev) { estado.ligadas[t] = ev.target.checked; atualizar(); });
+  });
+
+  function atualizar() {
+    var m = momentoAtual();
+    var hh = String(Math.floor(m.minutos / 60)).padStart(2, "0"), mm = String(m.minutos % 60).padStart(2, "0");
+    document.getElementById("momento").textContent =
+      (estado.modo === "agora" ? "Agora: " : "Simulando: ") + DIAS[m.dia] + (m.texto ? ", " + m.texto : "") + " às " + hh + ":" + mm;
+
+    var nota = document.getElementById("notaFeriado");
+    var partesNota = [];
+    if (m.feriado) partesNota.push((m.nomeFeriado ? "Hoje é feriado (" + m.nomeFeriado + "). " : "Feriado: ") + "ZMRC e avenidas ficam liberadas. O rodízio por placa pode continuar valendo para caminhão.");
+    if (m.dia >= 1 && m.dia <= 5 && estado.veiculo !== "vuc") partesNota.push("Rodízio de " + DIAS[m.dia].toLowerCase() + ": placas final " + FINAIS_RODIZIO[m.dia].join(" e ") + ".");
+    nota.textContent = partesNota.join(" ");
+    nota.hidden = partesNota.length === 0;
+
+    ORDEM.forEach(function (t) {
+      var s = situacao(t, m), chip = document.getElementById("chip-" + t);
+      chip.className = "chip " + s; chip.textContent = TEXTO[s].replace(" agora", "");
+    });
+    pintar(m);
+    try { localStorage.setItem("rotaCaminhaoSP", JSON.stringify({ veiculo: estado.veiculo, placa: estado.placa })); } catch (e) {}
+  }
+
+  function marcar(id, ligado) { document.getElementById(id).setAttribute("aria-pressed", ligado ? "true" : "false"); }
+
+  document.getElementById("vCaminhao").addEventListener("click", function () { estado.veiculo = "caminhao"; marcar("vCaminhao", true); marcar("vVuc", false); atualizar(); });
+  document.getElementById("vVuc").addEventListener("click", function () { estado.veiculo = "vuc"; marcar("vVuc", true); marcar("vCaminhao", false); atualizar(); });
+  document.getElementById("mAgora").addEventListener("click", function () {
+    estado.modo = "agora"; marcar("mAgora", true); marcar("mEscolher", false);
+    document.getElementById("camposEscolha").hidden = true; atualizar();
+  });
+  document.getElementById("mEscolher").addEventListener("click", function () {
+    var a = agoraSP();
+    document.getElementById("selDia").value = String(a.dia);
+    document.getElementById("selHora").value = String(Math.floor(a.minutos / 60)).padStart(2, "0") + ":" + String(a.minutos % 60).padStart(2, "0");
+    document.getElementById("selFeriado").checked = a.feriado;
+    estado.modo = "escolher"; marcar("mEscolher", true); marcar("mAgora", false);
+    document.getElementById("camposEscolha").hidden = false; atualizar();
+  });
+  ["selDia", "selHora", "selFeriado"].forEach(function (id) { document.getElementById(id).addEventListener("change", atualizar); document.getElementById(id).addEventListener("input", atualizar); });
+  var selPlaca = document.getElementById("selPlaca");
+  selPlaca.value = estado.placa;
+  selPlaca.addEventListener("change", function () { estado.placa = selPlaca.value; atualizar(); });
+
+  marcar("vCaminhao", estado.veiculo === "caminhao"); marcar("vVuc", estado.veiculo === "vuc");
+
+  var painel = document.getElementById("painel"), btnPainel = document.getElementById("btnPainel");
+  btnPainel.addEventListener("click", function () {
+    var fechar = !painel.classList.contains("fechado");
+    painel.classList.toggle("fechado", fechar);
+    btnPainel.textContent = fechar ? "Mostrar painel" : "Esconder";
+    btnPainel.setAttribute("aria-expanded", fechar ? "false" : "true");
+    setTimeout(function () { mapa.invalidateSize(); }, 50);
+  });
+
+  if (!dados.length) {
+    document.getElementById("lista").insertAdjacentHTML("beforebegin", '<p class="nota">Não encontrei o arquivo dados-restricoes.js. Ele precisa ficar na mesma pasta desta página.</p>');
+  }
+
+  atualizar();
+  setInterval(function () { if (estado.modo === "agora") atualizar(); }, 60000);
+})();
+</script>
+</body>
+</html>
