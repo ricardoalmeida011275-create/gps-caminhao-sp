@@ -250,6 +250,10 @@ body.navegando .app { flex-direction: column; }
 .chave { background: var(--papel); border: 1px solid var(--linha); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; }
 .chave .linha-campos { margin-top: 0; }
 .chave .campo-texto { flex: 1 1 200px; }
+.convite { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--linha); padding-top: 10px; }
+.btn-convidar { margin-top: 0; background: #1f7a3d; font-size: 17px; }
+.convite textarea { width: 100%; resize: vertical; font-size: 13px; }
+.selo { display: inline-block; vertical-align: middle; margin-left: 6px; font-family: var(--f-titulo); font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; background: var(--aviso); color: var(--aviso-texto); border-radius: 4px; padding: 1px 6px; }
 
 /* Janelinha que abre ao tocar numa via/área */
 .leaflet-popup-content { font-family: var(--f-texto); font-size: 14px; line-height: 1.4; margin: 12px 14px; }
@@ -295,7 +299,7 @@ body.navegando .app { flex-direction: column; }
 
   <aside class="painel" id="painel">
     <div class="painel-topo">
-      <h1 class="marca">Rota Caminhão SP<small>Rota que respeita as restrições</small></h1>
+      <h1 class="marca">Rota Caminhão SP <span class="selo">Teste piloto</span><small>Rota que respeita as restrições</small></h1>
       <button class="btn-painel" id="btnPainel" type="button" aria-expanded="true" aria-controls="painelCorpo">Esconder</button>
     </div>
 
@@ -400,6 +404,12 @@ body.navegando .app { flex-direction: column; }
           <button class="btn-pequeno" type="button" id="btnApagarChave">Apagar</button>
         </div>
         <p class="nota" style="margin:0">A chave fica guardada só neste aparelho. Ela não vai para o GitHub.</p>
+        <div id="caixaConvite" class="convite" hidden>
+          <button class="btn-rota btn-convidar" type="button" id="btnConvidar">Convidar motoristas para o teste</button>
+          <p class="nota" style="margin:0">Manda um texto pronto com um link que já configura o app. Quem receber usa a sua chave (o seu limite de 2.000 rotas por dia): mande só para quem você confia. Se o link se espalhar, gere uma chave nova no HeiGIT.</p>
+          <textarea id="txtConvite" class="campo-texto" rows="8" hidden aria-label="Texto do convite"></textarea>
+          <button class="btn-pequeno" type="button" id="btnCopiarConvite" hidden>Copiar texto</button>
+        </div>
       </section>
 
     </div>
@@ -474,6 +484,17 @@ body.navegando .app { flex-direction: column; }
     if (typeof salvo.placa === "string") estado.placa = salvo.placa;
   } catch (e) {}
   estado.chave = ler("rotaCaminhaoSP.chave") || "";
+
+  /* Link de convite: ...#chave=XXXX salva a chave neste aparelho e some da barra de endereço */
+  var veioDeConvite = false;
+  (function lerConvite() {
+    var m = (location.hash || "").match(/^#chave=(.+)$/);
+    if (!m) return;
+    var k = "";
+    try { k = decodeURIComponent(m[1]).trim(); } catch (e) {}
+    if (k.length >= 30) { estado.chave = k; gravar("rotaCaminhaoSP.chave", k); veioDeConvite = true; }
+    try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+  })();
 
   /* ================= Hora de São Paulo ================= */
   function agoraSP() {
@@ -638,7 +659,40 @@ body.navegando .app { flex-direction: column; }
     document.getElementById("estadoChave").textContent = estado.chave
       ? "Chave salva neste aparelho (termina em …" + estado.chave.slice(-4) + ")."
       : "Nenhuma chave salva. Sem ela, o mapa funciona, mas a rota não.";
+    document.getElementById("caixaConvite").hidden = !estado.chave;
   }
+
+  /* ---------- Convidar motoristas para o teste ---------- */
+  function linkConvite() { return location.origin + location.pathname + "#chave=" + encodeURIComponent(estado.chave); }
+  function textoConvite() {
+    return "Fala! Estou fazendo um teste piloto de um aplicativo de GPS para caminhão em São Paulo. " +
+      "Ele traça a rota respeitando as restrições da CET (ZMRC, rodízio e avenidas proibidas por horário), de acordo com o tipo de veículo.\n\n" +
+      "É uma versão de teste: ainda vai melhorar bastante, inclusive o visual. Se der certo, a ideia é lançar no mercado, então a sua opinião vale muito.\n\n" +
+      "Como usar:\n" +
+      "1. Abra este link no Chrome (ele já vem configurado): " + linkConvite() + "\n" +
+      "2. Para deixar como app: menu ⋮ do Chrome > \"Instalar e criar atalho\" (ou \"Adicionar à tela inicial\").\n" +
+      "3. Escolha o veículo, o final da placa, a saída (\"Minha localização\") e o destino, e toque em \"Traçar rota\".\n" +
+      "4. Toque em \"Iniciar navegação\" ANTES de sair. Não mexa no celular dirigindo e deixe a tela ligada.\n\n" +
+      "Importante: é uma ferramenta de apoio. Respeite sempre as placas e as regras da CET. Ele ainda não conhece as zonas residenciais (ZERC) nem todas as placas de proibição.\n\n" +
+      "Depois me conta: a rota fez sentido? Mandou você por algum lugar proibido? O GPS e a voz acompanharam? Se puder, mande prints (com o caminhão parado).";
+  }
+  document.getElementById("btnConvidar").addEventListener("click", function () {
+    var texto = textoConvite();
+    if (navigator.share) {
+      navigator.share({ title: "Teste do Rota Caminhão SP", text: texto }).catch(function () {});
+      return;
+    }
+    var area = document.getElementById("txtConvite");
+    area.value = texto; area.hidden = false; area.focus(); area.select();
+    document.getElementById("btnCopiarConvite").hidden = false;
+  });
+  document.getElementById("btnCopiarConvite").addEventListener("click", function () {
+    var area = document.getElementById("txtConvite"), btn = this;
+    function avisar(t) { btn.textContent = t; setTimeout(function () { btn.textContent = "Copiar texto"; }, 2500); }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(area.value).then(function () { avisar("Copiado!"); }, function () { area.select(); avisar("Selecionei: use Ctrl+C"); });
+    } else { area.select(); avisar("Selecionei: use Ctrl+C"); }
+  });
   document.getElementById("btnSalvarChave").addEventListener("click", function () {
     var v = document.getElementById("txtChave").value.trim();
     if (!v) { document.getElementById("estadoChave").textContent = "Cole a chave no campo antes de salvar."; return; }
@@ -1242,10 +1296,13 @@ body.navegando .app { flex-direction: column; }
     document.getElementById("navTexto").textContent = "Buscando o sinal do GPS…";
     document.getElementById("navDist").textContent = "";
     document.getElementById("navSeta").textContent = "↑";
-    mostrarAlertaNav(nav.precisaRecalc ? "A rota foi feita para outro horário. Vou ajustar para o horário de agora assim que o GPS achar você." : "");
+    mostrarAlertaNav(nav.precisaRecalc
+      ? "A rota foi feita para outro horário. Vou ajustar para o horário de agora assim que o GPS achar você."
+      : "Não mexa no celular dirigindo. Siga sempre as placas.", nav.precisaRecalc ? "info" : "seguranca");
+    if (!nav.precisaRecalc) setTimeout(function () { if (nav.ativo && document.getElementById("navAlerta").textContent.indexOf("Não mexa") === 0) mostrarAlertaNav(""); }, 15000);
     setTimeout(function () { mapa.invalidateSize(); }, 50);
     pedirTelaLigada();
-    falar("Navegação iniciada. Respeite sempre a sinalização.");
+    falar("Navegação iniciada. Não mexa no celular dirigindo e respeite sempre a sinalização.");
     nav.watch = navigator.geolocation.watchPosition(aoReceberPosicao, aoFalharPosicao, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
   }
 
@@ -1282,6 +1339,7 @@ body.navegando .app { flex-direction: column; }
   }
 
   atualizar();
+  if (veioDeConvite) mostrarMsg("Pronto! O app já está configurado. Escolha a saída e o destino e toque em \"Traçar rota\".");
   setInterval(function () { if (estado.modo === "agora") atualizar(); }, 60000);
 })();
 </script>
