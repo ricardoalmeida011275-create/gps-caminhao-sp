@@ -5,6 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Rota Caminhão SP</title>
 <link rel="manifest" href="manifest.webmanifest">
+<meta name="description" content="GPS para caminhão em São Paulo: traça a rota respeitando ZMRC, rodízio e avenidas proibidas por horário.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Rota Caminhão SP">
+<meta property="og:title" content="Rota Caminhão SP - GPS para caminhão">
+<meta property="og:description" content="Rota que respeita as restrições da CET em São Paulo (ZMRC, rodízio e horários). Versão de teste.">
+<meta property="og:url" content="https://ricardoalmeida011275-create.github.io/gps-caminhao-sp/">
+<meta property="og:image" content="https://ricardoalmeida011275-create.github.io/gps-caminhao-sp/icones/icone-512.png">
+<meta property="og:image:width" content="512">
+<meta property="og:image:height" content="512">
+<meta property="og:image:alt" content="Ícone do app Rota Caminhão SP">
+<meta property="og:locale" content="pt_BR">
+<meta name="twitter:card" content="summary">
 <meta name="theme-color" content="#0b1a33">
 <link rel="icon" type="image/png" sizes="192x192" href="icones/icone-192.png">
 <link rel="apple-touch-icon" href="icones/apple-icone.png">
@@ -678,7 +690,7 @@ body.navegando .app { flex-direction: column; }
       "É uma versão de teste: ainda vai melhorar bastante, inclusive o visual. Se der certo, a ideia é lançar no mercado, então a sua opinião vale muito.\n\n" +
       "Como usar:\n" +
       "1. Abra este link no Chrome (ele já vem configurado): " + linkConvite() + "\n" +
-      "2. Para deixar como app: toque no botão azul \"Instalar app\" no alto da tela e confirme. No iPhone, o botão mostra o passo a passo.\n" +
+      "2. Para deixar como app: toque no botão azul \"Instalar o GPS\" no alto da tela e confirme. No iPhone, o botão mostra o passo a passo.\n" +
       "3. Escolha o veículo, o final da placa, a saída (\"Minha localização\") e o destino, e toque em \"Traçar rota\".\n" +
       "4. Toque em \"Iniciar navegação\" ANTES de sair. Não mexa no celular dirigindo e deixe a tela ligada.\n\n" +
       "Importante: é uma ferramenta de apoio. Respeite sempre as placas e as regras da CET. Ele ainda não conhece as zonas residenciais (ZERC) nem todas as placas de proibição.\n\n" +
@@ -1364,8 +1376,8 @@ body.navegando .app { flex-direction: column; }
 #dicaIphone .caixa b{color:#1565c0}
 #dicaIphone button{margin-top:12px;width:100%;padding:12px;border:0;border-radius:10px;background:#1565c0;color:#fff;font:600 16px Barlow,system-ui,sans-serif}
 </style>
-<button id="instalarApp" type="button" aria-label="Instalar o app GPS Caminhão">
-  <img src="icones/icone-192.png" alt="">Instalar app<span class="fechar" aria-label="Fechar">✕</span>
+<button id="instalarApp" type="button" aria-label="Instalar o GPS Caminhão">
+  <img src="icones/icone-192.png" alt="">📲 Instalar o GPS<span class="fechar" aria-label="Fechar">✕</span>
 </button>
 <div id="dicaIphone" role="dialog" aria-label="Como instalar no iPhone">
   <div class="caixa">
