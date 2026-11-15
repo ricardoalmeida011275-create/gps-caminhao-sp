@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Rota Caminhão SP</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0b1a33">
+<link rel="icon" type="image/png" sizes="192x192" href="icones/icone-192.png">
+<link rel="apple-touch-icon" href="icones/apple-icone.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="GPS Caminhão">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
@@ -1341,6 +1349,68 @@ body.navegando .app { flex-direction: column; }
   atualizar();
   if (veioDeConvite) mostrarMsg("Pronto! O app já está configurado. Escolha a saída e o destino e toque em \"Traçar rota\".");
   setInterval(function () { if (estado.modo === "agora") atualizar(); }, 60000);
+})();
+</script>
+
+<!-- ===== Botão "Instalar app" ===== -->
+<style>
+#instalarApp{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);right:10px;z-index:99999;display:none;align-items:center;gap:8px;
+  background:linear-gradient(135deg,#1565c0,#0b1a33);color:#fff;border:1px solid rgba(120,190,255,.6);border-radius:999px;
+  padding:8px 10px 8px 8px;font:600 14px/1 Barlow,system-ui,sans-serif;box-shadow:0 4px 18px rgba(21,101,192,.45);cursor:pointer}
+#instalarApp img{width:30px;height:30px;border-radius:8px}
+#instalarApp .fechar{margin-left:4px;padding:2px 6px;border-radius:50%;background:rgba(255,255,255,.18);font-size:13px}
+#dicaIphone{position:fixed;inset:0;z-index:100000;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.55)}
+#dicaIphone .caixa{background:#fff;color:#1d2226;max-width:420px;width:100%;margin:12px;border-radius:16px;padding:18px;font:500 16px/1.45 Barlow,system-ui,sans-serif}
+#dicaIphone .caixa b{color:#1565c0}
+#dicaIphone button{margin-top:12px;width:100%;padding:12px;border:0;border-radius:10px;background:#1565c0;color:#fff;font:600 16px Barlow,system-ui,sans-serif}
+</style>
+<button id="instalarApp" type="button" aria-label="Instalar o app GPS Caminhão">
+  <img src="icones/icone-192.png" alt="">Instalar app<span class="fechar" aria-label="Fechar">✕</span>
+</button>
+<div id="dicaIphone" role="dialog" aria-label="Como instalar no iPhone">
+  <div class="caixa">
+    <p style="margin:0 0 8px"><b>Instalar no iPhone:</b></p>
+    <p style="margin:0">1. Toque no botão <b>Compartilhar</b> (o quadrado com a seta para cima) na barra do Safari.</p>
+    <p style="margin:6px 0 0">2. Escolha <b>Adicionar à Tela de Início</b>.</p>
+    <p style="margin:6px 0 0">3. Toque em <b>Adicionar</b>. Pronto, o ícone do caminhão aparece na sua tela.</p>
+    <button type="button" id="fecharDica">Entendi</button>
+  </div>
+</div>
+<script>
+(function () {
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+  }
+  var btn = document.getElementById("instalarApp");
+  var dica = document.getElementById("dicaIphone");
+  var jaInstalado = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+  var fechou = false;
+  try { fechou = localStorage.getItem("instalarFechado") === "1"; } catch (e) {}
+  if (jaInstalado || fechou) return;
+
+  var pedido = null;
+  var ehIphone = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+  window.addEventListener("beforeinstallprompt", function (e) {
+    e.preventDefault(); pedido = e; btn.style.display = "flex";
+  });
+  if (ehIphone) btn.style.display = "flex";
+
+  btn.addEventListener("click", function (e) {
+    if (e.target.classList.contains("fechar")) {
+      btn.style.display = "none";
+      try { localStorage.setItem("instalarFechado", "1"); } catch (err) {}
+      return;
+    }
+    if (pedido) {
+      pedido.prompt();
+      pedido.userChoice.then(function () { pedido = null; btn.style.display = "none"; });
+    } else if (ehIphone) {
+      dica.style.display = "flex";
+    }
+  });
+  document.getElementById("fecharDica").addEventListener("click", function () { dica.style.display = "none"; });
+  window.addEventListener("appinstalled", function () { btn.style.display = "none"; });
 })();
 </script>
 </body>
