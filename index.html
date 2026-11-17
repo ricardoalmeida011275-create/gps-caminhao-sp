@@ -259,7 +259,8 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
 .grade-campos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 10px; }
 .campo { display: flex; flex-direction: column; gap: 3px; font-size: 13px; font-weight: 600; color: var(--suave); min-width: 0; }
 .campo input, .campo select { border: 1px solid var(--linha); background: var(--fundo); color: var(--asfalto); border-radius: 8px; padding: 9px 10px; font-size: 16px; font-weight: 500; min-width: 0; width: 100%; }
-.btn-salvar { background: var(--liberado); color: #fff; border-color: var(--liberado); }
+/* Botão de confirmar o veículo: amarelo do app com letra escura (vale nos dois temas) */
+.btn-pequeno.btn-salvar { background: var(--aviso); color: var(--aviso-texto); border: 2px solid var(--aviso-texto); font-weight: 700; }
 .momento { font-family: var(--f-titulo); font-size: 20px; font-weight: 600; margin: 8px 0 0; font-variant-numeric: tabular-nums; }
 .nota { font-size: 13px; color: var(--suave); margin: 4px 0 0; }
 
@@ -456,7 +457,7 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
           <p class="nota" style="margin:0">Ao escolher o tipo, aparecem medidas típicas. Corrija com os dados do seu caminhão (documento e carga). A altura é a do caminhão carregado.</p>
           <p class="nota veiculo-aviso" id="formAviso" hidden></p>
           <div class="linha-campos">
-            <button type="submit" class="btn-pequeno btn-salvar">Salvar caminhão</button>
+            <button type="submit" class="btn-pequeno btn-salvar">Confirmar</button>
             <button type="button" class="btn-pequeno" id="btnCancelarVeiculo">Cancelar</button>
           </div>
         </form>
