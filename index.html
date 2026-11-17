@@ -802,8 +802,40 @@ body.navegando .app { flex-direction: column; }
     return chamar(BUSCA + "/autocomplete?" + q.toString());
   }
 
+  /* Busca completa: acha o número exato da casa (a busca rápida ignora o número) */
+  function buscarComNumero(texto) {
+    var t = /s[aã]o paulo|\bsp\b/i.test(texto) ? texto : texto + ", São Paulo";
+    var q = new URLSearchParams({
+      text: t, size: "4", "boundary.country": "BR",
+      "focus.point.lat": "-23.55", "focus.point.lon": "-46.63",
+      "boundary.rect.min_lat": "-24.05", "boundary.rect.max_lat": "-23.30",
+      "boundary.rect.min_lon": "-47.10", "boundary.rect.max_lon": "-46.30"
+    });
+    return chamar(BUSCA + "/search?" + q.toString());
+  }
+  /* Tem número de casa? Ex.: "Rua Augusta 1500", "Av. Paulista, 1000" */
+  function numeroDigitado(texto) {
+    var m = texto.match(/(?:^|[\s,])(\d{1,5}[A-Za-z]?)(?:\s*[-,]|\s|$)/);
+    return m && /[A-Za-zÀ-ú]{3,}/.test(texto) ? m[1] : null;
+  }
+
   function configurarBusca(letra) {
     var campo = document.getElementById("txt" + letra), lista = document.getElementById("sug" + letra), espera = null, ultimo = "";
+    function botao(f, destaque) {
+      var p = f.properties || {};
+      var li = document.createElement("li"), b = document.createElement("button");
+      b.type = "button";
+      var titulo = p.layer === "address" ? (p.street || p.name) + ", " + (p.housenumber || "") : (p.name || p.label);
+      b.innerHTML = (destaque ? "📍 " : "") + escapar(titulo) + "<small>" + escapar([destaque ? "Endereço com número" : "", p.neighbourhood, p.locality || p.county, p.region_a || p.region].filter(Boolean).join(", ")) + "</small>";
+      b.addEventListener("click", function () {
+        var c = f.geometry.coordinates;
+        definirPonto(letra, c[1], c[0], p.label || p.name);
+        lista.hidden = true;
+        mapa.setView([c[1], c[0]], Math.max(mapa.getZoom(), 15));
+      });
+      li.appendChild(b);
+      return li;
+    }
     campo.addEventListener("input", function () {
       estado[letra] = null; atualizarMarcadores();
       clearTimeout(espera);
@@ -812,24 +844,31 @@ body.navegando .app { flex-direction: column; }
       if (!estado.chave) { mostrarMsg("Para buscar endereços, salve a chave do serviço de rotas no fim do painel."); return; }
       espera = setTimeout(function () {
         ultimo = texto;
-        buscar(texto).then(function (r) {
+        var numero = numeroDigitado(texto);
+        Promise.all([
+          buscar(texto),
+          numero ? buscarComNumero(texto).catch(function () { return null; }) : Promise.resolve(null)
+        ]).then(function (res) {
           if (texto !== ultimo) return;
           lista.innerHTML = "";
-          var feats = (r && r.features) || [];
-          if (!feats.length) { lista.innerHTML = '<li><button type="button" disabled>Nada encontrado. Tente com o bairro ou toque no mapa.</button></li>'; lista.hidden = false; return; }
-          feats.forEach(function (f) {
-            var p = f.properties || {};
-            var li = document.createElement("li"), b = document.createElement("button");
-            b.type = "button";
-            b.innerHTML = escapar(p.name || p.label) + "<small>" + escapar([p.neighbourhood, p.locality || p.county, p.region_a || p.region].filter(Boolean).join(", ")) + "</small>";
-            b.addEventListener("click", function () {
-              var c = f.geometry.coordinates;
-              definirPonto(letra, c[1], c[0], p.label || p.name);
-              lista.hidden = true;
-              mapa.setView([c[1], c[0]], Math.max(mapa.getZoom(), 14));
-            });
-            li.appendChild(b); lista.appendChild(li);
+          var rapidos = (res[0] && res[0].features) || [];
+          // Só aceita como "endereço com número" o que tem exatamente o número digitado
+          var exatos = ((res[1] && res[1].features) || []).filter(function (f) {
+            var hn = String((f.properties && f.properties.housenumber) || "").toLowerCase();
+            return f.properties && f.properties.layer === "address" && hn.replace(/\s/g, "") === numero.toLowerCase();
           });
+          var vistos = {};
+          exatos.forEach(function (f) { vistos[f.properties.label] = true; lista.appendChild(botao(f, true)); });
+          if (numero && !exatos.length) {
+            lista.insertAdjacentHTML("beforeend", '<li><button type="button" disabled>O número ' + escapar(numero) + ' não está no mapa. Escolha a rua abaixo e, se precisar, ajuste tocando no mapa.</button></li>');
+          }
+          rapidos.forEach(function (f) {
+            var lab = f.properties && f.properties.label;
+            if (lab && vistos[lab]) return;
+            vistos[lab] = true;
+            lista.appendChild(botao(f, false));
+          });
+          if (!exatos.length && !rapidos.length) lista.innerHTML = '<li><button type="button" disabled>Nada encontrado. Tente com o bairro ou toque no mapa.</button></li>';
           lista.hidden = false;
         }).catch(function (e) { mostrarMsg(e.message); });
       }, 450);
