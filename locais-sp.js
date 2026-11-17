@@ -29,6 +29,9 @@ window.LOCAIS_SP = [
   { nome: "Ceasa Campinas", apelidos: ["ceasa campinas"], categoria: "Abastecimento", bairro: "Barão Geraldo", cidade: "Campinas, SP", lat: -22.846209, lon: -47.095301 },
 
   // ===== Eventos =====
+  // ARCA: o mapa gratuito não tem este lugar. Ponto = ENTRADA DE CAMINHÕES, informada pelo dono do app
+  // no Google Maps em 17/11/2026 (endereço da fachada: Av. Manuel Bandeira, 360).
+  { nome: "ARCA (entrada de caminhões)", apelidos: ["arca","espaco arca","arca sp","arca vila leopoldina"], categoria: "Eventos", bairro: "Vila Leopoldina", cidade: "São Paulo", lat: -23.539475, lon: -46.735146 },
   { nome: "Autódromo de Interlagos", apelidos: ["interlagos","autodromo","autodromo de interlagos","jose carlos pace"], categoria: "Eventos", bairro: "Socorro", cidade: "São Paulo", lat: -23.700522, lon: -46.69717 },
   { nome: "Centro de Convenções Frei Caneca", apelidos: ["frei caneca convencoes","convencoes frei caneca"], categoria: "Eventos", bairro: "Vila Bela Vista", cidade: "São Paulo", lat: -23.553793, lon: -46.652757 },
   { nome: "Distrito Anhembi", apelidos: ["anhembi","anhembi parque","sambodromo","sambodromo do anhembi","distrito anhembi"], categoria: "Eventos", bairro: "Bom Retiro", cidade: "São Paulo", lat: -23.515952, lon: -46.642538 },
