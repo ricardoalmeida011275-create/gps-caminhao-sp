@@ -443,7 +443,7 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
           <label class="campo">Tipo de caminhão
             <select id="vTipo"></select>
           </label>
-          <div class="grade-campos">
+          <div class="grade-campos" id="gradeMedidas">
             <label class="campo">Altura (m)<input id="vAltura" type="number" inputmode="decimal" step="0.05" min="1.5" max="6"></label>
             <label class="campo">Largura (m)<input id="vLargura" type="number" inputmode="decimal" step="0.05" min="1.5" max="4"></label>
             <label class="campo">Comprimento (m)<input id="vComprimento" type="number" inputmode="decimal" step="0.1" min="3" max="40"></label>
@@ -451,7 +451,7 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
             <label class="campo">Peso por eixo (t)<input id="vEixoPeso" type="number" inputmode="decimal" step="0.5" min="1" max="20"></label>
             <label class="campo">Nº de eixos<input id="vEixos" type="number" inputmode="numeric" step="1" min="2" max="12"></label>
           </div>
-          <label class="check"><input type="checkbox" id="vPerigosa"> Leva carga perigosa</label>
+          <label class="check" id="linhaPerigosa"><input type="checkbox" id="vPerigosa"> Leva carga perigosa</label>
           <label class="check" id="linhaAetc"><input type="checkbox" id="vAetc"> Tenho autorização da CET para VUC (cadastro/AETC)</label>
           <p class="nota" style="margin:0">Ao escolher o tipo, aparecem medidas típicas. Corrija com os dados do seu caminhão (documento e carga). A altura é a do caminhão carregado.</p>
           <p class="nota veiculo-aviso" id="formAviso" hidden></p>
@@ -589,11 +589,13 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
     var horarioCheio = (util && entre(min, 5, 21)) || (sab && entre(min, 10, 14));
     if (tipo === "rodizio") {
       if (m.veiculo === "vuc") return "liberado";            // VUC cadastrado é liberado do rodízio (Portaria DSV.G 09/19)
+      if (m.veiculo === "carro" && m.feriado) return "liberado";   // rodízio de carro é suspenso nos feriados
       var noHorario = util && (entre(min, 7, 10) || entre(min, 17, 20));
       if (!noHorario) return "liberado";
       if (!m.placa) return "atencao";
       return FINAIS_RODIZIO[m.dia].indexOf(m.placa) >= 0 ? "proibido" : "liberado";
     }
+    if (m.veiculo === "carro") return "liberado";             // ZMRC e avenidas restritas valem só para caminhão
     if (m.feriado) return "liberado";                         // "excetuados os feriados" (art. 1º e 2º)
     var proibido;
     if (tipo === "ver4") proibido = (util && (entre(min, 5, 9) || entre(min, 17, 21))) || (sab && entre(min, 10, 14));
@@ -800,7 +802,8 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
     carreta:  { nome: "Carreta (cavalo + semirreboque)",  altura: 4.4, largura: 2.6, comprimento: 18.6, peso: 45,  eixoPeso: 10,  eixos: 6 },
     bitrem:   { nome: "Bitrem",                           altura: 4.4, largura: 2.6, comprimento: 19.8, peso: 57,  eixoPeso: 10,  eixos: 7 },
     rodotrem: { nome: "Rodotrem",                         altura: 4.4, largura: 2.6, comprimento: 25,   peso: 74,  eixoPeso: 10,  eixos: 9 },
-    outro:    { nome: "Outro",                            altura: 4.0, largura: 2.6, comprimento: 12,   peso: 23,  eixoPeso: 10,  eixos: 3 }
+    outro:    { nome: "Outro",                            altura: 4.0, largura: 2.6, comprimento: 12,   peso: 23,  eixoPeso: 10,  eixos: 3 },
+    carro:    { nome: "Carro (não é caminhão)",           altura: 1.6, largura: 1.9, comprimento: 4.5,  peso: 1.5, eixoPeso: 1,   eixos: 2 }
   };
 
   estado.caminhao = null;
@@ -812,9 +815,11 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
 
   /* Regra da CET: só é VUC com até 2,20 m de largura, 7,20 m de comprimento e autorização (Portaria 137/18, art. 18) */
   function ehVucAutorizado(c) { return !!c && c.tipo === "vuc" && c.aetc && c.largura <= 2.2 && c.comprimento <= 7.2; }
+  var AVISO_CARRO = "Rota de CARRO: não serve para caminhão. O app não desvia da ZMRC nem das avenidas proibidas para caminhão; só respeita o rodízio.";
   function avisosDoCaminhao(c) {
     var a = [];
     if (!c) return a;
+    if (c.tipo === "carro") return [AVISO_CARRO];
     if (c.tipo === "vuc" && (c.largura > 2.2 || c.comprimento > 7.2)) a.push("Pelas medidas, não é VUC na regra da CET (máximo 2,20 m de largura e 7,20 m de comprimento, Portaria 137/18, art. 18). O app vai usar as regras de caminhão.");
     else if (c.tipo === "vuc" && !c.aetc) a.push("Sem a autorização da CET, o VUC segue as mesmas restrições de caminhão (Portaria 137/18, art. 18).");
     if (c.altura > 4.4 || c.largura > 2.6 || c.comprimento > 19.8) a.push("Acima dos limites do CONTRAN (altura 4,40 m, largura 2,60 m, comprimento 19,80 m; Resolução 210/2006): precisa de Autorização Especial de Trânsito.");
@@ -823,15 +828,19 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
   function numBR(n, casas) { return Number(n).toLocaleString("pt-BR", { minimumFractionDigits: casas || 0, maximumFractionDigits: casas === undefined ? 1 : casas }); }
   function resumoCaminhao(c) {
     if (!c) return "";
+    if (c.tipo === "carro") return "Carro";
     return (TIPOS[c.tipo] ? TIPOS[c.tipo].nome : "Caminhão") + " · " + numBR(c.altura, 2) + " m de altura · " + numBR(c.peso) + " t · " + numBR(c.comprimento) + " m" + (c.perigosa ? " · carga perigosa" : "");
   }
 
   function mostrarCaminhao() {
     var c = estado.caminhao, el = document.getElementById("veiculoResumo");
-    estado.veiculo = ehVucAutorizado(c) ? "vuc" : "caminhao";
+    estado.veiculo = c && c.tipo === "carro" ? "carro" : ehVucAutorizado(c) ? "vuc" : "caminhao";
     if (!c) {
       el.innerHTML = "<strong>Nenhum caminhão cadastrado</strong>A rota usa as regras de caminhão comum, sem desviar de viaduto baixo ou limite de peso. Cadastre para uma rota mais segura.";
       document.getElementById("btnEditarVeiculo").textContent = "Cadastrar caminhão";
+    } else if (c.tipo === "carro") {
+      el.innerHTML = "<strong>Carro</strong>Rota feita para carro." + '<br><span class="regra">Regras da CET: carro (só rodízio)</span>';
+      document.getElementById("btnEditarVeiculo").textContent = "Trocar veículo";
     } else {
       el.innerHTML = "<strong>" + escapar(resumoCaminhao(c)) + "</strong>" + numBR(c.largura, 2) + " m de largura · " + numBR(c.eixos, 0) + " eixos · " + numBR(c.eixoPeso) + " t por eixo" +
         '<br><span class="regra">Regras da CET: ' + (estado.veiculo === "vuc" ? "VUC autorizado" : "caminhão") + "</span>";
@@ -850,9 +859,12 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
     document.getElementById("vPerigosa").checked = !!c.perigosa;
     document.getElementById("vAetc").checked = !!c.aetc;
     document.getElementById("linhaAetc").hidden = c.tipo !== "vuc";
+    // Carro não precisa de medidas nem de carga perigosa
+    document.getElementById("gradeMedidas").hidden = c.tipo === "carro";
+    document.getElementById("linhaPerigosa").hidden = c.tipo === "carro";
   }
   function lerForm() {
-    var c = { tipo: vTipo.value, perigosa: document.getElementById("vPerigosa").checked, aetc: vTipo.value === "vuc" && document.getElementById("vAetc").checked };
+    var c = { tipo: vTipo.value, perigosa: vTipo.value !== "carro" && document.getElementById("vPerigosa").checked, aetc: vTipo.value === "vuc" && document.getElementById("vAetc").checked };
     Object.keys(CAMPOS).forEach(function (k) { c[k] = parseFloat(String(document.getElementById(CAMPOS[k]).value).replace(",", ".")); });
     return c;
   }
@@ -1305,23 +1317,25 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
   }
 
   function pedirRota(orig, dest, desvios, alternativas) {
+    var ehCarro = estado.veiculo === "carro";
     var corpo = {
       coordinates: [[orig.lon, orig.lat], [dest.lon, dest.lat]],
       instructions: true, language: "pt", units: "m", radiuses: [800, 800],
-      options: { vehicle_type: "hgv" }
+      options: ehCarro ? {} : { vehicle_type: "hgv" }
     };
     // Até 3 caminhos diferentes num pedido só (o serviço só aceita em viagens de até 100 km)
     if (alternativas) corpo.alternative_routes = { target_count: 3, weight_factor: 1.6, share_factor: 0.6 };
     // Medidas do caminhão cadastrado: o serviço desvia de viaduto/túnel baixo, vias estreitas e limite de peso
     var c = estado.caminhao;
-    if (c) {
+    if (c && !ehCarro) {
       corpo.options.profile_params = { restrictions: {
         height: c.altura, width: c.largura, length: c.comprimento, weight: c.peso, axleload: c.eixoPeso, hazmat: !!c.perigosa
       } };
     }
     var polis = juntarPoligonos(desvios);
     if (polis.length) corpo.options.avoid_polygons = { type: "MultiPolygon", coordinates: polis };
-    return chamar(ORS + "/v2/directions/driving-hgv/geojson", {
+    // Perfil do serviço de rotas: carro ou caminhão
+    return chamar(ORS + "/v2/directions/" + (ehCarro ? "driving-car" : "driving-hgv") + "/geojson", {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo)
     }, 90);
   }
@@ -1369,7 +1383,8 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
     });
     if (rodizioProibido && !ignorar.rodizio) desvios = desvios.concat(areas.rodizio);          // a ZMRC fica dentro do rodízio
     else if (zmrcProibida && !ignorar.zmrc) desvios = desvios.concat(areas.zmrc);
-    if (situacao("rodizio", m) === "atencao") avisos.push("Informe o final da placa: neste horário o rodízio pode valer para o seu caminhão.");
+    if (m.veiculo === "carro") avisos.unshift(AVISO_CARRO);
+    if (situacao("rodizio", m) === "atencao") avisos.push("Informe o final da placa: neste horário o rodízio pode valer para o seu " + (m.veiculo === "carro" ? "carro." : "caminhão."));
 
     // Desvios de trechos já descobertos antes (ex.: rota anterior). Só valem se o trecho continua proibido agora.
     var desviosTrecho = (opcoes.desviosAnteriores || []).filter(function (d) { return situacao(d.tipo, m) === "proibido"; });
@@ -1425,7 +1440,7 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
       lista.sort(function (x, y) { return (resumo(x.f).duration || 0) - (resumo(y.f).duration || 0); });
       lista = lista.slice(0, 3);
       var veiculoTexto = estado.caminhao
-        ? resumoCaminhao(estado.caminhao) + " · regras da CET: " + (m.veiculo === "vuc" ? "VUC autorizado" : "caminhão")
+        ? resumoCaminhao(estado.caminhao) + " · regras da CET: " + (m.veiculo === "carro" ? "carro (só rodízio)" : m.veiculo === "vuc" ? "VUC autorizado" : "caminhão")
         : "Caminhão sem medidas cadastradas · regras da CET: caminhão";
       return lista.map(function (res, i) {
         var sum = resumo(res.f);
@@ -1903,7 +1918,7 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
     document.getElementById("navSeta").textContent = "↑";
     mostrarAlertaNav(nav.precisaRecalc
       ? "A rota foi feita para outro horário. Vou ajustar para o horário de agora assim que o GPS achar você."
-      : "Não mexa no celular dirigindo. Siga sempre as placas.", nav.precisaRecalc ? "info" : "seguranca");
+      : (estado.veiculo === "carro" ? "Rota de CARRO: não serve para caminhão. " : "") + "Não mexa no celular dirigindo. Siga sempre as placas.", nav.precisaRecalc ? "info" : "seguranca");
     if (!nav.precisaRecalc) setTimeout(function () { if (nav.ativo && document.getElementById("navAlerta").textContent.indexOf("Não mexa") === 0) mostrarAlertaNav(""); }, 15000);
     setTimeout(function () { mapa.invalidateSize(); }, 50);
     // Mapa girando: começa olhando na direção da rota
