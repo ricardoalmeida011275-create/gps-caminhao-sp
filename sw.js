@@ -1,5 +1,5 @@
 // Faz o celular aceitar instalar o app e guarda a última versão para abrir sem internet.
-const CACHE = "rota-caminhao-v1";
+const CACHE = "rota-caminhao-v2";
 const ARQUIVOS = ["./", "./index.html", "./dados-restricoes.js", "./manifest.webmanifest", "./icones/icone-192.png", "./icones/icone-512.png"];
 
 self.addEventListener("install", (e) => {

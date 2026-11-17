@@ -134,6 +134,22 @@ body.navegando .app { flex-direction: column; }
   font-weight: 600; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.25);
 }
 .btn-navegar { margin-top: 4px; background: var(--liberado); }
+.btn-bussola {
+  position: absolute; z-index: 1000; top: 12px; right: max(12px, env(safe-area-inset-right, 0px));
+  width: 58px; padding: 6px 0 5px; border: 1px solid var(--linha); border-radius: 14px; cursor: pointer;
+  background: var(--papel); color: var(--asfalto); box-shadow: 0 2px 8px rgba(0,0,0,.25);
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.btn-bussola .agulha {
+  width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--linha); position: relative;
+  display: block; transition: transform .15s linear;
+}
+.btn-bussola .agulha::before {
+  content: ""; position: absolute; left: 50%; top: 3px; margin-left: -5px;
+  border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 11px solid #c8102e;
+}
+.btn-bussola .agulha b { position: absolute; left: 0; right: 0; top: 14px; font-size: 10px; line-height: 1; text-align: center; font-family: var(--f-titulo); }
+.btn-bussola small { font-size: 11px; font-weight: 600; }
 .pos-seta {
   width: 34px; height: 34px; border-radius: 50%; background: #1565c0; border: 3px solid #fff;
   box-shadow: 0 2px 8px rgba(0,0,0,.4); display: grid; place-items: center;
@@ -309,6 +325,10 @@ body.navegando .app { flex-direction: column; }
   <div class="mapa-caixa">
     <div id="mapa" aria-label="Mapa de São Paulo com as restrições a caminhões"></div>
     <button class="btn-centro" type="button" id="btnCentro" hidden>Centralizar</button>
+    <button class="btn-bussola" type="button" id="btnBussola" hidden aria-label="Alternar direção para cima ou norte para cima">
+      <span class="agulha" id="agulhaBussola" aria-hidden="true"><b>N</b></span>
+      <small id="txtBussola">Direção</small>
+    </button>
   </div>
   <div class="nav-base" id="navBase" hidden>
     <div class="nav-numero"><strong id="navRestante">–</strong><span>faltam</span></div>
@@ -437,6 +457,8 @@ body.navegando .app { flex-direction: column; }
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<!-- Plugin que permite girar o mapa (modo "direção para cima") -->
+<script src="https://cdn.jsdelivr.net/npm/leaflet-rotate@0.2.8/dist/leaflet-rotate.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
 <script src="dados-restricoes.js"></script>
 <script>
@@ -556,7 +578,11 @@ body.navegando .app { flex-direction: column; }
   function hhmm(min) { return String(Math.floor(min / 60)).padStart(2, "0") + ":" + String(min % 60).padStart(2, "0"); }
 
   /* ================= Mapa ================= */
-  var mapa = L.map("mapa", { zoomControl: true, preferCanvas: true }).setView([-23.56, -46.64], 12);
+  var mapa = L.map("mapa", {
+    zoomControl: true, preferCanvas: true, zoomSnap: 0.25,
+    rotate: true, bearing: 0, touchRotate: false, shiftKeyRotate: false, rotateControl: false
+  }).setView([-23.56, -46.64], 12);
+  if (location.hostname === "localhost") window._mapa = mapa; // só para testes no computador
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
     attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">colaboradores do OpenStreetMap</a>'
@@ -1186,7 +1212,7 @@ body.navegando .app { flex-direction: column; }
       document.getElementById("navSeta").textContent = SETAS[10];
       document.getElementById("navDist").textContent = km(restanteFim);
       document.getElementById("navTexto").textContent = "Destino à frente";
-      return;
+      return { dist: null, k: -1 };
     }
     var dist = prox.inicio - s;
     document.getElementById("navSeta").textContent = SETAS[prox.type] || "↑";
@@ -1196,6 +1222,141 @@ body.navegando .app { flex-direction: column; }
     if (dist <= 40 && !f[k + "c"]) { f[k + "c"] = f[k + "b"] = f[k + "a"] = true; falar("Agora, " + frase); }
     else if (dist <= 200 && dist > 40 && !f[k + "b"]) { f[k + "b"] = f[k + "a"] = true; falar("Em " + arredondar(dist) + ", " + frase); }
     else if (dist <= 600 && dist > 200 && !f[k + "a"]) { f[k + "a"] = true; falar("Em " + arredondar(dist) + ", " + frase); }
+    // Passo de "chegada" (tipo 10) não é conversão
+    return { dist: prox.type === 10 || prox.type === 11 ? null : dist, k: k };
+  }
+
+  /* ---------- Mapa que gira e segue o caminhão ---------- */
+  var giro = { modo: "direcao", alvo: 0, bussola: null, velocidade: 0, ultimaFix: null, zoomAtual: 17,
+               ultimoToque: 0, animando: false, destaque: null, destaqueIdx: -1 };
+  if (ler("rotaCaminhaoSP.modoMapa") === "norte") giro.modo = "norte";
+
+  function difAngulo(a, b) { return ((b - a + 540) % 360) - 180; }
+  function suavizarAngulo(atual, alvo, fator) { return (atual + difAngulo(atual, alvo) * fator + 360) % 360; }
+
+  /* Bússola do celular (usada parado ou devagar) */
+  function aoGirarCelular(ev) {
+    var h = null;
+    if (typeof ev.webkitCompassHeading === "number") h = ev.webkitCompassHeading;          // iPhone
+    else if (ev.absolute && typeof ev.alpha === "number") h = 360 - ev.alpha;            // Android
+    if (h === null || isNaN(h)) return;
+    var tela = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+    h = (h + tela + 360) % 360;
+    giro.bussola = giro.bussola === null ? h : suavizarAngulo(giro.bussola, h, 0.15);
+  }
+  function ligarBussola() {
+    function escutar() {
+      if ("ondeviceorientationabsolute" in window) window.addEventListener("deviceorientationabsolute", aoGirarCelular);
+      else window.addEventListener("deviceorientation", aoGirarCelular);
+    }
+    try {
+      if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === "function") {
+        DeviceOrientationEvent.requestPermission().then(function (r) { if (r === "granted") escutar(); }).catch(function () {});
+      } else escutar();
+    } catch (e) {}
+  }
+  function desligarBussola() {
+    window.removeEventListener("deviceorientationabsolute", aoGirarCelular);
+    window.removeEventListener("deviceorientation", aoGirarCelular);
+    giro.bussola = null;
+  }
+
+  /* Decide para onde o caminhão está virado: GPS em movimento; parado, bússola; sem nada, a direção da rota */
+  function atualizarDirecao(p, rotaGraus) {
+    var agora = Date.now(), lon = p.coords.longitude, lat = p.coords.latitude;
+    var v = p.coords.speed, dirGps = p.coords.heading, dirMov = null;
+    if (giro.ultimaFix) {
+      var a = xy(giro.ultimaFix.lon, giro.ultimaFix.lat), b = xy(lon, lat), d = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      var dt = (agora - giro.ultimaFix.t) / 1000;
+      if ((v === null || isNaN(v)) && dt > 0) v = d / dt;
+      if (d > 8) dirMov = (90 - rumo(a, b) * 180 / Math.PI + 360) % 360;
+    }
+    if (!giro.ultimaFix || (dirMov !== null)) giro.ultimaFix = { lon: lon, lat: lat, t: agora };
+    giro.velocidade = giro.velocidade * 0.6 + (v || 0) * 0.4;
+
+    var nova = null;
+    if (giro.velocidade >= 2.5 && dirGps !== null && !isNaN(dirGps)) nova = dirGps;
+    else if (giro.velocidade >= 2.5 && dirMov !== null) nova = dirMov;
+    else if (giro.bussola !== null) nova = giro.bussola;
+    else if (rotaGraus !== null) nova = rotaGraus;
+    // Ignora mexidinhas pequenas para o mapa não ficar tremendo
+    if (nova !== null && Math.abs(difAngulo(giro.alvo, nova)) > 4) giro.alvo = (nova + 360) % 360;
+  }
+
+  /* Gira o mapa e a seta de forma suave, quadro a quadro */
+  function animarGiro() {
+    if (!nav.ativo) { giro.animando = false; return; }
+    if (giro.velocidade < 2.5 && giro.bussola !== null && Math.abs(difAngulo(giro.alvo, giro.bussola)) > 4) giro.alvo = giro.bussola;
+    var alvoMapa = giro.modo === "direcao" ? -giro.alvo : 0;
+    var atual = mapa.getBearing() || 0, d = difAngulo(atual, alvoMapa);
+    if (Math.abs(d) > 0.4) mapa.setBearing(atual + d * 0.12);
+    atualizarSetaEBussola();
+    requestAnimationFrame(animarGiro);
+  }
+  function iniciarAnimacao() { if (!giro.animando) { giro.animando = true; requestAnimationFrame(animarGiro); } }
+
+  function atualizarSetaEBussola() {
+    var b = mapa.getBearing() || 0;
+    var el = nav.marcador && nav.marcador.getElement && nav.marcador.getElement();
+    var seta = el && el.querySelector(".pos-seta");
+    if (seta) seta.style.transform = "rotate(" + Math.round(giro.alvo + b) + "deg)";
+    var agulha = document.getElementById("agulhaBussola");
+    if (agulha) agulha.style.transform = "rotate(" + Math.round(b) + "deg)";
+  }
+
+  /* Zoom: mais longe em avenida rápida, mais perto em rua lenta; bem perto chegando numa conversão */
+  function zoomDesejado(distManobra) {
+    var v = giro.velocidade, base = v > 16 ? 15.5 : v > 8 ? 16.25 : 17;
+    if (distManobra !== null && distManobra <= 300) return Math.min(18, base + 1.25);
+    return base;
+  }
+
+  /* Leva o mapa até o caminhão, deixando a seta na parte de baixo da tela (mais caminho à frente) */
+  function seguirCaminhao(lat, lon) {
+    if (!nav.seguindo) return;
+    var z = giro.zoomAtual, tam = mapa.getSize();
+    var desloc = giro.modo === "direcao" ? tam.y * 0.22 : 0;
+    var centro = [lon, lat];
+    if (desloc > 0) {
+      var mpp = 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, z);
+      centro = turf.destination(turf.point([lon, lat]), desloc * mpp / 1000, giro.alvo, { units: "kilometers" }).geometry.coordinates;
+    }
+    mapa.setView([centro[1], centro[0]], z, { animate: true, duration: 0.8 });
+  }
+
+  function retomarSeguir() {
+    nav.seguindo = true;
+    document.getElementById("btnCentro").hidden = true;
+    if (nav.ultimaPos) seguirCaminhao(nav.ultimaPos.lat, nav.ultimaPos.lon);
+  }
+
+  /* Destaca a próxima conversão: trecho da rota mais forte e um ponto na esquina */
+  function destacarManobra(k) {
+    if (giro.destaqueIdx === k) return;
+    limparDestaque();
+    var r = estado.rota, st = r.passos[k];
+    if (!st || !st.way_points) return;
+    var i0 = st.way_points[0], ini = i0, fim = i0;
+    while (ini > 0 && r.acum[i0] - r.acum[ini] < 40) ini--;
+    while (fim < r.coords.length - 1 && r.acum[fim] - r.acum[i0] < 80) fim++;
+    var linhas = r.coords.slice(ini, fim + 1).map(function (c) { return [c[1], c[0]]; });
+    giro.destaque = L.layerGroup([
+      L.polyline(linhas, { color: "#0b2740", weight: 15, opacity: 0.85, interactive: false }),
+      L.polyline(linhas, { color: "#ffd400", weight: 9, opacity: 1, interactive: false }),
+      L.circleMarker([r.coords[i0][1], r.coords[i0][0]], { radius: 9, color: "#0b2740", weight: 3, fillColor: "#ffd400", fillOpacity: 1, interactive: false })
+    ]).addTo(mapa);
+    giro.destaqueIdx = k;
+  }
+  function limparDestaque() {
+    if (giro.destaque) mapa.removeLayer(giro.destaque);
+    giro.destaque = null; giro.destaqueIdx = -1;
+  }
+
+  function mostrarModoMapa() {
+    document.getElementById("txtBussola").textContent = giro.modo === "direcao" ? "Direção" : "Norte";
+    document.getElementById("btnBussola").setAttribute("aria-label", giro.modo === "direcao"
+      ? "Mapa girando com a direção. Toque para deixar o norte para cima."
+      : "Mapa com o norte para cima. Toque para girar com a direção.");
   }
 
   function atualizarBase(s) {
@@ -1214,17 +1375,16 @@ body.navegando .app { flex-direction: column; }
   function aoReceberPosicao(p) {
     var lon = p.coords.longitude, lat = p.coords.latitude, prec = p.coords.accuracy || 20;
     if (!nav.ativo) return;
-    // Direção da seta: a do GPS (se estiver andando) ou a da rota
-    var graus = (p.coords.heading !== null && !isNaN(p.coords.heading) && (p.coords.speed || 0) > 1) ? p.coords.heading : null;
     nav.ultimaPos = { lon: lon, lat: lat };
 
-    if (nav.recalculando) { moverMarcador(lat, lon, graus); return; }
-    var pos = localizarNaRota(lon, lat);
-    if (graus === null && estado.rota.pts[pos.i + 1]) {
+    if (nav.recalculando) { atualizarDirecao(p, null); moverMarcador(lat, lon); seguirCaminhao(lat, lon); return; }
+    var pos = localizarNaRota(lon, lat), rotaGraus = null;
+    if (pos.d < 60 && estado.rota.pts[pos.i + 1]) {
       var a = estado.rota.pts[pos.i], b = estado.rota.pts[pos.i + 1];
-      graus = 90 - rumo(a, b) * 180 / Math.PI;
+      rotaGraus = (90 - rumo(a, b) * 180 / Math.PI + 360) % 360;
     }
-    moverMarcador(lat, lon, graus);
+    atualizarDirecao(p, rotaGraus);
+    moverMarcador(lat, lon);
 
     // Chegada
     var paraB = Math.hypot.apply(null, (function () { var q = xy(lon, lat), d = xy(estado.B.lon, estado.B.lat); return [q[0] - d[0], q[1] - d[1]]; })());
@@ -1239,18 +1399,26 @@ body.navegando .app { flex-direction: column; }
         return;
       }
       mostrarAlertaNav("Fora da rota…", "info");
+      seguirCaminhao(lat, lon);
     } else {
       nav.foraDesde = null;
       if (document.getElementById("navAlerta").className.indexOf("info") >= 0) mostrarAlertaNav("");
     }
-    atualizarInstrucao(pos.s);
+    var manobra = atualizarInstrucao(pos.s);
     atualizarBase(pos.s);
+
+    // Perto da conversão: aproxima e destaca. Depois dela: volta ao zoom normal.
+    if (manobra.dist !== null && manobra.dist <= 300) destacarManobra(manobra.k);
+    else limparDestaque();
+    var z = zoomDesejado(manobra.dist);
+    if (Math.abs(z - giro.zoomAtual) >= 0.5) giro.zoomAtual = z;
+    seguirCaminhao(lat, lon);
   }
 
-  function moverMarcador(lat, lon, graus) {
-    if (!nav.marcador) nav.marcador = L.marker([lat, lon], { icon: iconePosicao(graus), keyboard: false, interactive: false, zIndexOffset: 1000 }).addTo(mapa);
-    else { nav.marcador.setLatLng([lat, lon]); nav.marcador.setIcon(iconePosicao(graus)); }
-    if (nav.seguindo) mapa.setView([lat, lon], Math.max(mapa.getZoom(), 16), { animate: true });
+  function moverMarcador(lat, lon) {
+    if (!nav.marcador) nav.marcador = L.marker([lat, lon], { icon: iconePosicao(0), keyboard: false, interactive: false, zIndexOffset: 1000 }).addTo(mapa);
+    else nav.marcador.setLatLng([lat, lon]);
+    atualizarSetaEBussola();
   }
 
   function aoFalharPosicao(e) {
@@ -1270,6 +1438,7 @@ body.navegando .app { flex-direction: column; }
       desenharRota(res.coords, false);
       exibirResultado(res);
       nav.idx = 0; nav.falados = {}; nav.precisaRecalc = false;
+      limparDestaque();
       if (res.problemas.length) {
         mostrarAlertaNav("Atenção: não achei caminho livre. A rota passa por " + res.problemas.map(function (p) { return CAMADAS[p.tipo].curto; }).join(", ") + ", proibida agora.", "alerta");
         falar("Atenção: não achei caminho livre de restrições.");
@@ -1321,6 +1490,14 @@ body.navegando .app { flex-direction: column; }
       : "Não mexa no celular dirigindo. Siga sempre as placas.", nav.precisaRecalc ? "info" : "seguranca");
     if (!nav.precisaRecalc) setTimeout(function () { if (nav.ativo && document.getElementById("navAlerta").textContent.indexOf("Não mexa") === 0) mostrarAlertaNav(""); }, 15000);
     setTimeout(function () { mapa.invalidateSize(); }, 50);
+    // Mapa girando: começa olhando na direção da rota
+    var r0 = estado.rota;
+    giro.alvo = r0.pts[1] ? (90 - rumo(r0.pts[0], r0.pts[1]) * 180 / Math.PI + 360) % 360 : 0;
+    giro.velocidade = 0; giro.ultimaFix = null; giro.zoomAtual = 17; limparDestaque();
+    document.getElementById("btnBussola").hidden = false;
+    mostrarModoMapa();
+    ligarBussola();
+    iniciarAnimacao();
     pedirTelaLigada();
     falar("Navegação iniciada. Não mexa no celular dirigindo e respeite sempre a sinalização.");
     nav.watch = navigator.geolocation.watchPosition(aoReceberPosicao, aoFalharPosicao, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
@@ -1332,25 +1509,38 @@ body.navegando .app { flex-direction: column; }
     if (nav.tela) { try { nav.tela.release(); } catch (e) {} nav.tela = null; }
     if (window.speechSynthesis) speechSynthesis.cancel();
     if (nav.marcador) { mapa.removeLayer(nav.marcador); nav.marcador = null; }
+    desligarBussola();
+    limparDestaque();
+    mapa.setBearing(0);
     document.body.classList.remove("navegando");
-    ["navTopo", "navBase", "navAlerta"].forEach(function (id) { document.getElementById(id).hidden = true; });
+    ["navTopo", "navBase", "navAlerta", "btnBussola", "btnCentro"].forEach(function (id) { document.getElementById(id).hidden = true; });
     setTimeout(function () { mapa.invalidateSize(); if (estado.rota) desenharRota(estado.rota.coords); }, 50);
   }
 
   document.getElementById("btnEncerrar").addEventListener("click", encerrarNavegacao);
-  document.getElementById("btnCentro").addEventListener("click", function () {
-    nav.seguindo = true; document.getElementById("btnCentro").hidden = true;
-    if (nav.ultimaPos) mapa.setView([nav.ultimaPos.lat, nav.ultimaPos.lon], Math.max(mapa.getZoom(), 16));
+  document.getElementById("btnCentro").addEventListener("click", retomarSeguir);
+  document.getElementById("btnBussola").addEventListener("click", function () {
+    giro.modo = giro.modo === "direcao" ? "norte" : "direcao";
+    gravar("rotaCaminhaoSP.modoMapa", giro.modo);
+    mostrarModoMapa();
+    if (nav.ultimaPos && nav.seguindo) seguirCaminhao(nav.ultimaPos.lat, nav.ultimaPos.lon);
   });
+  // Se o motorista mexer no mapa com o dedo, para de seguir; volta sozinho depois de 8 s sem mexer
+  ["touchstart", "touchmove", "mousedown", "wheel"].forEach(function (ev) {
+    document.getElementById("mapa").addEventListener(ev, function () {
+      if (!nav.ativo) return;
+      giro.ultimoToque = Date.now();
+      if (nav.seguindo) { nav.seguindo = false; document.getElementById("btnCentro").hidden = false; }
+    }, { passive: true });
+  });
+  setInterval(function () {
+    if (nav.ativo && !nav.seguindo && Date.now() - giro.ultimoToque > 8000) retomarSeguir();
+  }, 1000);
   document.getElementById("btnVoz").addEventListener("click", function () {
     nav.voz = !nav.voz;
     this.setAttribute("aria-pressed", nav.voz ? "true" : "false");
     this.textContent = nav.voz ? "Voz ligada" : "Voz desligada";
     if (!nav.voz && window.speechSynthesis) speechSynthesis.cancel();
-  });
-  mapa.on("dragstart", function () {
-    if (!nav.ativo) return;
-    nav.seguindo = false; document.getElementById("btnCentro").hidden = false;
   });
   setInterval(vigiarRestricoes, 60000);
 
