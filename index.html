@@ -500,6 +500,7 @@ body.navegando .app { flex-direction: column; }
 <script src="https://cdn.jsdelivr.net/npm/leaflet-rotate@0.2.8/dist/leaflet-rotate.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
 <script src="dados-restricoes.js"></script>
+<script src="locais-sp.js"></script>
 <script>
 (function () {
   "use strict";
@@ -953,6 +954,28 @@ body.navegando .app { flex-direction: column; }
     });
     return chamar(BUSCA + "/search?" + q.toString());
   }
+  /* ---------- Lugares conhecidos de SP (arquivo locais-sp.js) ----------
+     Busca sem ligar para acentos e maiúsculas, e por pedaço do nome ("arca", "ceasa", "anhembi"). */
+  function semAcento(s) { return String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase(); }
+  var LOCAIS = (window.LOCAIS_SP || []).map(function (l) {
+    var nomes = [l.nome].concat(l.apelidos || []).map(semAcento);
+    return { l: l, nomes: nomes, tudo: nomes.join(" | ") + " | " + semAcento(l.bairro) + " | " + semAcento(l.categoria) };
+  });
+  var PALAVRAS_VAZIAS = { de: 1, da: 1, do: 1, das: 1, dos: 1, e: 1, o: 1, a: 1 };
+  function buscarLocal(texto) {
+    var q = semAcento(texto).replace(/[^a-z0-9 ]/g, " ").trim();
+    if (q.length < 3) return [];
+    var palavras = q.split(/\s+/).filter(function (p) { return p && !PALAVRAS_VAZIAS[p]; });
+    if (!palavras.length) return [];
+    return LOCAIS.map(function (x) {
+      if (!palavras.every(function (p) { return x.tudo.indexOf(p) >= 0; })) return null;
+      var nota = 1;
+      x.nomes.forEach(function (n) { if (n === q) nota = Math.max(nota, 4); else if (n.indexOf(q) === 0) nota = Math.max(nota, 3); else if (n.indexOf(q) >= 0) nota = Math.max(nota, 2); });
+      return { x: x, nota: nota };
+    }).filter(Boolean).sort(function (a, b) { return b.nota - a.nota || a.x.l.nome.length - b.x.l.nome.length; })
+      .slice(0, 4).map(function (r) { return r.x.l; });
+  }
+
   /* Tem número de casa? Ex.: "Rua Augusta 1500", "Av. Paulista, 1000" */
   function numeroDigitado(texto) {
     var m = texto.match(/(?:^|[\s,])(\d{1,5}[A-Za-z]?)(?:\s*[-,]|\s|$)/);
@@ -976,12 +999,32 @@ body.navegando .app { flex-direction: column; }
       li.appendChild(b);
       return li;
     }
+    function botaoLocal(l) {
+      var li = document.createElement("li"), b = document.createElement("button");
+      b.type = "button";
+      b.innerHTML = "⭐ " + escapar(l.nome) + "<small>" + escapar(["Lugar conhecido", l.bairro, l.cidade || "São Paulo"].filter(Boolean).join(", ")) + "</small>";
+      b.addEventListener("click", function () {
+        definirPonto(letra, l.lat, l.lon, l.nome);
+        lista.hidden = true;
+        mapa.setView([l.lat, l.lon], Math.max(mapa.getZoom(), 15));
+      });
+      li.appendChild(b);
+      return li;
+    }
+    function mostrarLocais(locais) {
+      lista.innerHTML = "";
+      locais.forEach(function (l) { lista.appendChild(botaoLocal(l)); });
+      lista.hidden = !locais.length;
+    }
     campo.addEventListener("input", function () {
       estado[letra] = null; atualizarMarcadores();
       clearTimeout(espera);
       var texto = campo.value.trim();
-      if (texto.length < 4) { lista.hidden = true; return; }
-      if (!estado.chave) { mostrarMsg("Para buscar endereços, salve a chave do serviço de rotas no fim do painel."); return; }
+      // Lugares conhecidos aparecem na hora, mesmo sem internet ou sem chave
+      var locais = numeroDigitado(texto) ? [] : buscarLocal(texto);
+      mostrarLocais(locais);
+      if (texto.length < 4) { if (!locais.length) lista.hidden = true; return; }
+      if (!estado.chave) { if (!locais.length) mostrarMsg("Para buscar endereços, salve a chave do serviço de rotas no fim do painel."); return; }
       espera = setTimeout(function () {
         ultimo = texto;
         var numero = numeroDigitado(texto);
@@ -990,8 +1033,14 @@ body.navegando .app { flex-direction: column; }
           numero ? buscarComNumero(texto).catch(function () { return null; }) : Promise.resolve(null)
         ]).then(function (res) {
           if (texto !== ultimo) return;
-          lista.innerHTML = "";
-          var rapidos = (res[0] && res[0].features) || [];
+          mostrarLocais(locais);
+          var rapidos = ((res[0] && res[0].features) || []).slice();
+          // Prioriza resultados da cidade de São Paulo
+          rapidos.sort(function (x, y) {
+            var sx = semAcento(x.properties && x.properties.locality) === "sao paulo" ? 0 : 1;
+            var sy = semAcento(y.properties && y.properties.locality) === "sao paulo" ? 0 : 1;
+            return sx - sy;
+          });
           // Só aceita como "endereço com número" o que tem exatamente o número digitado
           var exatos = ((res[1] && res[1].features) || []).filter(function (f) {
             var hn = String((f.properties && f.properties.housenumber) || "").toLowerCase();
@@ -1008,7 +1057,7 @@ body.navegando .app { flex-direction: column; }
             vistos[lab] = true;
             lista.appendChild(botao(f, false));
           });
-          if (!exatos.length && !rapidos.length) lista.innerHTML = '<li><button type="button" disabled>Nada encontrado. Tente com o bairro ou toque no mapa.</button></li>';
+          if (!exatos.length && !rapidos.length && !locais.length) lista.innerHTML = '<li><button type="button" disabled>Nada encontrado. Tente com o bairro ou toque no mapa.</button></li>';
           lista.hidden = false;
         }).catch(function (e) { mostrarMsg(e.message); });
       }, 450);
