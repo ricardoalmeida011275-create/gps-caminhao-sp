@@ -207,6 +207,15 @@ body.navegando .app { flex-direction: column; }
   border: 1px solid var(--linha); background: var(--papel); border-radius: 8px; padding: 9px 10px; min-width: 0;
 }
 .check { display: flex; gap: 6px; align-items: center; font-size: 14px; }
+.veiculo-resumo { background: var(--papel); border: 1px solid var(--linha); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; font-size: 14px; }
+.veiculo-resumo strong { display: block; font-size: 16px; }
+.veiculo-resumo .regra { display: inline-block; margin-top: 4px; font-family: var(--f-titulo); font-weight: 700; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; border-radius: 999px; padding: 1px 9px; background: var(--fundo); }
+.veiculo-aviso { color: var(--atencao); font-weight: 600; margin: 0 0 8px; }
+.form-veiculo { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; background: var(--papel); border: 1px solid var(--linha); border-radius: 10px; padding: 12px; }
+.grade-campos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 10px; }
+.campo { display: flex; flex-direction: column; gap: 3px; font-size: 13px; font-weight: 600; color: var(--suave); min-width: 0; }
+.campo input, .campo select { border: 1px solid var(--linha); background: var(--fundo); color: var(--asfalto); border-radius: 8px; padding: 9px 10px; font-size: 16px; font-weight: 500; min-width: 0; width: 100%; }
+.btn-salvar { background: var(--liberado); color: #fff; border-color: var(--liberado); }
 .momento { font-family: var(--f-titulo); font-size: 20px; font-weight: 600; margin: 8px 0 0; font-variant-numeric: tabular-nums; }
 .nota { font-size: 13px; color: var(--suave); margin: 4px 0 0; }
 
@@ -377,12 +386,33 @@ body.navegando .app { flex-direction: column; }
 
       <section class="resultado" id="resultado" hidden aria-live="polite"></section>
 
-      <section>
-        <p class="rotulo">Veículo</p>
-        <div class="grupo-botoes" role="group" aria-label="Tipo de veículo">
-          <button class="opcao" type="button" id="vCaminhao" data-veiculo="caminhao" aria-pressed="true">Caminhão<small>qualquer caminhão que não é VUC</small></button>
-          <button class="opcao" type="button" id="vVuc" data-veiculo="vuc" aria-pressed="false">VUC autorizado<small>até 2,20 m × 7,20 m, com AETC</small></button>
-        </div>
+      <section aria-labelledby="tituloVeiculo">
+        <p class="rotulo" id="tituloVeiculo">Seu caminhão</p>
+        <div class="veiculo-resumo" id="veiculoResumo">…</div>
+        <p class="nota veiculo-aviso" id="veiculoAviso" hidden></p>
+        <button class="btn-pequeno" type="button" id="btnEditarVeiculo" aria-expanded="false" aria-controls="formVeiculo">Cadastrar caminhão</button>
+
+        <form id="formVeiculo" class="form-veiculo" hidden novalidate>
+          <label class="campo">Tipo de caminhão
+            <select id="vTipo"></select>
+          </label>
+          <div class="grade-campos">
+            <label class="campo">Altura (m)<input id="vAltura" type="number" inputmode="decimal" step="0.05" min="1.5" max="6"></label>
+            <label class="campo">Largura (m)<input id="vLargura" type="number" inputmode="decimal" step="0.05" min="1.5" max="4"></label>
+            <label class="campo">Comprimento (m)<input id="vComprimento" type="number" inputmode="decimal" step="0.1" min="3" max="40"></label>
+            <label class="campo">Peso total (t)<input id="vPeso" type="number" inputmode="decimal" step="0.5" min="1" max="120"></label>
+            <label class="campo">Peso por eixo (t)<input id="vEixoPeso" type="number" inputmode="decimal" step="0.5" min="1" max="20"></label>
+            <label class="campo">Nº de eixos<input id="vEixos" type="number" inputmode="numeric" step="1" min="2" max="12"></label>
+          </div>
+          <label class="check"><input type="checkbox" id="vPerigosa"> Leva carga perigosa</label>
+          <label class="check" id="linhaAetc"><input type="checkbox" id="vAetc"> Tenho autorização da CET para VUC (cadastro/AETC)</label>
+          <p class="nota" style="margin:0">Ao escolher o tipo, aparecem medidas típicas. Corrija com os dados do seu caminhão (documento e carga). A altura é a do caminhão carregado.</p>
+          <p class="nota veiculo-aviso" id="formAviso" hidden></p>
+          <div class="linha-campos">
+            <button type="submit" class="btn-pequeno btn-salvar">Salvar caminhão</button>
+            <button type="button" class="btn-pequeno" id="btnCancelarVeiculo">Cancelar</button>
+          </div>
+        </form>
       </section>
 
       <section>
@@ -671,8 +701,109 @@ body.navegando .app { flex-direction: column; }
 
   function marcar(id, ligado) { document.getElementById(id).setAttribute("aria-pressed", ligado ? "true" : "false"); }
 
-  document.getElementById("vCaminhao").addEventListener("click", function () { estado.veiculo = "caminhao"; marcar("vCaminhao", true); marcar("vVuc", false); atualizar(); });
-  document.getElementById("vVuc").addEventListener("click", function () { estado.veiculo = "vuc"; marcar("vVuc", true); marcar("vCaminhao", false); atualizar(); });
+  /* ================= Cadastro do caminhão ================= */
+  // Medidas típicas de cada tipo (o motorista corrige com os dados do seu caminhão)
+  var TIPOS = {
+    vuc:      { nome: "VUC",                              altura: 3.2, largura: 2.2, comprimento: 7.0,  peso: 9,   eixoPeso: 6,   eixos: 2 },
+    "3-4":    { nome: "3/4 (caminhão leve)",              altura: 3.4, largura: 2.4, comprimento: 7.5,  peso: 8.5, eixoPeso: 6,   eixos: 2 },
+    toco:     { nome: "Toco (2 eixos)",                   altura: 3.8, largura: 2.6, comprimento: 10,   peso: 16,  eixoPeso: 10,  eixos: 2 },
+    truck:    { nome: "Truck (3 eixos)",                  altura: 4.0, largura: 2.6, comprimento: 12,   peso: 23,  eixoPeso: 8.5, eixos: 3 },
+    bitruck:  { nome: "Bitruck (4 eixos)",                altura: 4.0, largura: 2.6, comprimento: 14,   peso: 29,  eixoPeso: 8.5, eixos: 4 },
+    carreta:  { nome: "Carreta (cavalo + semirreboque)",  altura: 4.4, largura: 2.6, comprimento: 18.6, peso: 45,  eixoPeso: 10,  eixos: 6 },
+    bitrem:   { nome: "Bitrem",                           altura: 4.4, largura: 2.6, comprimento: 19.8, peso: 57,  eixoPeso: 10,  eixos: 7 },
+    rodotrem: { nome: "Rodotrem",                         altura: 4.4, largura: 2.6, comprimento: 25,   peso: 74,  eixoPeso: 10,  eixos: 9 },
+    outro:    { nome: "Outro",                            altura: 4.0, largura: 2.6, comprimento: 12,   peso: 23,  eixoPeso: 10,  eixos: 3 }
+  };
+
+  estado.caminhao = null;
+  try { estado.caminhao = JSON.parse(ler("rotaCaminhaoSP.caminhao") || "null"); } catch (e) {}
+  if (!estado.caminhao && estado.veiculo === "vuc") {
+    // quem usava o botão antigo "VUC autorizado" continua como VUC autorizado
+    estado.caminhao = Object.assign({ tipo: "vuc", perigosa: false, aetc: true }, TIPOS.vuc);
+  }
+
+  /* Regra da CET: só é VUC com até 2,20 m de largura, 7,20 m de comprimento e autorização (Portaria 137/18, art. 18) */
+  function ehVucAutorizado(c) { return !!c && c.tipo === "vuc" && c.aetc && c.largura <= 2.2 && c.comprimento <= 7.2; }
+  function avisosDoCaminhao(c) {
+    var a = [];
+    if (!c) return a;
+    if (c.tipo === "vuc" && (c.largura > 2.2 || c.comprimento > 7.2)) a.push("Pelas medidas, não é VUC na regra da CET (máximo 2,20 m de largura e 7,20 m de comprimento, Portaria 137/18, art. 18). O app vai usar as regras de caminhão.");
+    else if (c.tipo === "vuc" && !c.aetc) a.push("Sem a autorização da CET, o VUC segue as mesmas restrições de caminhão (Portaria 137/18, art. 18).");
+    if (c.altura > 4.4 || c.largura > 2.6 || c.comprimento > 19.8) a.push("Acima dos limites do CONTRAN (altura 4,40 m, largura 2,60 m, comprimento 19,80 m; Resolução 210/2006): precisa de Autorização Especial de Trânsito.");
+    return a;
+  }
+  function numBR(n, casas) { return Number(n).toLocaleString("pt-BR", { minimumFractionDigits: casas || 0, maximumFractionDigits: casas === undefined ? 1 : casas }); }
+  function resumoCaminhao(c) {
+    if (!c) return "";
+    return (TIPOS[c.tipo] ? TIPOS[c.tipo].nome : "Caminhão") + " · " + numBR(c.altura, 2) + " m de altura · " + numBR(c.peso) + " t · " + numBR(c.comprimento) + " m" + (c.perigosa ? " · carga perigosa" : "");
+  }
+
+  function mostrarCaminhao() {
+    var c = estado.caminhao, el = document.getElementById("veiculoResumo");
+    estado.veiculo = ehVucAutorizado(c) ? "vuc" : "caminhao";
+    if (!c) {
+      el.innerHTML = "<strong>Nenhum caminhão cadastrado</strong>A rota usa as regras de caminhão comum, sem desviar de viaduto baixo ou limite de peso. Cadastre para uma rota mais segura.";
+      document.getElementById("btnEditarVeiculo").textContent = "Cadastrar caminhão";
+    } else {
+      el.innerHTML = "<strong>" + escapar(resumoCaminhao(c)) + "</strong>" + numBR(c.largura, 2) + " m de largura · " + numBR(c.eixos, 0) + " eixos · " + numBR(c.eixoPeso) + " t por eixo" +
+        '<br><span class="regra">Regras da CET: ' + (estado.veiculo === "vuc" ? "VUC autorizado" : "caminhão") + "</span>";
+      document.getElementById("btnEditarVeiculo").textContent = "Editar caminhão";
+    }
+    var av = avisosDoCaminhao(c), aviso = document.getElementById("veiculoAviso");
+    aviso.textContent = av.join(" "); aviso.hidden = !av.length;
+  }
+
+  var vTipo = document.getElementById("vTipo");
+  Object.keys(TIPOS).forEach(function (k) { var o = document.createElement("option"); o.value = k; o.textContent = TIPOS[k].nome; vTipo.appendChild(o); });
+  var CAMPOS = { altura: "vAltura", largura: "vLargura", comprimento: "vComprimento", peso: "vPeso", eixoPeso: "vEixoPeso", eixos: "vEixos" };
+  function preencherForm(c) {
+    vTipo.value = c.tipo;
+    Object.keys(CAMPOS).forEach(function (k) { document.getElementById(CAMPOS[k]).value = c[k]; });
+    document.getElementById("vPerigosa").checked = !!c.perigosa;
+    document.getElementById("vAetc").checked = !!c.aetc;
+    document.getElementById("linhaAetc").hidden = c.tipo !== "vuc";
+  }
+  function lerForm() {
+    var c = { tipo: vTipo.value, perigosa: document.getElementById("vPerigosa").checked, aetc: vTipo.value === "vuc" && document.getElementById("vAetc").checked };
+    Object.keys(CAMPOS).forEach(function (k) { c[k] = parseFloat(String(document.getElementById(CAMPOS[k]).value).replace(",", ".")); });
+    return c;
+  }
+  function validar(c) {
+    var faixas = { altura: [1.5, 6, "Altura"], largura: [1.5, 4, "Largura"], comprimento: [3, 40, "Comprimento"], peso: [1, 120, "Peso total"], eixoPeso: [1, 20, "Peso por eixo"], eixos: [2, 12, "Número de eixos"] };
+    for (var k in faixas) {
+      var f = faixas[k];
+      if (isNaN(c[k]) || c[k] < f[0] || c[k] > f[1]) return f[2] + " precisa ficar entre " + numBR(f[0]) + " e " + numBR(f[1]) + ".";
+    }
+    return "";
+  }
+  vTipo.addEventListener("change", function () {
+    var t = TIPOS[vTipo.value], atual = lerForm();
+    preencherForm(Object.assign({}, t, { tipo: vTipo.value, perigosa: atual.perigosa, aetc: atual.aetc }));
+  });
+  document.getElementById("btnEditarVeiculo").addEventListener("click", function () {
+    var form = document.getElementById("formVeiculo"), abrir = form.hidden;
+    if (abrir) preencherForm(estado.caminhao || Object.assign({ tipo: "truck", perigosa: false, aetc: false }, TIPOS.truck));
+    form.hidden = !abrir;
+    document.getElementById("formAviso").hidden = true;
+    this.setAttribute("aria-expanded", abrir ? "true" : "false");
+  });
+  document.getElementById("btnCancelarVeiculo").addEventListener("click", function () {
+    document.getElementById("formVeiculo").hidden = true;
+    document.getElementById("btnEditarVeiculo").setAttribute("aria-expanded", "false");
+  });
+  document.getElementById("formVeiculo").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var c = lerForm(), erro = validar(c), aviso = document.getElementById("formAviso");
+    if (erro) { aviso.textContent = erro; aviso.hidden = false; return; }
+    c.eixos = Math.round(c.eixos);
+    estado.caminhao = c;
+    gravar("rotaCaminhaoSP.caminhao", JSON.stringify(c));
+    document.getElementById("formVeiculo").hidden = true;
+    document.getElementById("btnEditarVeiculo").setAttribute("aria-expanded", "false");
+    mostrarCaminhao();
+    atualizar();
+    mostrarMsg("Caminhão salvo. Trace a rota de novo para usar as medidas novas.");
+  });
   document.getElementById("mAgora").addEventListener("click", function () {
     estado.modo = "agora"; marcar("mAgora", true); marcar("mEscolher", false);
     document.getElementById("camposEscolha").hidden = true; atualizar();
@@ -689,7 +820,7 @@ body.navegando .app { flex-direction: column; }
   var selPlaca = document.getElementById("selPlaca");
   selPlaca.value = estado.placa;
   selPlaca.addEventListener("change", function () { estado.placa = selPlaca.value; atualizar(); });
-  marcar("vCaminhao", estado.veiculo === "caminhao"); marcar("vVuc", estado.veiculo === "vuc");
+  mostrarCaminhao();
 
   var painel = document.getElementById("painel"), btnPainel = document.getElementById("btnPainel");
   btnPainel.addEventListener("click", function () {
@@ -717,7 +848,7 @@ body.navegando .app { flex-direction: column; }
       "Como usar:\n" +
       "1. Abra este link no Chrome (ele já vem configurado): " + linkConvite() + "\n" +
       "2. Para deixar como app: toque no botão azul \"Instalar o GPS\" no alto da tela e confirme. No iPhone, o botão mostra o passo a passo.\n" +
-      "3. Escolha o veículo, o final da placa, a saída (\"Minha localização\") e o destino, e toque em \"Traçar rota\".\n" +
+      "3. Toque em \"Cadastrar caminhão\" e coloque o tipo e as medidas do seu caminhão (altura, peso...). Depois escolha o final da placa, a saída (\"Minha localização\") e o destino, e toque em \"Traçar rota\".\n" +
       "4. Toque em \"Iniciar navegação\" ANTES de sair. Não mexa no celular dirigindo e deixe a tela ligada.\n\n" +
       "Importante: é uma ferramenta de apoio. Respeite sempre as placas e as regras da CET. Ele ainda não conhece as zonas residenciais (ZERC) nem todas as placas de proibição.\n\n" +
       "Depois me conta: a rota fez sentido? Mandou você por algum lugar proibido? O GPS e a voz acompanharam? Se puder, mande prints (com o caminhão parado).";
@@ -1043,7 +1174,13 @@ body.navegando .app { flex-direction: column; }
       instructions: true, language: "pt", units: "m", radiuses: [800, 800],
       options: { vehicle_type: "hgv" }
     };
-    if (estado.veiculo === "vuc") corpo.options.profile_params = { restrictions: { length: 7.2, width: 2.2 } };
+    // Medidas do caminhão cadastrado: o serviço desvia de viaduto/túnel baixo, vias estreitas e limite de peso
+    var c = estado.caminhao;
+    if (c) {
+      corpo.options.profile_params = { restrictions: {
+        height: c.altura, width: c.largura, length: c.comprimento, weight: c.peso, axleload: c.eixoPeso, hazmat: !!c.perigosa
+      } };
+    }
     var polis = juntarPoligonos(desvios);
     if (polis.length) corpo.options.avoid_polygons = { type: "MultiPolygon", coordinates: polis };
     return chamar(ORS + "/v2/directions/driving-hgv/geojson", {
@@ -1124,6 +1261,9 @@ body.navegando .app { flex-direction: column; }
           avisos.push("Durante a viagem começa a restrição de " + CAMADAS[t].curto + " (" + CAMADAS[t].hora + "). Chegada prevista às " + hhmm(res.chegada.minutos) + ": confira se a rota passa por ela.");
       });
       res.avisos = avisos; res.ignorar = ignorar; res.tentativa = tentativa; res.momento = m;
+      res.veiculoTexto = estado.caminhao
+        ? resumoCaminhao(estado.caminhao) + " · regras da CET: " + (m.veiculo === "vuc" ? "VUC autorizado" : "caminhão")
+        : "Caminhão sem medidas cadastradas · regras da CET: caminhão";
       // Passos (manobras) com o ponto da rota onde cada um começa
       res.passos = [];
       ((res.f.properties && res.f.properties.segments) || []).forEach(function (sg) {
@@ -1134,7 +1274,8 @@ body.navegando .app { flex-direction: column; }
   }
 
   function exibirResultado(res) {
-    var numeros = '<div class="res-numeros"><div><strong>' + km(res.distancia) + '</strong><span>distância</span></div><div><strong>' + tempo(res.duracao) + '</strong><span>tempo sem trânsito</span></div><div><strong>' + hhmm(res.chegada.minutos) + '</strong><span>chegada prevista</span></div></div>';
+    var numeros = '<div class="res-numeros"><div><strong>' + km(res.distancia) + '</strong><span>distância</span></div><div><strong>' + tempo(res.duracao) + '</strong><span>tempo sem trânsito</span></div><div><strong>' + hhmm(res.chegada.minutos) + '</strong><span>chegada prevista</span></div></div>' +
+      '<p class="nota" style="margin:0">Veículo: ' + escapar(res.veiculoTexto || "") + '</p>';
     var listaProb = res.problemas.map(function (p) {
       return '<li>' + (p.area ? "Entra na " + escapar(CAMADAS[p.tipo].curto) : "Passa por " + km(p.metros) + " em " + escapar(p.nome)) +
         ' — proibido agora (<a href="' + linkFonte(p.tipo) + '" target="_blank" rel="noopener">' + escapar(CAMADAS[p.tipo].fonte) + '</a>)</li>';
