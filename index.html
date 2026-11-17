@@ -130,6 +130,13 @@ body.navegando .leaflet-bottom { bottom: calc(92px + env(safe-area-inset-bottom,
   animation: descer .3s ease-out;
 }
 .nav-alerta.alerta { background: var(--proibido-fundo); color: var(--proibido); }
+.nav-faixa {
+  border-radius: 14px; padding: 8px 14px; font-weight: 600; font-size: 15px; line-height: 1.25;
+  background: var(--papel); color: var(--asfalto); border-left: 6px solid #c2185b;
+  box-shadow: 0 4px 14px rgba(0,0,0,.18); animation: descer .3s ease-out;
+}
+.nota-onibus { color: var(--asfalto); }
+@media (prefers-reduced-motion: reduce) { .nav-faixa { animation: none; } }
 .nav-base {
   position: absolute; z-index: 1100;
   left: max(10px, env(safe-area-inset-left, 0px)); right: max(10px, env(safe-area-inset-right, 0px));
@@ -377,6 +384,7 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
       </div>
     </div>
     <div class="nav-alerta" id="navAlerta" hidden role="alert"></div>
+    <div class="nav-faixa" id="navFaixa" hidden></div>
   </div>
   <div class="mapa-caixa">
     <div id="mapa" aria-label="Mapa de São Paulo com as restrições a caminhões"></div>
@@ -499,7 +507,8 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
 
       <section class="pendente">
         <strong>Zonas residenciais (ZERC):</strong> a Prefeitura não publica a lista de quais zonas residenciais têm a placa de proibição. Por precaução, o app evita todas as zonas residenciais (ZER) do mapa oficial do GeoSampa. Pode haver ZER sem placa (rota um pouco mais longa).<br>
-        <strong>A rota ainda não conhece:</strong> ruas com placa "Proibido caminhão" fora destes grupos, corredores de ônibus, calçadões e limites de altura e peso que não estejam no OpenStreetMap. Siga as placas.
+        <strong>Faixas e corredores de ônibus:</strong> o app avisa, mas não desvia, porque o caminhão pode usar a avenida pelas outras faixas.<br>
+        <strong>A rota ainda não conhece:</strong> ruas com placa "Proibido caminhão" fora destes grupos, calçadões e limites de altura e peso que não estejam no OpenStreetMap. Siga as placas.
       </section>
 
       <section>
@@ -508,6 +517,7 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
           <li>Horários e lista de vias: <a href="https://www.cetsp.com.br/media/722444/p-137_18.pdf" target="_blank" rel="noopener">Portaria 137/2018 SMT.GAB</a> (em vigor desde 03/10/2018).</li>
           <li>Tabela de exceções: <a href="https://www.cetsp.com.br/consultas/caminhoes/resumo-das-restricoes.aspx" target="_blank" rel="noopener">CET, Resumo das restrições</a>.</li>
           <li>Desenhos das áreas e vias: <a href="https://www.cetsp.com.br/consultas/caminhoes/mapa.aspx" target="_blank" rel="noopener">mapas oficiais da CET</a> (baixados em 12/11/2026).</li>
+          <li>Faixas e corredores de ônibus: <a href="https://geosampa.prefeitura.sp.gov.br" target="_blank" rel="noopener">GeoSampa</a> (faixas da CET/Prefeitura e corredores da SPTrans, baixados em 17/11/2026). Regra: Código de Trânsito, art. 184.</li>
           <li>Zonas residenciais (ZER): <a href="https://geosampa.prefeitura.sp.gov.br" target="_blank" rel="noopener">GeoSampa</a>, zoneamento da Lei 18.081/2024 (baixado em 17/11/2026). Regra da ZERC: <a href="https://www.cetsp.com.br/consultas/caminhoes/locais-com-restricao-ao-caminhao/zona-especial-de-restricao-de-circulacao-zerc.aspx" target="_blank" rel="noopener">CET</a>, Decreto 56.920/16 e Portaria 137/18, art. 3º.</li>
           <li>Rodízio por placa: <a href="https://www.cetsp.com.br/consultas/rodizio-municipal.aspx" target="_blank" rel="noopener">CET, Rodízio Municipal</a>; liberação do VUC cadastrado: <a href="https://www.cetsp.com.br/media/808826/Portaria-DSV-G-09_19-cadastro-Rodizio.pdf" target="_blank" rel="noopener">Portaria DSV.G 09/19</a>.</li>
           <li>Cálculo da rota e busca de endereços: <a href="https://openrouteservice.org" target="_blank" rel="noopener">OpenRouteService</a> (HeiGIT), com mapas do OpenStreetMap.</li>
@@ -555,6 +565,7 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
 <script src="dados-restricoes.js"></script>
 <script src="locais-sp.js"></script>
 <script src="zer-sp.js"></script>
+<script src="onibus-sp.js"></script>
 <script>
 (function () {
   "use strict";
@@ -1275,6 +1286,113 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
     }
     return null;
   }
+
+  /* ================= Faixas e corredores de ônibus (só AVISO; não desvia) =================
+     O caminhão pode usar a avenida pelas outras faixas; proibido é andar NA faixa (no horário) ou NO corredor. */
+  var ONI = window.ONIBUS_SP || { faixas: [], corredores: [] };
+  var CELULA_ONI = 200, gradeOni = {}, segOni = [];
+  function indexarOnibus(item, tipo) {
+    item.g.forEach(function (l) {
+      for (var i = 0; i < l.length - 1; i++) {
+        var a = xy(l[i][0], l[i][1]), b = xy(l[i + 1][0], l[i + 1][1]);
+        var k = segOni.push({ a: a, b: b, item: item, tipo: tipo }) - 1;
+        var x0 = Math.floor(Math.min(a[0], b[0]) / CELULA_ONI) - 1, x1 = Math.floor(Math.max(a[0], b[0]) / CELULA_ONI) + 1;
+        var y0 = Math.floor(Math.min(a[1], b[1]) / CELULA_ONI) - 1, y1 = Math.floor(Math.max(a[1], b[1]) / CELULA_ONI) + 1;
+        for (var gx = x0; gx <= x1; gx++) for (var gy = y0; gy <= y1; gy++) { var c = gx + "," + gy; (gradeOni[c] = gradeOni[c] || []).push(k); }
+      }
+    });
+  }
+  ONI.faixas.forEach(function (f, i) { f.id = "f" + i; indexarOnibus(f, "faixa"); });
+  ONI.corredores.forEach(function (c, i) { c.id = "c" + i; indexarOnibus(c, "corredor"); });
+
+  /* A faixa está funcionando neste momento? Devolve o minuto em que termina, ou -1 */
+  function faixaAtivaAte(f, m) {
+    for (var i = 0; i < f.r.length; i++) {
+      var r = f.r[i];
+      if (r[0].indexOf(String(m.dia)) >= 0 && m.minutos >= r[1] && m.minutos < r[2]) return r[2];
+    }
+    return -1;
+  }
+  /* Faixa (funcionando) ou corredor no ponto, andando na direção "rumoRad" */
+  function onibusNoPonto(p, rumoRad, m) {
+    var lst = gradeOni[Math.floor(p[0] / CELULA_ONI) + "," + Math.floor(p[1] / CELULA_ONI)];
+    if (!lst) return null;
+    var melhor = null;
+    for (var j = 0; j < lst.length; j++) {
+      var g = segOni[lst[j]];
+      if (distSeg(p, g.a, g.b) >= 25 || !paralelo(rumoRad, rumo(g.a, g.b))) continue;
+      if (g.tipo === "corredor") return { item: g.item, tipo: "corredor", ate: -1 };
+      var ate = faixaAtivaAte(g.item, m);
+      if (ate >= 0 && !melhor) melhor = { item: g.item, tipo: "faixa", ate: ate };
+    }
+    return melhor;
+  }
+  /* Quantos metros da rota passam por avenida com faixa funcionando ou com corredor */
+  function onibusNaRota(coords, m) {
+    var pts = amostrar(coords), faixa = 0, corredor = 0, nomes = {};
+    pts.forEach(function (s) {
+      var o = onibusNoPonto(s.p, s.rumo, m);
+      if (!o) return;
+      if (o.tipo === "corredor") corredor += s.passo; else faixa += s.passo;
+      nomes[o.item.n] = (nomes[o.item.n] || 0) + s.passo;
+    });
+    var principais = Object.keys(nomes).sort(function (a, b) { return nomes[b] - nomes[a]; }).slice(0, 3);
+    return { faixa: faixa, corredor: corredor, principais: principais };
+  }
+  /* Deixa o nome legível: "AV  BRIG LUIS ANTONIO" vira "Av. Brig Luis Antonio" */
+  function nomeAvenida(n) {
+    var s = String(n || "").replace(/\s+/g, " ").trim();
+    var prefixos = { "AV": "Av.", "R": "R.", "EST": "Estr.", "PC": "Pç.", "AL": "Al.", "VD": "Vd.", "PTE": "Pte.", "TV": "Tv.", "LGO": "Lgo." };
+    var pequenas = { de: 1, da: 1, do: 1, das: 1, dos: 1, e: 1 };
+    return s.split(" ").map(function (p, i) {
+      if (i === 0 && prefixos[p]) return prefixos[p];
+      if (p.length <= 3 && /^[A-Z]+$/.test(p) && !pequenas[p.toLowerCase()] && i > 0 && /EMTU|ABD|SP|CPTM/.test(p)) return p;
+      var b = p.toLowerCase();
+      return (i > 0 && pequenas[b]) ? b : b.charAt(0).toUpperCase() + b.slice(1);
+    }).join(" ");
+  }
+  /* Texto do aviso para o motorista */
+  function avisoOnibus(o) {
+    if (o.tipo === "corredor") return "Corredor de ônibus no meio da avenida: não entre.";
+    var f = o.item, lado = /ESQ/.test(f.l) && !/DIR/.test(f.l) ? "à esquerda" : /DIR/.test(f.l) ? "à direita" : "neste trecho";
+    var quando = o.ate >= 1440 ? "o dia todo" : "até as " + hhmm(o.ate).replace(":00", "h");
+    if (/PREFER/.test(f.t)) return "Faixa preferencial de ônibus " + lado + " " + quando + ": dê preferência aos ônibus.";
+    if (/REVERS/.test(f.t)) return "Faixa reversível de ônibus neste trecho " + quando + ": siga as placas.";
+    return "Faixa de ônibus " + lado + " " + quando + ": não use." + (lado === "à direita" ? " Só entre na tracejada para virar à direita." : "");
+  }
+
+  /* No mapa: faixas (linha fina) e corredores (linha grossa) em magenta; aparecem com o zoom aproximado */
+  var COR_ONIBUS = "#c2185b", grupoOnibus = L.layerGroup(), mostrarOnibus = true;
+  function linhasLeaflet(item) { return item.g.map(function (l) { return l.map(function (c) { return [c[1], c[0]]; }); }); }
+  ONI.corredores.forEach(function (c) {
+    L.polyline(linhasLeaflet(c), { color: COR_ONIBUS, weight: 7, opacity: 0.55 })
+      .bindPopup('<p class="pop-titulo">' + escapar(c.n) + '</p>Corredor de ônibus (faixa do meio): caminhão não entra.<br>Fonte: GeoSampa / SPTrans')
+      .addTo(grupoOnibus);
+  });
+  ONI.faixas.forEach(function (f) {
+    L.polyline(linhasLeaflet(f), { color: COR_ONIBUS, weight: 3, opacity: 0.8, dashArray: /PREFER|REVERS/.test(f.t) ? "4 6" : null })
+      .bindPopup('<p class="pop-titulo">' + escapar(nomeAvenida(f.n)) + '</p>Faixa ' + escapar(f.t.toLowerCase()) + ' de ônibus' + (f.l ? ' (' + escapar(f.l.toLowerCase()) + ')' : '') +
+        '<br>Funciona: ' + escapar(f.h) + '<br>Fora desse horário, todos podem usar.<br>Fonte: GeoSampa (Prefeitura de SP)')
+      .addTo(grupoOnibus);
+  });
+  function atualizarCamadaOnibus() {
+    var ver = mostrarOnibus && mapa.getZoom() >= 14;
+    if (ver && !mapa.hasLayer(grupoOnibus)) grupoOnibus.addTo(mapa);
+    if (!ver && mapa.hasLayer(grupoOnibus)) mapa.removeLayer(grupoOnibus);
+  }
+  mapa.on("zoomend", atualizarCamadaOnibus);
+  atualizarCamadaOnibus();
+  (function () {
+    var li = document.createElement("li");
+    li.className = "item";
+    li.innerHTML = '<input type="checkbox" id="liga-onibus" checked aria-label="Mostrar faixas e corredores de ônibus">' +
+      '<label class="item-nome" for="liga-onibus">Faixas e corredores de ônibus</label><span class="chip atencao">Aviso</span>' +
+      '<span class="item-hora">O caminhão pode usar a avenida, mas não a faixa de ônibus (no horário dela) nem o corredor. Aparecem no mapa com o zoom aproximado.</span>' +
+      '<span class="item-fonte">Fonte: <a href="https://geosampa.prefeitura.sp.gov.br" target="_blank" rel="noopener">GeoSampa</a> · Código de Trânsito, art. 184</span>';
+    document.getElementById("lista").appendChild(li);
+    li.querySelector("input").addEventListener("change", function (ev) { mostrarOnibus = ev.target.checked; atualizarCamadaOnibus(); });
+  })();
+
   function juntarPoligonos(lista) {
     var coords = [];
     lista.forEach(function (f) {
@@ -1562,6 +1680,17 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
   function exibirResultado(res) {
     var numeros = '<div class="res-numeros"><div><strong>' + km(res.distancia) + '</strong><span>distância</span></div><div><strong>' + tempo(res.duracao) + '</strong><span>tempo sem trânsito</span></div><div><strong>' + hhmm(res.chegada.minutos) + '</strong><span>chegada prevista</span></div></div>' +
       '<p class="nota" style="margin:0">Veículo: ' + escapar(res.veiculoTexto || "") + '</p>';
+    // Faixas e corredores de ônibus no caminho (só informação; a rota não muda)
+    if (!res.onibus) res.onibus = onibusNaRota(res.coords, res.momento);
+    var oni = res.onibus;
+    if (oni.faixa + oni.corredor >= 100) {
+      numeros += '<p class="nota nota-onibus" style="margin:0">🚌 ' +
+        (oni.faixa >= 100 ? km(oni.faixa) + " em avenidas com faixa de ônibus funcionando no horário de saída" : "") +
+        (oni.faixa >= 100 && oni.corredor >= 100 ? " e " : "") +
+        (oni.corredor >= 100 ? km(oni.corredor) + " em avenidas com corredor de ônibus" : "") +
+        (oni.principais.length ? " (" + escapar(oni.principais.map(nomeAvenida).join(", ")) + ")" : "") +
+        ". Use as outras faixas.</p>";
+    }
     var listaProb = res.problemas.map(function (p) {
       return '<li>' + (p.area ? "Entra na " + escapar(CAMADAS[p.tipo].curto) : "Passa por " + km(p.metros) + " em " + escapar(p.nome)) +
         ' — proibido agora (<a href="' + linkFonte(p.tipo) + '" target="_blank" rel="noopener">' + escapar(CAMADAS[p.tipo].fonte) + '</a>)</li>';
@@ -1891,6 +2020,11 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
     }
     var manobra = atualizarInstrucao(pos.s);
     atualizarBase(pos.s);
+    // Faixa de ônibus funcionando ou corredor onde o caminhão está agora: aviso na tela (e falado uma vez)
+    if (estado.rota.pts[pos.i + 1]) {
+      var oni = onibusNoPonto(xy(lon, lat), rumo(estado.rota.pts[pos.i], estado.rota.pts[pos.i + 1]), momentoAtual());
+      mostrarAvisoOnibus(oni, pos.s);
+    }
 
     // Perto da conversão: aproxima e destaca. Depois dela: volta ao zoom normal.
     if (manobra.dist !== null && manobra.dist <= 300) destacarManobra(manobra.k);
@@ -1898,6 +2032,21 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
     var z = zoomDesejado(manobra.dist);
     if (Math.abs(z - giro.zoomAtual) >= 0.5) giro.zoomAtual = z;
     seguirCaminhao(lat, lon);
+  }
+
+  function mostrarAvisoOnibus(o, s) {
+    var el = document.getElementById("navFaixa");
+    if (!o) {
+      // só esconde depois de 150 m sem faixa (nos cruzamentos a faixa some por alguns metros)
+      if (nav.onibusAtual && s - (nav.sUltimoOnibus || 0) > 150) { el.hidden = true; nav.onibusAtual = null; }
+      return;
+    }
+    nav.sUltimoOnibus = s;
+    var texto = avisoOnibus(o);
+    if (nav.onibusAtual === texto) return;           // mesma mensagem: não repete
+    el.textContent = "🚌 " + texto; el.hidden = false; nav.onibusAtual = texto;
+    // fala quando a mensagem muda, sem cortar uma instrução de manobra que esteja sendo falada
+    if (!(window.speechSynthesis && speechSynthesis.speaking)) falar(texto);
   }
 
   function moverMarcador(lat, lon) {
@@ -1970,6 +2119,7 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
     // A navegação usa sempre o horário de agora
     if (estado.modo !== "agora") { document.getElementById("mAgora").click(); nav.precisaRecalc = true; }
     nav.ativo = true; nav.seguindo = true; nav.idx = 0; nav.falados = {}; nav.foraDesde = null; nav.chegou = false; nav.ultimaRecalc = 0;
+    nav.sUltimoOnibus = 0; nav.onibusAtual = null;
     document.body.classList.add("navegando");
     ["navTopo", "navBase"].forEach(function (id) { document.getElementById(id).hidden = false; });
     document.getElementById("btnCentro").hidden = true;
@@ -2005,7 +2155,7 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
     limparDestaque();
     mapa.setBearing(0);
     document.body.classList.remove("navegando");
-    ["navTopo", "navBase", "navAlerta", "btnBussola", "btnCentro"].forEach(function (id) { document.getElementById(id).hidden = true; });
+    ["navTopo", "navBase", "navAlerta", "navFaixa", "btnBussola", "btnCentro"].forEach(function (id) { document.getElementById(id).hidden = true; });
     setTimeout(function () {
       mapa.invalidateSize();
       if (estado.opcoes && estado.opcoes.length > 1) { desenharOpcoes(estado.opcoes, estado.escolhida || 0); exibirResultado(estado.rota); }
