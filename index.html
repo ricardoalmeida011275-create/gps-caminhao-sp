@@ -94,45 +94,80 @@ button, select, input { font: inherit; color: inherit; }
 .mapa-caixa { flex: 1; min-height: 0; position: relative; display: flex; }
 #mapa { flex: 1; min-height: 0; background: var(--fundo); }
 
-/* Navegação */
+/* Navegação: mapa ocupando a tela, com cartões finos flutuando por cima */
 body.navegando .painel { display: none; }
-body.navegando .app { flex-direction: column; }
-.nav-topo {
-  display: flex; align-items: center; gap: 14px;
-  background: var(--nav-fundo); color: var(--nav-texto);
-  padding-block: 12px;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
+body.navegando .app { flex-direction: column; position: relative; }
+body.navegando .aviso { font-size: 11.5px; padding-block: 4px; padding-top: max(4px, env(safe-area-inset-top, 0px)); border-bottom-width: 1px; }
+body.navegando #instalarApp { display: none !important; }   /* não cobre a manobra */
+body.navegando .leaflet-control-zoom { display: none; }
+body.navegando .leaflet-bottom { bottom: calc(92px + env(safe-area-inset-bottom, 0px)); }
+.nav-cima {
+  position: absolute; z-index: 1100; top: 10px;
+  left: max(10px, env(safe-area-inset-left, 0px)); right: max(10px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 6px; pointer-events: none;
 }
-.nav-seta { font-size: 46px; line-height: 1; width: 52px; text-align: center; flex: none; font-weight: 700; }
+.nav-cima > * { pointer-events: auto; }
+.nav-topo {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--nav-fundo); color: var(--nav-texto);
+  border-radius: 18px; padding: 10px 16px 10px 10px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.28);
+  animation: descer .35s ease-out;
+}
+.nav-seta {
+  font-size: 40px; line-height: 1; width: 56px; height: 56px; flex: none; font-weight: 700;
+  display: grid; place-items: center; border-radius: 14px; background: rgba(255,255,255,.12);
+}
 .nav-info { min-width: 0; }
 .nav-dist { margin: 0; font-family: var(--f-titulo); font-weight: 700; font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums; }
-.nav-texto { margin: 4px 0 0; font-size: 17px; font-weight: 600; line-height: 1.25; }
+.nav-texto {
+  margin: 3px 0 0; font-size: 18px; font-weight: 600; line-height: 1.2;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
 .nav-alerta {
-  padding-block: 8px; font-weight: 600; font-size: 14.5px;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
-  background: var(--atencao-fundo); color: var(--atencao);
+  border-radius: 14px; padding: 8px 14px; font-weight: 600; font-size: 15px;
+  background: var(--atencao-fundo); color: var(--atencao); box-shadow: 0 4px 14px rgba(0,0,0,.18);
+  animation: descer .3s ease-out;
 }
 .nav-alerta.alerta { background: var(--proibido-fundo); color: var(--proibido); }
 .nav-base {
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-  background: var(--papel); border-top: 1px solid var(--linha);
-  padding-block: 10px; padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  position: absolute; z-index: 1100;
+  left: max(10px, env(safe-area-inset-left, 0px)); right: max(10px, env(safe-area-inset-right, 0px));
+  bottom: max(10px, env(safe-area-inset-bottom, 0px));
+  display: flex; align-items: center; gap: 12px;
+  background: var(--papel); color: var(--asfalto); border-radius: 18px; padding: 8px 10px 8px 16px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.22);
+  animation: subir .35s ease-out;
 }
-.nav-numero strong { display: block; font-family: var(--f-titulo); font-size: 24px; line-height: 1; font-variant-numeric: tabular-nums; }
+.nav-numero { min-width: 0; }
+.nav-numero strong { display: block; font-family: var(--f-titulo); font-size: 23px; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.nav-numero.principal strong { font-size: 27px; color: var(--liberado); }
 .nav-numero span { font-size: 12px; color: var(--suave); }
+.btn-voz {
+  margin-left: auto; flex: none; width: 48px; height: 48px; border-radius: 50%; cursor: pointer;
+  border: 1px solid var(--linha); background: var(--fundo); color: var(--asfalto); font-size: 21px; line-height: 1;
+}
+.btn-voz[aria-pressed="false"] { opacity: .55; }
 .btn-encerrar {
-  margin-left: auto; border: 0; border-radius: 10px; padding: 10px 16px; cursor: pointer;
+  flex: none; height: 48px; border: 0; border-radius: 14px; padding: 0 14px; cursor: pointer;
   background: var(--proibido); color: #fff; font-family: var(--f-titulo); font-weight: 700; font-size: 17px;
 }
 .btn-centro {
   position: absolute; z-index: 1000; right: max(12px, env(safe-area-inset-right, 0px)); bottom: 24px;
-  border: 1px solid var(--linha); background: var(--papel); border-radius: 999px; padding: 10px 16px;
-  font-weight: 600; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.25);
+  min-height: 48px; border: 1px solid var(--linha); background: var(--papel); color: var(--asfalto); border-radius: 999px; padding: 10px 18px;
+  font-weight: 700; font-size: 15px; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.22);
 }
+body.navegando .btn-centro { left: max(12px, env(safe-area-inset-left, 0px)); right: auto; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+.troca { animation: aparecer .3s ease-out; }
+@keyframes descer { from { opacity: 0; transform: translateY(-10px); } }
+@keyframes subir { from { opacity: 0; transform: translateY(10px); } }
+@keyframes aparecer { from { opacity: .25; transform: translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) { .nav-topo, .nav-alerta, .nav-base, .troca { animation: none; } }
+
+/* Mapa de fundo escuro no modo noturno */
+:root[data-theme="dark"] .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.92) contrast(.9) saturate(.6); }
+:root[data-theme="dark"] .leaflet-container { background: #1b2226; }
 .btn-navegar { margin-top: 4px; background: var(--liberado); }
 .opcoes { display: flex; flex-direction: column; gap: 6px; }
 .opcao-rota {
@@ -332,14 +367,16 @@ body.navegando .app { flex-direction: column; }
 </div>
 
 <div class="app">
-  <div class="nav-topo" id="navTopo" hidden aria-live="polite">
-    <div class="nav-seta" id="navSeta" aria-hidden="true">↑</div>
-    <div class="nav-info">
-      <p class="nav-dist" id="navDist"></p>
-      <p class="nav-texto" id="navTexto">Buscando o sinal do GPS…</p>
+  <div class="nav-cima">
+    <div class="nav-topo" id="navTopo" hidden aria-live="polite">
+      <div class="nav-seta" id="navSeta" aria-hidden="true">↑</div>
+      <div class="nav-info">
+        <p class="nav-dist" id="navDist"></p>
+        <p class="nav-texto" id="navTexto">Buscando o sinal do GPS…</p>
+      </div>
     </div>
+    <div class="nav-alerta" id="navAlerta" hidden role="alert"></div>
   </div>
-  <div class="nav-alerta" id="navAlerta" hidden role="alert"></div>
   <div class="mapa-caixa">
     <div id="mapa" aria-label="Mapa de São Paulo com as restrições a caminhões"></div>
     <button class="btn-centro" type="button" id="btnCentro" hidden>Centralizar</button>
@@ -349,9 +386,10 @@ body.navegando .app { flex-direction: column; }
     </button>
   </div>
   <div class="nav-base" id="navBase" hidden>
-    <div class="nav-numero"><strong id="navRestante">–</strong><span>faltam</span></div>
+    <div class="nav-numero principal"><strong id="navTempo">–</strong><span>restante</span></div>
+    <div class="nav-numero"><strong id="navRestante">–</strong><span>distância</span></div>
     <div class="nav-numero"><strong id="navChegada">–</strong><span>chegada</span></div>
-    <button class="btn-pequeno" type="button" id="btnVoz" aria-pressed="true">Voz ligada</button>
+    <button class="btn-voz" type="button" id="btnVoz" aria-pressed="true" aria-label="Voz ligada. Toque para desligar">🔊</button>
     <button class="btn-encerrar" type="button" id="btnEncerrar">Encerrar</button>
   </div>
 
@@ -472,6 +510,18 @@ body.navegando .app { flex-direction: column; }
           <li>Cálculo da rota e busca de endereços: <a href="https://openrouteservice.org" target="_blank" rel="noopener">OpenRouteService</a> (HeiGIT), com mapas do OpenStreetMap.</li>
           <li>Mapa de fundo: © colaboradores do OpenStreetMap.</li>
         </ol>
+      </section>
+
+      <section aria-labelledby="tituloAparencia">
+        <p class="rotulo" id="tituloAparencia">Aparência</p>
+        <label class="campo">Modo noturno
+          <select id="selTema">
+            <option value="auto">Automático (escurece à noite)</option>
+            <option value="claro">Sempre claro</option>
+            <option value="escuro">Sempre escuro</option>
+          </select>
+        </label>
+        <p class="nota" id="notaTema"></p>
       </section>
 
       <section class="chave" aria-labelledby="tituloChave">
@@ -616,6 +666,34 @@ body.navegando .app { flex-direction: column; }
     return { dia: dia, minutos: total, feriado: m.feriado && dia === m.dia, veiculo: m.veiculo, placa: m.placa };
   }
   function hhmm(min) { return String(Math.floor(min / 60)).padStart(2, "0") + ":" + String(min % 60).padStart(2, "0"); }
+
+  /* ================= Modo noturno ================= */
+  // Nascer e pôr do sol em São Paulo (cálculo astronômico simples, precisão de poucos minutos)
+  function solDeHoje() {
+    var hoje = new Date(), inicio = new Date(hoje.getFullYear(), 0, 0);
+    var dia = Math.floor((hoje - inicio) / 86400000);
+    var rad = Math.PI / 180, lat = -23.55, lon = -46.63;
+    var decl = 23.44 * Math.sin(rad * 360 / 365 * (dia - 81));
+    var B = rad * 360 / 364 * (dia - 81);
+    var eqTempo = 9.87 * Math.sin(2 * B) - 7.53 * Math.cos(B) - 1.5 * Math.sin(B);   // minutos
+    var cosH = (Math.cos(rad * 90.833) - Math.sin(rad * lat) * Math.sin(rad * decl)) / (Math.cos(rad * lat) * Math.cos(rad * decl));
+    var H = Math.acos(Math.max(-1, Math.min(1, cosH))) / rad;
+    var meioDia = 720 - 4 * (lon - (-45)) - eqTempo;   // fuso de Brasília (UTC-3)
+    return { nasce: Math.round(meioDia - 4 * H), poe: Math.round(meioDia + 4 * H) };
+  }
+  function ehNoite() {
+    var sol = solDeHoje(), agora = agoraSP().minutos;
+    return agora < sol.nasce - 10 || agora > sol.poe + 15;   // escurece um pouco depois do pôr do sol
+  }
+  function aplicarTema() {
+    var pref = ler("rotaCaminhaoSP.tema") || "auto";
+    var escuro = pref === "escuro" || (pref === "auto" && ehNoite());
+    var raiz = document.documentElement, novo = escuro ? "dark" : "light";
+    var mudou = raiz.getAttribute("data-theme") !== novo;
+    raiz.setAttribute("data-theme", novo);
+    return mudou;
+  }
+  aplicarTema();
 
   /* ================= Mapa ================= */
   var mapa = L.map("mapa", {
@@ -1541,9 +1619,14 @@ body.navegando .app { flex-direction: column; }
       return { dist: null, k: -1 };
     }
     var dist = prox.inicio - s;
+    var elTexto = document.getElementById("navTexto");
+    if (elTexto.textContent !== prox.instruction) {
+      // manobra nova: troca o texto com uma animação curta
+      elTexto.classList.remove("troca"); void elTexto.offsetWidth; elTexto.classList.add("troca");
+    }
     document.getElementById("navSeta").textContent = SETAS[prox.type] || "↑";
     document.getElementById("navDist").textContent = km(dist);
-    document.getElementById("navTexto").textContent = prox.instruction;
+    elTexto.textContent = prox.instruction;
     var f = nav.falados, frase = prox.instruction.charAt(0).toLowerCase() + prox.instruction.slice(1);
     if (dist <= 40 && !f[k + "c"]) { f[k + "c"] = f[k + "b"] = f[k + "a"] = true; falar("Agora, " + frase); }
     else if (dist <= 200 && dist > 40 && !f[k + "b"]) { f[k + "b"] = f[k + "a"] = true; falar("Em " + arredondar(dist) + ", " + frase); }
@@ -1690,6 +1773,7 @@ body.navegando .app { flex-direction: column; }
     var segundos = r.total > 0 ? r.duracao * (restante / r.total) : 0;
     var agora = agoraSP();
     document.getElementById("navRestante").textContent = km(restante);
+    document.getElementById("navTempo").textContent = tempo(segundos);
     document.getElementById("navChegada").textContent = hhmm(somarMinutos(agora, segundos / 60).minutos);
   }
 
@@ -1876,7 +1960,8 @@ body.navegando .app { flex-direction: column; }
   document.getElementById("btnVoz").addEventListener("click", function () {
     nav.voz = !nav.voz;
     this.setAttribute("aria-pressed", nav.voz ? "true" : "false");
-    this.textContent = nav.voz ? "Voz ligada" : "Voz desligada";
+    this.textContent = nav.voz ? "🔊" : "🔇";
+    this.setAttribute("aria-label", nav.voz ? "Voz ligada. Toque para desligar" : "Voz desligada. Toque para ligar");
     if (!nav.voz && window.speechSynthesis) speechSynthesis.cancel();
   });
   setInterval(vigiarRestricoes, 60000);
@@ -1887,7 +1972,24 @@ body.navegando .app { flex-direction: column; }
 
   atualizar();
   if (veioDeConvite) mostrarMsg("Pronto! O app já está configurado. Escolha a saída e o destino e toque em \"Traçar rota\".");
-  setInterval(function () { if (estado.modo === "agora") atualizar(); }, 60000);
+  setInterval(function () {
+    var mudouTema = aplicarTema();
+    if (estado.modo === "agora" || mudouTema) atualizar();
+  }, 60000);
+
+  /* Escolha do modo noturno */
+  var selTema = document.getElementById("selTema");
+  selTema.value = ler("rotaCaminhaoSP.tema") || "auto";
+  function mostrarNotaTema() {
+    var sol = solDeHoje();
+    document.getElementById("notaTema").textContent = "Hoje em São Paulo o sol nasce por volta das " + hhmm(sol.nasce) + " e se põe por volta das " + hhmm(sol.poe) + ".";
+  }
+  selTema.addEventListener("change", function () {
+    gravar("rotaCaminhaoSP.tema", selTema.value);
+    aplicarTema(); atualizar();
+    if (estado.opcoes && estado.opcoes.length > 1 && !nav.ativo) desenharOpcoes(estado.opcoes, estado.escolhida || 0, false);
+  });
+  mostrarNotaTema();
 })();
 </script>
 
