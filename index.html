@@ -497,7 +497,8 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
       </section>
 
       <section class="pendente">
-        <strong>A rota ainda não conhece:</strong> a ZERC (bairros residenciais, proibida para caminhão o dia todo, Portaria 137/18 art. 3º), ruas com placa "Proibido caminhão" fora destes grupos, corredores de ônibus, calçadões e limites de altura e peso que não estejam no OpenStreetMap. Siga as placas.
+        <strong>Zonas residenciais (ZERC):</strong> a Prefeitura não publica a lista de quais zonas residenciais têm a placa de proibição. Por precaução, o app evita todas as zonas residenciais (ZER) do mapa oficial do GeoSampa. Pode haver ZER sem placa (rota um pouco mais longa).<br>
+        <strong>A rota ainda não conhece:</strong> ruas com placa "Proibido caminhão" fora destes grupos, corredores de ônibus, calçadões e limites de altura e peso que não estejam no OpenStreetMap. Siga as placas.
       </section>
 
       <section>
@@ -506,6 +507,7 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
           <li>Horários e lista de vias: <a href="https://www.cetsp.com.br/media/722444/p-137_18.pdf" target="_blank" rel="noopener">Portaria 137/2018 SMT.GAB</a> (em vigor desde 03/10/2018).</li>
           <li>Tabela de exceções: <a href="https://www.cetsp.com.br/consultas/caminhoes/resumo-das-restricoes.aspx" target="_blank" rel="noopener">CET, Resumo das restrições</a>.</li>
           <li>Desenhos das áreas e vias: <a href="https://www.cetsp.com.br/consultas/caminhoes/mapa.aspx" target="_blank" rel="noopener">mapas oficiais da CET</a> (baixados em 12/11/2026).</li>
+          <li>Zonas residenciais (ZER): <a href="https://geosampa.prefeitura.sp.gov.br" target="_blank" rel="noopener">GeoSampa</a>, zoneamento da Lei 18.081/2024 (baixado em 17/11/2026). Regra da ZERC: <a href="https://www.cetsp.com.br/consultas/caminhoes/locais-com-restricao-ao-caminhao/zona-especial-de-restricao-de-circulacao-zerc.aspx" target="_blank" rel="noopener">CET</a>, Decreto 56.920/16 e Portaria 137/18, art. 3º.</li>
           <li>Rodízio por placa: <a href="https://www.cetsp.com.br/consultas/rodizio-municipal.aspx" target="_blank" rel="noopener">CET, Rodízio Municipal</a>; liberação do VUC cadastrado: <a href="https://www.cetsp.com.br/media/808826/Portaria-DSV-G-09_19-cadastro-Rodizio.pdf" target="_blank" rel="noopener">Portaria DSV.G 09/19</a>.</li>
           <li>Cálculo da rota e busca de endereços: <a href="https://openrouteservice.org" target="_blank" rel="noopener">OpenRouteService</a> (HeiGIT), com mapas do OpenStreetMap.</li>
           <li>Mapa de fundo: © colaboradores do OpenStreetMap.</li>
@@ -551,6 +553,7 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
 <script src="dados-restricoes.js"></script>
 <script src="locais-sp.js"></script>
+<script src="zer-sp.js"></script>
 <script>
 (function () {
   "use strict";
@@ -564,9 +567,10 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
     ver2:    { nome: "Avenidas grupo 2 (Marg. Pinheiros, Bandeirantes…)", curto: "avenida do grupo 2", hora: "Seg a sex 5h–21h · Sáb 10h–14h", fonte: "Portaria 137/18, art. 2º §2º" },
     ver3:    { nome: "Avenidas grupo 3 (região do Morumbi)", curto: "avenida do grupo 3", hora: "Seg a sex 5h–21h · Sáb 10h–14h", fonte: "Portaria 137/18, art. 2º §3º" },
     ver4:    { nome: "Avenidas grupo 4 (Marg. Tietê, Av. do Estado…)", curto: "avenida do grupo 4", hora: "Seg a sex 5h–9h e 17h–21h · Sáb 10h–14h", fonte: "Portaria 137/18, art. 2º §4º" },
-    rodizio: { nome: "Rodízio por placa (Centro Expandido)", curto: "área do rodízio", hora: "Seg a sex 7h–10h e 17h–20h, conforme o final da placa", fonte: "CET, Rodízio Municipal", area: true }
+    rodizio: { nome: "Rodízio por placa (Centro Expandido)", curto: "área do rodízio", hora: "Seg a sex 7h–10h e 17h–20h, conforme o final da placa", fonte: "CET, Rodízio Municipal", area: true },
+    zerc:    { nome: "Zonas residenciais (ZER) – possível ZERC", curto: "zona residencial (ZER)", hora: "Caminhão proibido o dia todo, todos os dias, inclusive feriados · VUC autorizado e carro liberados", fonte: "Decreto 56.920/16 e Portaria 137/18, art. 3º · mapa: GeoSampa", area: true }
   };
-  var ORDEM = ["zmrc", "ver1", "ver2", "ver3", "ver4", "rodizio"];
+  var ORDEM = ["zmrc", "zerc", "ver1", "ver2", "ver3", "ver4", "rodizio"];
   var LINHAS = ["ver1", "ver2", "ver3", "ver4"];
   var FINAIS_RODIZIO = { 1: ["1", "2"], 2: ["3", "4"], 3: ["5", "6"], 4: ["7", "8"], 5: ["9", "0"] };
   var DIAS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
@@ -587,6 +591,10 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
   function situacao(tipo, m) {
     var util = m.dia >= 1 && m.dia <= 5, sab = m.dia === 6, min = m.minutos;
     var horarioCheio = (util && entre(min, 5, 21)) || (sab && entre(min, 10, 14));
+    if (tipo === "zerc") {
+      // Portaria 137/18 art. 3º: placa "período integral" (sem exceção de feriado). VUC com AETC é liberado (art. 18).
+      return (m.veiculo === "carro" || m.veiculo === "vuc") ? "liberado" : "proibido";
+    }
     if (tipo === "rodizio") {
       if (m.veiculo === "vuc") return "liberado";            // VUC cadastrado é liberado do rodízio (Portaria DSV.G 09/19)
       if (m.veiculo === "carro" && m.feriado) return "liberado";   // rodízio de carro é suspenso nos feriados
@@ -724,7 +732,15 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
     camada.bindPopup(function (l) { return textoPopup(l._tipo, l._nome); });
     grupos[t].addLayer(camada);
   });
-  ["rodizio", "zmrc", "ver4", "ver3", "ver2", "ver1"].forEach(function (t) { grupos[t].addTo(mapa); });
+  // Zonas residenciais (ZER) do GeoSampa, arquivo zer-sp.js
+  var zerSP = (window.ZER_SP && window.ZER_SP.features) || [];
+  zerSP.forEach(function (f) {
+    var camada = L.geoJSON(f, {});
+    camada.eachLayer(function (l) { l._tipo = "zerc"; l._nome = "Zona residencial (ZER): pode ter placa de proibição de caminhão (ZERC)"; });
+    camada.bindPopup(function (l) { return textoPopup(l._tipo, l._nome); });
+    grupos.zerc.addLayer(camada);
+  });
+  ["rodizio", "zmrc", "zerc", "ver4", "ver3", "ver2", "ver1"].forEach(function (t) { grupos[t].addTo(mapa); });
   try { mapa.fitBounds(L.featureGroup(grupos.rodizio.getLayers()).getBounds(), { padding: [8, 8] }); } catch (e) {}
 
   function textoPopup(tipo, nome) {
@@ -950,7 +966,7 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
       "2. Para deixar como app: toque no botão azul \"Instalar o GPS\" no alto da tela e confirme. No iPhone, o botão mostra o passo a passo.\n" +
       "3. Toque em \"Cadastrar caminhão\" e coloque o tipo e as medidas do seu caminhão (altura, peso...). Depois escolha o final da placa, a saída (\"Minha localização\") e o destino, e toque em \"Traçar rota\".\n" +
       "4. Toque em \"Iniciar navegação\" ANTES de sair. Não mexa no celular dirigindo e deixe a tela ligada.\n\n" +
-      "Importante: é uma ferramenta de apoio. Respeite sempre as placas e as regras da CET. Ele ainda não conhece as zonas residenciais (ZERC) nem todas as placas de proibição.\n\n" +
+      "Importante: é uma ferramenta de apoio. Respeite sempre as placas e as regras da CET. Ele evita as zonas residenciais por precaução, mas ainda não conhece todas as placas de proibição.\n\n" +
       "Depois me conta: a rota fez sentido? Mandou você por algum lugar proibido? O GPS e a voz acompanharam? Se puder, mande prints (com o caminhão parado).";
   }
   document.getElementById("btnConvidar").addEventListener("click", function () {
@@ -1242,6 +1258,22 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
     var p = turf.point([lon, lat]);
     return areas[t].some(function (pol) { return turf.booleanPointInPolygon(p, pol); });
   }
+
+  /* Zonas residenciais (ZER): caixas em metros para achar rápido em qual bairro um ponto cai */
+  var zerIndice = zerSP.map(function (f) {
+    var b = turf.bbox(f), a = xy(b[0], b[1]), c = xy(b[2], b[3]);
+    return { f: f, id: f.properties.id, caixa: [a[0], a[1], c[0], c[1]] };
+  });
+  function zerEm(lon, lat) {
+    var p = xy(lon, lat), pt = null;
+    for (var i = 0; i < zerIndice.length; i++) {
+      var z = zerIndice[i], c = z.caixa;
+      if (p[0] < c[0] || p[0] > c[2] || p[1] < c[1] || p[1] > c[3]) continue;
+      pt = pt || turf.point([lon, lat]);
+      if (turf.booleanPointInPolygon(pt, z.f)) return z;
+    }
+    return null;
+  }
   function juntarPoligonos(lista) {
     var coords = [];
     lista.forEach(function (f) {
@@ -1305,6 +1337,18 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
       for (var i = 0; i < pts.length; i += 3) if (dentroDe(t, pts[i].lon, pts[i].lat)) metros += pts[i].passo * 3;
       if (metros > 60) problemas.push({ tipo: t, nome: CAMADAS[t].nome, metros: metros, area: true });
     });
+
+    // 3) Entrar em zona residencial (ZER, possível ZERC): anota em qual bairro, para desviar só dele
+    if (situacao("zerc", m) === "proibido") {
+      var porBairro = {};
+      for (var q = 0; q < pts.length; q++) {
+        var z = zerEm(pts[q].lon, pts[q].lat);
+        if (!z || (ignorarAreas && ignorarAreas.zer && ignorarAreas.zer[z.id])) continue;
+        var o = porBairro[z.id] || (porBairro[z.id] = { tipo: "zerc", nome: CAMADAS.zerc.nome, metros: 0, area: true, zer: z });
+        o.metros += pts[q].passo;
+      }
+      Object.keys(porBairro).forEach(function (k) { if (porBairro[k].metros >= 40) problemas.push(porBairro[k]); });
+    }
     return problemas;
   }
 
@@ -1383,6 +1427,16 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
     });
     if (rodizioProibido && !ignorar.rodizio) desvios = desvios.concat(areas.rodizio);          // a ZMRC fica dentro do rodízio
     else if (zmrcProibida && !ignorar.zmrc) desvios = desvios.concat(areas.zmrc);
+    // Saída ou destino dentro de zona residencial (ZER): a rota precisa entrar nela; avisa
+    if (situacao("zerc", m) === "proibido") {
+      [[orig, "A saída"], [dest, "O destino"]].forEach(function (par) {
+        var z = zerEm(par[0].lon, par[0].lat);
+        if (!z) return;
+        ignorar.zer = ignorar.zer || {};
+        ignorar.zer[z.id] = true;
+        avisos.push(par[1] + " fica numa zona residencial (ZER), onde pode haver placa de proibição de caminhão o dia todo (ZERC, Portaria 137/18, art. 3º). Para entrar, pode ser preciso autorização da CET (AETC). Confira as placas.");
+      });
+    }
     if (m.veiculo === "carro") avisos.unshift(AVISO_CARRO);
     if (situacao("rodizio", m) === "atencao") avisos.push("Informe o final da placa: neste horário o rodízio pode valer para o seu " + (m.veiculo === "carro" ? "carro." : "caminhão."));
 
@@ -1418,6 +1472,11 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
           // Rota com restrição: descarta, mas aprende os trechos proibidos para o próximo pedido
           c.problemas.filter(function (p) { return !p.area; }).forEach(function (tr) {
             novos.push({ tipo: tr.tipo, poli: desvioDoTrecho(tr) });
+          });
+          // Zona residencial tocada: no próximo pedido, desvia só daquele bairro
+          c.problemas.filter(function (p) { return p.tipo === "zerc" && p.zer; }).forEach(function (p) {
+            var jaTem = desviosTrecho.concat(novos).some(function (d) { return d.zerId === p.zer.id; });
+            if (!jaTem) novos.push({ tipo: "zerc", zerId: p.zer.id, poli: p.zer.f });
           });
           if (!piorCaso || c.problemas.length < piorCaso.problemas.length) piorCaso = c;
         });
