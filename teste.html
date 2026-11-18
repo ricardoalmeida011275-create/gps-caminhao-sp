@@ -9,6 +9,9 @@
 <meta property="og:description" content="GPS de caminhão que respeita as restrições. Veja como instalar em 5 passos.">
 <meta property="og:image" content="https://ricardoalmeida011275-create.github.io/gps-caminhao-sp/icones/icone-512.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icones/icone-192.png">
+<!-- Mesmo "cadastro de app" do Rota Liberada: se instalar a partir desta página, instala o app (abre na tela do GPS) -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0b1a33">
 <style>
 :root { --fundo: #f4f5f2; --papel: #fff; --texto: #1d2226; --suave: #5b6670; --linha: #d6dad6; --amarelo: #ffcf33; --azul: #0b5cad; --zap: #075e54; }
 @media (prefers-color-scheme: dark) { :root { --fundo: #171b1e; --papel: #20262a; --texto: #e9ecea; --suave: #a3adb2; --linha: #343c41; --azul: #7db7ff; } }
@@ -19,6 +22,7 @@ header { text-align: center; margin-bottom: 10px; }
 header img { width: 72px; height: 72px; border-radius: 18px; }
 h1 { font-size: 26px; margin: 8px 0 2px; line-height: 1.2; }
 .sub { color: var(--suave); margin: 0; font-size: 15px; }
+.abrir-app { display: block; margin: 14px 0 6px; background: #1f7a3d; color: #fff; text-decoration: none; font-weight: 800; font-size: 20px; border-radius: 12px; padding: 14px; box-shadow: 0 3px 0 #145228; }
 .passo { background: var(--papel); border: 1px solid var(--linha); border-radius: 14px; padding: 14px; margin: 14px 0; }
 .passo h2 { font-size: 20px; margin: 0 0 4px; display: flex; gap: 10px; align-items: center; line-height: 1.25; }
 .num { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--azul); color: #fff; display: grid; place-items: center; font-size: 18px; }
@@ -62,6 +66,8 @@ ul { padding-left: 22px; margin: 6px 0; }
   <img src="icones/icone-192.png" alt="Ícone do Rota Liberada">
   <h1>Instale o Rota Liberada</h1>
   <p class="sub">GPS de caminhão que respeita as restrições. São só 5 passos.</p>
+  <a class="abrir-app" href="./">👉 Abrir o app Rota Liberada</a>
+  <p class="sub">Esta página é só o passo a passo. Toque no botão verde acima para abrir o app e faça os passos 3 e 4 <strong>lá no app</strong>.</p>
 </header>
 
 <section class="passo">
@@ -149,6 +155,10 @@ ul { padding-left: 22px; margin: 6px 0; }
   </ul>
 </section>
 
+<script>
+  // Liga o mesmo "modo app" do Rota Liberada, para o Chrome deixar instalar a partir desta página também
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function () {});
+</script>
 <p class="rodape">Rota Liberada · <a href="./">Abrir o app</a> · <a href="privacidade.html">Política de privacidade</a> · contato@topvtrine.com</p>
 </main>
 </body>
