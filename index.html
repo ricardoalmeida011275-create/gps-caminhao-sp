@@ -2286,11 +2286,26 @@ body { font-size: 16px; }
     if (agulha) agulha.style.transform = "rotate(" + Math.round(b) + "deg)";
   }
 
-  /* Zoom: mais longe em avenida rápida, mais perto em rua lenta; bem perto chegando numa conversão */
-  function zoomDesejado(distManobra) {
+  /* Zoom: mais longe em avenida rápida, mais perto em rua lenta.
+     Chegando numa conversão, vai aproximando aos poucos até ficar BEM perto (pedido dos motoristas).
+     Bifurcações ("mantenha à direita/esquerda", "levemente") aproximam mais cedo e mais perto,
+     porque em SP é fácil pegar a saída errada. */
+  var TIPOS_BIFURCACAO = { 4: 1, 5: 1, 12: 1, 13: 1 };
+  function distanciaZoomManobra(tipo) {
+    var bif = !!TIPOS_BIFURCACAO[tipo];
+    return Math.max(bif ? 450 : 350, giro.velocidade * 18);   // começa ~18 segundos antes da conversão
+  }
+  function zoomDesejado(distManobra, tipo) {
     var v = giro.velocidade, base = v > 16 ? 15.5 : v > 8 ? 16.25 : 17;
-    if (distManobra !== null && distManobra <= 300) return Math.min(18, base + 1.25);
-    return base;
+    if (distManobra === null) return base;
+    var bif = !!TIPOS_BIFURCACAO[tipo];
+    var inicio = distanciaZoomManobra(tipo);
+    if (distManobra > inicio) return base;
+    var perto = bif ? 19 : 18.75, colado = bif ? 130 : 90;
+    if (distManobra <= colado) return perto;
+    var t = 1 - (distManobra - colado) / (inicio - colado);          // 0 no começo, 1 na esquina
+    var z = base + 1 + t * (perto - base - 1);
+    return Math.min(perto, Math.round(z * 4) / 4);
   }
 
   /* Leva o mapa até o caminhão, deixando a seta na parte de baixo da tela (mais caminho à frente) */
@@ -2396,10 +2411,11 @@ body { font-size: 16px; }
     }
 
     // Perto da conversão: aproxima e destaca. Depois dela: volta ao zoom normal.
-    if (manobra.dist !== null && manobra.dist <= 300) destacarManobra(manobra.k);
+    var tipoManobra = manobra.k !== undefined && estado.rota.passos[manobra.k] ? estado.rota.passos[manobra.k].type : null;
+    if (manobra.dist !== null && manobra.dist <= Math.max(300, distanciaZoomManobra(tipoManobra))) destacarManobra(manobra.k);
     else limparDestaque();
-    var z = zoomDesejado(manobra.dist);
-    if (Math.abs(z - giro.zoomAtual) >= 0.5) giro.zoomAtual = z;
+    var z = zoomDesejado(manobra.dist, tipoManobra);
+    if (Math.abs(z - giro.zoomAtual) >= 0.25) giro.zoomAtual = z;
     seguirCaminhao(lat, lon);
   }
 
