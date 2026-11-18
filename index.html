@@ -1013,18 +1013,19 @@ body { font-size: 16px; }
   function mostrarEstadoChave() {
     document.getElementById("estadoChave").textContent = estado.chave
       ? "Chave salva neste aparelho (termina em …" + estado.chave.slice(-4) + ")."
-      : "Nenhuma chave salva. Sem ela, o mapa funciona, mas a rota não.";
-    document.getElementById("caixaConvite").hidden = !estado.chave;
+      : "Não precisa de chave: o app usa a central do GPS. Só cole uma chave aqui se quiser usar a sua própria conta.";
+    document.getElementById("caixaConvite").hidden = false;
   }
 
   /* ---------- Convidar motoristas para o teste ---------- */
-  function linkConvite() { return location.origin + location.pathname + "#chave=" + encodeURIComponent(estado.chave); }
+  // O link não leva mais a chave: as rotas passam pela central (gps.topvtrine.com), que guarda a chave escondida.
+  function linkConvite() { return location.origin + location.pathname; }
   function textoConvite() {
     return "Fala! Estou fazendo um teste piloto de um aplicativo de GPS para caminhão em São Paulo. " +
       "Ele traça a rota respeitando as restrições da CET (ZMRC, rodízio e avenidas proibidas por horário), de acordo com o tipo de veículo.\n\n" +
       "É uma versão de teste: ainda vai melhorar bastante, inclusive o visual. Se der certo, a ideia é lançar no mercado, então a sua opinião vale muito.\n\n" +
       "Como usar:\n" +
-      "1. Abra este link no Chrome (ele já vem configurado): " + linkConvite() + "\n" +
+      "1. Abra este link no Chrome (não precisa criar conta nem chave): " + linkConvite() + "\n" +
       "2. Para deixar como app: toque no botão azul \"Instalar o GPS\" no alto da tela e confirme. No iPhone, o botão mostra o passo a passo.\n" +
       "3. Toque em \"Cadastrar caminhão\" e coloque o tipo e as medidas do seu caminhão (altura, peso...). Depois escolha o final da placa, a saída (\"Minha localização\") e o destino, e toque em \"Traçar rota\".\n" +
       "4. Toque em \"Iniciar navegação\" ANTES de sair. Não mexa no celular dirigindo e deixe a tela ligada.\n\n" +
@@ -1067,10 +1068,18 @@ body { font-size: 16px; }
   // Endereços novos do HeiGIT (o antigo api.openrouteservice.org está sendo desativado)
   var ORS = "https://api.heigit.org/openrouteservice";
   var BUSCA = "https://api.heigit.org/pelias/v1";
+  // Central do GPS na HostGator: guarda a chave escondida e repassa os pedidos (usada quando o aparelho não tem chave própria)
+  var CENTRAL = "https://gps.topvtrine.com/rota.php";
+  function viaCentral(url) {
+    var resto = url.replace("https://api.heigit.org/", ""), i = resto.indexOf("?");
+    var caminho = i >= 0 ? resto.slice(0, i) : resto, parametros = i >= 0 ? resto.slice(i + 1) : "";
+    return CENTRAL + "?caminho=" + encodeURIComponent(caminho) + (parametros ? "&" + parametros : "");
+  }
 
   function explicarErro(status, corpo) {
     var cod = corpo && corpo.error && (corpo.error.code || corpo.error);
     var msg = corpo && corpo.error && (corpo.error.message || (typeof corpo.error === "string" ? corpo.error : ""));
+    if (!estado.chave && msg && (status === 429 || status === 503 || status === 403 || status === 502)) return msg;   // mensagens da central
     if (status === 401 || status === 403) return "A chave não foi aceita pelo serviço de rotas. Confira se ela foi copiada inteira e salve de novo.";
     if (status === 429) return "O limite grátis do dia foi atingido (2.000 rotas). Amanhã volta a funcionar.";
     if (cod === 2010) return "Não encontrei rua perto de um dos pontos. Tente um endereço mais exato ou toque no mapa em cima de uma rua.";
@@ -1082,7 +1091,12 @@ body { font-size: 16px; }
 
   function chamar(url, opcoes, limiteSegundos) {
     opcoes = opcoes || {};
-    opcoes.headers = Object.assign({ "Authorization": estado.chave, "Accept": "application/json, application/geo+json" }, opcoes.headers || {});
+    if (estado.chave) {
+      opcoes.headers = Object.assign({ "Authorization": estado.chave, "Accept": "application/json, application/geo+json" }, opcoes.headers || {});
+    } else {
+      url = viaCentral(url);   // sem chave no aparelho: a central coloca a chave
+      opcoes.headers = Object.assign({ "Accept": "application/json, application/geo+json" }, opcoes.headers || {});
+    }
     var controle = window.AbortController ? new AbortController() : null, estourou = false;
     var relogio = controle ? setTimeout(function () { estourou = true; controle.abort(); }, (limiteSegundos || 30) * 1000) : null;
     if (controle) opcoes.signal = controle.signal;
@@ -1271,7 +1285,6 @@ body { font-size: 16px; }
     var itens = [], fontes = [], principalFora = false;
     return tomtomBuscar(texto, !!numero).then(function (l) { itens = l; fontes.push("TomTom"); }, function () {
       principalFora = true;
-      if (!estado.chave) return;
       return peliasBuscar(texto, numero).then(function (l) { itens = l; fontes.push("OpenRouteService"); }, function () {});
     }).then(function () {
       var faltaNumero = numero && !itens.some(function (i) { return mesmoNumero(i.numero, numero); });
@@ -2090,7 +2103,6 @@ body { font-size: 16px; }
   }
 
   document.getElementById("btnRota").addEventListener("click", function () {
-    if (!estado.chave) { mostrarMsg("Salve a chave do serviço de rotas no fim do painel para traçar rotas."); document.getElementById("txtChave").focus(); return; }
     if (!estado.A || !estado.B) { mostrarMsg("Escolha a saída (A) e o destino (B): digite e toque numa sugestão, use sua localização ou toque no mapa."); return; }
 
     var btn = document.getElementById("btnRota");
