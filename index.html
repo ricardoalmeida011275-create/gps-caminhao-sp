@@ -155,6 +155,23 @@ body.navegando .leaflet-bottom { bottom: calc(92px + env(safe-area-inset-bottom,
   border: 1px solid var(--linha); background: var(--fundo); color: var(--asfalto); font-size: 21px; line-height: 1;
 }
 .btn-voz[aria-pressed="false"] { opacity: .55; }
+/* Opções de navegação */
+.nav-opcoes { position: fixed; inset: 0; z-index: 3000; background: rgba(0,0,0,.45); display: flex; align-items: flex-end; justify-content: center; }
+.nav-opcoes[hidden] { display: none; }
+.nav-opcoes-caixa {
+  width: 100%; max-width: 460px; max-height: 92vh; overflow-y: auto; background: var(--papel); color: var(--asfalto);
+  border-radius: 18px 18px 0 0; padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -6px 24px rgba(0,0,0,.3);
+}
+.nav-opcoes-titulo { font-family: var(--f-titulo); font-weight: 700; font-size: 21px; margin: 0 0 6px; }
+.op-nome { margin: 12px 0 6px; font-weight: 700; font-size: 15px; }
+.op-grupo { display: flex; gap: 6px; }
+.op-grupo button {
+  flex: 1; min-height: 46px; border: 2px solid var(--linha); background: var(--fundo); color: var(--asfalto);
+  border-radius: 10px; font-family: var(--f-titulo); font-weight: 700; font-size: 16px; cursor: pointer; padding: 6px 4px;
+}
+.op-grupo button[aria-pressed="true"] { background: var(--botao-fundo, #e3eefb); border-color: var(--botao-borda, #0b5cad); color: var(--botao-texto, #0a3a70); }
+.btn-rota.btn-chegada { margin-top: 16px; background: #1f7a3d; }
+.op-fechar { display: block; width: 100%; margin-top: 10px; }
 .btn-encerrar {
   flex: none; height: 48px; border: 0; border-radius: 14px; padding: 0 14px; cursor: pointer;
   background: var(--proibido); color: #fff; font-family: var(--f-titulo); font-weight: 700; font-size: 17px;
@@ -441,8 +458,38 @@ body { font-size: 16px; }
     <div class="nav-numero principal"><strong id="navTempo">–</strong><span>restante</span></div>
     <div class="nav-numero"><strong id="navRestante">–</strong><span>distância</span></div>
     <div class="nav-numero"><strong id="navChegada">–</strong><span>chegada</span></div>
-    <button class="btn-voz" type="button" id="btnVoz" aria-pressed="true" aria-label="Voz ligada. Toque para desligar">🔊</button>
+    <button class="btn-voz" type="button" id="btnVoz" aria-haspopup="dialog" aria-controls="navOpcoes" aria-label="Opções de navegação: voz, vibração, zoom e enviar chegada">⚙️</button>
     <button class="btn-encerrar" type="button" id="btnEncerrar">Encerrar</button>
+  </div>
+
+  <!-- Opções de navegação (abre pelo botão ⚙️ durante a navegação) -->
+  <div class="nav-opcoes" id="navOpcoes" role="dialog" aria-modal="true" aria-labelledby="tituloOpcoes" hidden>
+    <div class="nav-opcoes-caixa">
+      <p class="nav-opcoes-titulo" id="tituloOpcoes">⚙️ Opções de navegação</p>
+      <p class="op-nome">Voz</p>
+      <div class="op-grupo" data-op="voz">
+        <button type="button" data-v="tudo">🔊 Tudo</button>
+        <button type="button" data-v="conversoes">↱ Só curvas</button>
+        <button type="button" data-v="nao">🔇 Desligada</button>
+      </div>
+      <p class="op-nome">Vibrar antes das curvas</p>
+      <div class="op-grupo" data-op="vibrar">
+        <button type="button" data-v="sim">📳 Sim</button>
+        <button type="button" data-v="nao">Não</button>
+      </div>
+      <p class="op-nome">Bip antes de falar</p>
+      <div class="op-grupo" data-op="bip">
+        <button type="button" data-v="sim">🔔 Sim</button>
+        <button type="button" data-v="nao">Não</button>
+      </div>
+      <p class="op-nome">Zoom nas curvas</p>
+      <div class="op-grupo" data-op="zoom">
+        <button type="button" data-v="perto">🔍 Bem perto</button>
+        <button type="button" data-v="normal">Normal</button>
+      </div>
+      <button type="button" class="btn-rota btn-chegada" id="btnEnviarChegada">📲 Enviar minha chegada (WhatsApp)</button>
+      <button type="button" class="btn-pequeno op-fechar" id="btnFecharOpcoes">Fechar</button>
+    </div>
   </div>
 
   <aside class="painel" id="painel">
@@ -2132,15 +2179,39 @@ body { font-size: 16px; }
 
   var SETAS = { 0: "↰", 1: "↱", 2: "↰", 3: "↱", 4: "↖", 5: "↗", 6: "↑", 7: "⟳", 8: "⟳", 9: "↶", 10: "⚑", 11: "↑", 12: "↖", 13: "↗" };
 
-  function falar(texto) {
-    if (!nav.voz || !window.speechSynthesis) return;
+  /* ---------- Opções de navegação (guardadas no aparelho) ---------- */
+  var OPC_PADRAO = { voz: "tudo", vibrar: "sim", bip: "nao", zoom: "perto" };
+  var opc = (function () {
+    var o = {}; try { o = JSON.parse(ler("rotaCaminhaoSP.navOpcoes") || "{}") || {}; } catch (e) {}
+    return Object.assign({}, OPC_PADRAO, o);
+  })();
+  nav.voz = opc.voz !== "nao";
+
+  // Bip curto (som gerado no próprio celular, sem baixar nada)
+  var somCtx = null;
+  function bip() {
+    try {
+      somCtx = somCtx || new (window.AudioContext || window.webkitAudioContext)();
+      var o = somCtx.createOscillator(), g = somCtx.createGain(), t = somCtx.currentTime;
+      o.type = "sine"; o.frequency.value = 880;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.4, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+      o.connect(g); g.connect(somCtx.destination); o.start(t); o.stop(t + 0.2);
+    } catch (e) {}
+  }
+  function vibrar(padrao) { if (opc.vibrar === "sim" && navigator.vibrate) { try { navigator.vibrate(padrao); } catch (e) {} } }
+
+  // tipo: "manobra" (curvas, recálculo, chegada) ou "aviso" (faixa de ônibus, mensagens gerais)
+  function falar(texto, tipo) {
+    if (opc.voz === "nao" || !window.speechSynthesis) return;
+    if (opc.voz === "conversoes" && tipo !== "manobra") return;
     try {
       var u = new SpeechSynthesisUtterance(texto);
       u.lang = "pt-BR"; u.rate = 1;
       var vozes = speechSynthesis.getVoices().filter(function (v) { return /^pt(-|_)BR/i.test(v.lang); });
       if (vozes.length) u.voice = vozes[0];
       speechSynthesis.cancel();
-      speechSynthesis.speak(u);
+      if (opc.bip === "sim") { bip(); setTimeout(function () { speechSynthesis.speak(u); }, 250); }
+      else speechSynthesis.speak(u);
     } catch (e) {}
   }
 
@@ -2201,9 +2272,10 @@ body { font-size: 16px; }
     document.getElementById("navDist").textContent = km(dist);
     elTexto.textContent = prox.instruction;
     var f = nav.falados, frase = prox.instruction.charAt(0).toLowerCase() + prox.instruction.slice(1);
-    if (dist <= 40 && !f[k + "c"]) { f[k + "c"] = f[k + "b"] = f[k + "a"] = true; falar("Agora, " + frase); }
-    else if (dist <= 200 && dist > 40 && !f[k + "b"]) { f[k + "b"] = f[k + "a"] = true; falar("Em " + arredondar(dist) + ", " + frase); }
-    else if (dist <= 600 && dist > 200 && !f[k + "a"]) { f[k + "a"] = true; falar("Em " + arredondar(dist) + ", " + frase); }
+    var ehCurva = prox.type !== 10 && prox.type !== 11;
+    if (dist <= 40 && !f[k + "c"]) { f[k + "c"] = f[k + "b"] = f[k + "a"] = true; falar("Agora, " + frase, "manobra"); if (ehCurva) vibrar([250, 120, 250]); }
+    else if (dist <= 200 && dist > 40 && !f[k + "b"]) { f[k + "b"] = f[k + "a"] = true; falar("Em " + arredondar(dist) + ", " + frase, "manobra"); if (ehCurva) vibrar(200); }
+    else if (dist <= 600 && dist > 200 && !f[k + "a"]) { f[k + "a"] = true; falar("Em " + arredondar(dist) + ", " + frase, "manobra"); }
     // Passo de "chegada" (tipo 10) não é conversão
     return { dist: prox.type === 10 || prox.type === 11 ? null : dist, k: k };
   }
@@ -2298,6 +2370,7 @@ body { font-size: 16px; }
   function zoomDesejado(distManobra, tipo) {
     var v = giro.velocidade, base = v > 16 ? 15.5 : v > 8 ? 16.25 : 17;
     if (distManobra === null) return base;
+    if (opc.zoom === "normal") return distManobra <= 300 ? Math.min(18, base + 1.25) : base;   // jeito antigo, mais aberto
     var bif = !!TIPOS_BIFURCACAO[tipo];
     var inicio = distanciaZoomManobra(tipo);
     if (distManobra > inicio) return base;
@@ -2451,7 +2524,7 @@ body { font-size: 16px; }
     if (nav.recalculando || Date.now() - nav.ultimaRecalc < 10000) return;
     nav.recalculando = true;
     mostrarAlertaNav(motivo, "info");
-    falar(/saiu da rota/.test(motivo) ? "Recalculando" : motivo.replace("…", ""));
+    falar(/saiu da rota/.test(motivo) ? "Recalculando" : motivo.replace("…", ""), "manobra");
     var orig = { lon: lon, lat: lat, nome: "Posição atual" };
     // Mesmo caminhão, mesmas restrições; reaproveita os desvios já descobertos para ser mais rápido
     calcularRota(orig, estado.B, momentoAtual(), null, {
@@ -2466,7 +2539,7 @@ body { font-size: 16px; }
       limparDestaque();
       if (res.problemas.length) {
         mostrarAlertaNav("Atenção: não achei caminho livre. A rota passa por " + res.problemas.map(function (p) { return CAMADAS[p.tipo].curto; }).join(", ") + ", proibida agora.", "alerta");
-        falar("Atenção: não achei caminho livre de restrições.");
+        falar("Atenção: não achei caminho livre de restrições.", "manobra");
       } else mostrarAlertaNav("");
     }).catch(function (e) {
       mostrarAlertaNav(e.message + " Siga as placas.", "alerta");
@@ -2497,7 +2570,8 @@ body { font-size: 16px; }
     var frase = aprox ? "Você chegou perto do destino. Número aproximado, confira na chegada." : "Você chegou ao destino.";
     document.getElementById("navTexto").textContent = frase;
     document.getElementById("navRestante").textContent = "0 m";
-    falar(frase);
+    falar(frase, "manobra");
+    vibrar([300, 150, 300, 150, 300]);
   }
 
   function iniciarNavegacao() {
@@ -2569,12 +2643,42 @@ body { font-size: 16px; }
   setInterval(function () {
     if (nav.ativo && !nav.seguindo && Date.now() - giro.ultimoToque > 8000) retomarSeguir();
   }, 1000);
+  /* Janela de opções de navegação */
+  function mostrarOpcoes() {
+    [].forEach.call(document.querySelectorAll("#navOpcoes .op-grupo"), function (g) {
+      var chave = g.getAttribute("data-op");
+      [].forEach.call(g.querySelectorAll("button"), function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-v") === opc[chave] ? "true" : "false"); });
+    });
+  }
+  [].forEach.call(document.querySelectorAll("#navOpcoes .op-grupo"), function (g) {
+    g.addEventListener("click", function (ev) {
+      var b = ev.target.closest("button"); if (!b) return;
+      var chave = g.getAttribute("data-op"); opc[chave] = b.getAttribute("data-v");
+      gravar("rotaCaminhaoSP.navOpcoes", JSON.stringify(opc));
+      nav.voz = opc.voz !== "nao";
+      if (chave === "voz" && opc.voz === "nao" && window.speechSynthesis) speechSynthesis.cancel();
+      if (chave === "vibrar" && opc.vibrar === "sim") vibrar(200);          // mostra como é a vibração
+      if (chave === "bip" && opc.bip === "sim") bip();                      // mostra como é o bip
+      if (chave === "zoom" && nav.ultimaPos) { giro.zoomAtual = zoomDesejado(null, null); seguirCaminhao(nav.ultimaPos.lat, nav.ultimaPos.lon); }
+      mostrarOpcoes();
+    });
+  });
   document.getElementById("btnVoz").addEventListener("click", function () {
-    nav.voz = !nav.voz;
-    this.setAttribute("aria-pressed", nav.voz ? "true" : "false");
-    this.textContent = nav.voz ? "🔊" : "🔇";
-    this.setAttribute("aria-label", nav.voz ? "Voz ligada. Toque para desligar" : "Voz desligada. Toque para ligar");
-    if (!nav.voz && window.speechSynthesis) speechSynthesis.cancel();
+    mostrarOpcoes();
+    document.getElementById("navOpcoes").hidden = false;
+  });
+  document.getElementById("btnFecharOpcoes").addEventListener("click", function () { document.getElementById("navOpcoes").hidden = true; });
+  document.getElementById("navOpcoes").addEventListener("click", function (ev) { if (ev.target === this) this.hidden = true; });
+
+  /* Enviar a hora de chegada para o cliente (WhatsApp ou outro app que o motorista escolher) */
+  document.getElementById("btnEnviarChegada").addEventListener("click", function () {
+    var chegada = document.getElementById("navChegada").textContent, falta = document.getElementById("navRestante").textContent;
+    var destino = estado.B && estado.B.nome ? estado.B.nome.split(" – ")[0] : "o destino";
+    var texto = "Olá! Estou a caminho de " + destino + ". Chegada prevista por volta das " + chegada + " (faltam " + falta + ", sem contar o trânsito).";
+    if (nav.ultimaPos) texto += "\nMinha localização agora: https://maps.google.com/?q=" + nav.ultimaPos.lat.toFixed(5) + "," + nav.ultimaPos.lon.toFixed(5);
+    texto += "\n(enviado pelo Rota Liberada)";
+    if (navigator.share) { navigator.share({ text: texto }).catch(function () {}); return; }
+    window.open("https://wa.me/?text=" + encodeURIComponent(texto), "_blank");
   });
   setInterval(vigiarRestricoes, 60000);
 
