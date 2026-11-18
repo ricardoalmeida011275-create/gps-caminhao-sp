@@ -3,54 +3,55 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Como ser testador – Rota Liberada</title>
-<meta name="description" content="Passo a passo para participar do teste do app Rota Liberada na Google Play.">
-<meta property="og:title" content="Seja testador do Rota Liberada">
-<meta property="og:description" content="Passo a passo simples para entrar no teste do GPS de caminhão na Google Play.">
+<title>Como instalar – Rota Liberada</title>
+<meta name="description" content="Passo a passo simples para instalar o app Rota Liberada no celular.">
+<meta property="og:title" content="Instale o Rota Liberada">
+<meta property="og:description" content="GPS de caminhão que respeita as restrições. Veja como instalar em 5 passos.">
 <meta property="og:image" content="https://ricardoalmeida011275-create.github.io/gps-caminhao-sp/icones/icone-512.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icones/icone-192.png">
 <style>
-:root { --fundo: #f4f5f2; --papel: #fff; --texto: #1d2226; --suave: #5b6670; --linha: #d6dad6; --amarelo: #ffcf33; --azul: #0b5cad; --verde: #01875f; --zap: #075e54; }
+:root { --fundo: #f4f5f2; --papel: #fff; --texto: #1d2226; --suave: #5b6670; --linha: #d6dad6; --amarelo: #ffcf33; --azul: #0b5cad; --zap: #075e54; }
 @media (prefers-color-scheme: dark) { :root { --fundo: #171b1e; --papel: #20262a; --texto: #e9ecea; --suave: #a3adb2; --linha: #343c41; --azul: #7db7ff; } }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--fundo); color: var(--texto); font: 17px/1.5 "Segoe UI", Roboto, Arial, sans-serif; }
+body { margin: 0; background: var(--fundo); color: var(--texto); font: 18px/1.5 "Segoe UI", Roboto, Arial, sans-serif; }
 main { max-width: 560px; margin: 0 auto; padding: 18px 16px 48px; }
-header { text-align: center; margin-bottom: 14px; }
+header { text-align: center; margin-bottom: 10px; }
 header img { width: 72px; height: 72px; border-radius: 18px; }
-h1 { font-size: 25px; margin: 8px 0 2px; line-height: 1.2; }
+h1 { font-size: 26px; margin: 8px 0 2px; line-height: 1.2; }
 .sub { color: var(--suave); margin: 0; font-size: 15px; }
-.parte { background: var(--amarelo); color: #1d2226; font-weight: 800; border-radius: 10px; padding: 10px 14px; margin: 26px 0 12px; font-size: 18px; }
-.passo { background: var(--papel); border: 1px solid var(--linha); border-radius: 14px; padding: 14px; margin: 12px 0; }
-.passo h2 { font-size: 19px; margin: 0 0 6px; display: flex; gap: 10px; align-items: center; }
-.num { flex: none; width: 32px; height: 32px; border-radius: 50%; background: var(--azul); color: #fff; display: grid; place-items: center; font-size: 17px; }
+.passo { background: var(--papel); border: 1px solid var(--linha); border-radius: 14px; padding: 14px; margin: 14px 0; }
+.passo h2 { font-size: 20px; margin: 0 0 4px; display: flex; gap: 10px; align-items: center; line-height: 1.25; }
+.num { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--azul); color: #fff; display: grid; place-items: center; font-size: 18px; }
 .passo p { margin: 4px 0; }
 /* Desenho do celular */
 .cel { margin: 12px auto 4px; width: 230px; border: 8px solid #1d2226; border-radius: 26px; background: #fff; color: #1d2226; overflow: hidden; font-size: 13px; box-shadow: 0 6px 18px rgba(0,0,0,.18); }
-.cel .topo { height: 34px; display: flex; align-items: center; gap: 8px; padding: 0 10px; font-weight: 700; color: #fff; }
-.cel .tela { padding: 10px; min-height: 150px; position: relative; }
+.cel .topo { height: 36px; display: flex; align-items: center; gap: 8px; padding: 0 10px; font-weight: 700; color: #fff; }
+.cel .tela { padding: 10px; min-height: 160px; position: relative; }
 .zap .topo { background: var(--zap); }
 .zap .tela { background: #ece5dd; min-height: 185px; }
 .balao { background: #fff; border-radius: 8px; padding: 8px; box-shadow: 0 1px 1px rgba(0,0,0,.15); max-width: 92%; }
 .balao a { color: #0b5cad; word-break: break-all; }
-.menu { position: absolute; right: 10px; top: 54px; background: #fff; border-radius: 6px; box-shadow: 0 4px 14px rgba(0,0,0,.3); padding: 4px 0; min-width: 130px; }
-.menu div { padding: 7px 12px; }
+.menu { position: absolute; right: 8px; top: 8px; background: #fff; border-radius: 6px; box-shadow: 0 4px 14px rgba(0,0,0,.3); padding: 4px 0; min-width: 150px; }
+.menu div { padding: 6px 12px; }
 .menu .marcado { background: #fff3c4; font-weight: 800; }
+.menu .apagado { color: #9aa3a8; }
 .chrome .topo { background: #f1f3f4; color: #1d2226; }
 .barra { flex: 1; background: #fff; border: 1px solid #ccc; border-radius: 16px; padding: 4px 10px; font-weight: 400; color: #5b6670; font-size: 12px; overflow: hidden; white-space: nowrap; }
-.barra.cheia { color: #1d2226; border-color: #0b5cad; border-width: 2px; }
-.pontos { font-size: 18px; line-height: 1; }
-.play .topo { background: #fff; color: #1d2226; border-bottom: 1px solid #e3e3e3; }
-.foto { margin-left: auto; width: 24px; height: 24px; border-radius: 50%; background: #7b61ff; color: #fff; display: grid; place-items: center; font-size: 12px; }
-.foto.destaque { outline: 3px solid #ff3b30; outline-offset: 2px; }
-.btn-g { display: block; text-align: center; background: var(--verde); color: #fff; border-radius: 8px; padding: 9px; font-weight: 700; margin-top: 10px; }
-.btn-g.azul { background: #1a73e8; }
-.destaque-borda { outline: 3px solid #ff3b30; outline-offset: 3px; }
-.cinza { color: #5b6670; font-size: 12px; }
-.email { background: #e8f0fe; border-radius: 8px; padding: 8px; margin-top: 8px; font-weight: 700; }
-.app { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 14px; font-weight: 700; }
-.app img { width: 56px; height: 56px; border-radius: 14px; }
-.importante { background: var(--papel); border: 3px solid var(--amarelo); border-radius: 14px; padding: 14px; margin-top: 22px; }
-.importante h2 { margin: 0 0 6px; font-size: 19px; }
+.barra.cheia { color: #1d2226; border: 2px solid #0b5cad; }
+.pontos { font-size: 20px; line-height: 1; padding: 0 4px; border-radius: 50%; }
+.pontos.destaque { outline: 3px solid #ff3b30; outline-offset: 1px; }
+.rolar { text-align: center; color: #5b6670; font-size: 12px; margin: 2px 0; }
+.janela { position: absolute; left: 10px; right: 10px; top: 30px; background: #fff; border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,.35); padding: 12px; }
+.janela .titulo { font-weight: 800; margin-bottom: 8px; }
+.janela .botoes { display: flex; justify-content: flex-end; gap: 14px; margin-top: 10px; font-weight: 800; color: #1a73e8; }
+.janela .botoes .marcado { outline: 3px solid #ff3b30; outline-offset: 3px; border-radius: 4px; }
+.fundo-app { background: #e8eef6; }
+.icones { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding-top: 8px; }
+.icones span { aspect-ratio: 1; border-radius: 12px; background: #cfd8e3; }
+.icones .meu { background: none; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; font-weight: 700; aspect-ratio: auto; }
+.icones .meu img { width: 100%; border-radius: 12px; outline: 3px solid #ff3b30; outline-offset: 1px; }
+.dica { background: var(--papel); border: 3px solid var(--amarelo); border-radius: 14px; padding: 14px; margin-top: 20px; }
+.dica h2 { margin: 0 0 6px; font-size: 19px; }
 ul { padding-left: 22px; margin: 6px 0; }
 .rodape { color: var(--suave); font-size: 13px; text-align: center; margin-top: 22px; }
 </style>
@@ -59,112 +60,96 @@ ul { padding-left: 22px; margin: 6px 0; }
 <main>
 <header>
   <img src="icones/icone-192.png" alt="Ícone do Rota Liberada">
-  <h1>Seja testador do Rota Liberada</h1>
-  <p class="sub">GPS de caminhão que respeita as restrições. Leva 5 minutos e ajuda o app a chegar na Google Play.</p>
+  <h1>Instale o Rota Liberada</h1>
+  <p class="sub">GPS de caminhão que respeita as restrições. São só 5 passos.</p>
 </header>
 
-<div class="parte">PARTE 1 · Agora: mande o seu Gmail</div>
-
 <section class="passo">
-  <h2><span class="num">1</span> Descubra o seu Gmail da Play Store</h2>
-  <p>Abra a <strong>Play Store</strong> e toque na <strong>sua foto</strong>, no canto de cima à direita. O e-mail aparece logo embaixo do seu nome.</p>
-  <div class="cel play" aria-hidden="true">
-    <div class="topo">▶ Google Play <span class="foto destaque">R</span></div>
-    <div class="tela">
-      <div style="text-align:center;margin-top:6px"><span class="foto" style="margin:0 auto;width:40px;height:40px;font-size:18px">R</span></div>
-      <div style="text-align:center;font-weight:700;margin-top:6px">Seu Nome</div>
-      <div class="email" style="text-align:center">seunome@gmail.com</div>
-      <p class="cinza" style="text-align:center">← é este e-mail que você manda</p>
-    </div>
-  </div>
-</section>
-
-<section class="passo">
-  <h2><span class="num">2</span> Mande o e-mail para o Ricardo</h2>
-  <p>Pelo WhatsApp, mande: <strong>seu nome + esse Gmail</strong>.</p>
-  <p>⚠️ Precisa ser <strong>celular Android</strong> (iPhone não participa deste teste).</p>
-</section>
-
-<div class="parte">PARTE 2 · Quando chegar o link do teste</div>
-
-<section class="passo">
-  <h2><span class="num">3</span> Copie o link (não abra pelo WhatsApp)</h2>
+  <h2><span class="num">1</span> Copie o link</h2>
   <p><strong>Segure o dedo</strong> em cima do link e toque em <strong>"Copiar"</strong>.</p>
   <div class="cel zap" aria-hidden="true">
     <div class="topo">← Ricardo</div>
     <div class="tela">
-      <div class="balao">Link do teste do Rota Liberada:<br><a>https://play.google.com/apps/testing/…</a></div>
-      <div class="menu" style="top:78px"><div>Abrir</div><div class="marcado">Copiar</div><div>Compartilhar</div></div>
+      <div class="balao">Instale o Rota Liberada:<br><a>https://ricardoalmeida011275-create.github.io/gps-caminhao-sp/</a></div>
+      <div class="menu" style="top:98px"><div>Abrir</div><div class="marcado">Copiar</div><div>Compartilhar</div></div>
     </div>
   </div>
-  <p class="cinza">Se abrir sem querer dentro do WhatsApp: toque nos <strong>3 pontinhos (⋮)</strong> no canto de cima e escolha <strong>"Abrir no Chrome"</strong>.</p>
 </section>
 
 <section class="passo">
-  <h2><span class="num">4</span> Cole no Chrome</h2>
-  <p>Abra o <strong>Chrome</strong>, toque na <strong>barra de endereço</strong> lá em cima, <strong>segure o dedo</strong> e toque em <strong>"Colar e acessar"</strong>.</p>
+  <h2><span class="num">2</span> Cole no Chrome</h2>
+  <p>Abra o <strong>Chrome</strong>, toque na <strong>barra lá em cima</strong>, segure o dedo e toque em <strong>"Colar e acessar"</strong>.</p>
   <div class="cel chrome" aria-hidden="true">
-    <div class="topo"><span class="barra cheia">play.google.com/apps/testing/…</span><span class="pontos">⋮</span></div>
+    <div class="topo"><span class="barra cheia">ricardoalmeida011275-create.github…</span><span class="pontos">⋮</span></div>
     <div class="tela">
-      <div class="menu" style="top:6px;left:10px;right:auto"><div class="marcado">Colar e acessar</div><div>Colar</div></div>
+      <div class="menu" style="left:10px;right:auto"><div class="marcado">Colar e acessar</div><div>Colar</div></div>
     </div>
   </div>
 </section>
 
 <section class="passo">
-  <h2><span class="num">5</span> Confira se é o Gmail certo</h2>
-  <p>Na página que abrir, toque na <strong>foto no canto de cima</strong>. Precisa estar no <strong>mesmo Gmail que você mandou</strong>. Se for outro, troque para ele ali mesmo.</p>
-  <div class="cel play" aria-hidden="true">
-    <div class="topo">▶ Google Play <span class="foto destaque">R</span></div>
-    <div class="tela">
-      <div class="menu" style="top:6px"><div class="cinza">Conta em uso:</div><div class="marcado">seunome@gmail.com ✓</div><div>outra@gmail.com</div></div>
+  <h2><span class="num">3</span> Toque nos 3 pontinhos ⋮</h2>
+  <p>Com o app aberto no Chrome, toque nos <strong>3 pontinhos</strong> no <strong>canto de cima, à direita</strong>.</p>
+  <div class="cel chrome" aria-hidden="true">
+    <div class="topo"><span class="barra">ricardoalmeida011275-create.github…</span><span class="pontos destaque">⋮</span></div>
+    <div class="tela fundo-app">
+      <div style="font-weight:800;font-size:15px">Rota Liberada</div>
+      <div style="color:#5b6670;font-size:11px">GPS de caminhão que respeita as restrições</div>
     </div>
   </div>
 </section>
 
 <section class="passo">
-  <h2><span class="num">6</span> Toque em "Tornar-se testador"</h2>
-  <div class="cel play" aria-hidden="true">
-    <div class="topo">▶ Google Play</div>
-    <div class="tela">
-      <div style="font-weight:700">Rota Liberada</div>
-      <p class="cinza">Participe do programa de testes deste app.</p>
-      <span class="btn-g azul destaque-borda">TORNAR-SE TESTADOR</span>
+  <h2><span class="num">4</span> Role até embaixo e toque em "Adicionar à tela inicial"</h2>
+  <p>No menu, <strong>role para baixo</strong> até achar <strong>"Adicionar à tela inicial"</strong> (em alguns celulares aparece <strong>"Instalar app"</strong>). Toque nele.</p>
+  <div class="cel chrome" aria-hidden="true">
+    <div class="topo"><span class="barra">ricardoalmeida011275-create.github…</span><span class="pontos">⋮</span></div>
+    <div class="tela" style="min-height:215px">
+      <div class="menu" style="top:4px">
+        <div class="apagado">Nova guia</div>
+        <div class="apagado">Histórico</div>
+        <div class="rolar">⬇ role para baixo ⬇</div>
+        <div class="apagado">Compartilhar</div>
+        <div class="marcado">Adicionar à tela inicial</div>
+        <div class="apagado">Configurações</div>
+      </div>
     </div>
   </div>
-  <p>Vai aparecer: <strong>"Você agora é um testador"</strong>.</p>
+  <p>Vai aparecer uma janela: escolha <strong>"Instalar"</strong>. Se aparecer <strong>"Criar atalho"</strong>, pode tocar também, funciona igual.</p>
+  <div class="cel chrome" aria-hidden="true">
+    <div class="topo"><span class="barra">ricardoalmeida011275-create.github…</span><span class="pontos">⋮</span></div>
+    <div class="tela fundo-app">
+      <div class="janela">
+        <div class="titulo">Adicionar à tela inicial</div>
+        <div style="display:flex;gap:8px;align-items:center"><img src="icones/icone-192.png" alt="" style="width:30px;height:30px;border-radius:8px">Rota Liberada</div>
+        <div class="botoes"><span>Cancelar</span><span class="marcado">Instalar</span></div>
+      </div>
+    </div>
+  </div>
 </section>
 
 <section class="passo">
-  <h2><span class="num">7</span> Instale pela Play Store</h2>
-  <p>Na mesma página, toque em <strong>"baixar no Google Play"</strong> e depois em <strong>"Instalar"</strong>.</p>
-  <div class="cel play" aria-hidden="true">
-    <div class="topo">▶ Google Play</div>
-    <div class="tela">
-      <div style="display:flex;gap:10px;align-items:center"><img src="icones/icone-192.png" alt="" style="width:44px;height:44px;border-radius:10px"><div><strong>Rota Liberada</strong><div class="cinza">Versão de teste</div></div></div>
-      <span class="btn-g destaque-borda">Instalar</span>
+  <h2><span class="num">5</span> Pronto! Abra pelo ícone</h2>
+  <p>O ícone do <strong>Rota Liberada</strong> aparece na tela do celular. Abra sempre por ele.</p>
+  <div class="cel" aria-hidden="true">
+    <div class="tela fundo-app">
+      <div class="icones"><span></span><span></span><span></span><span></span><span></span><span class="meu"><img src="icones/icone-192.png" alt="">Rota Liberada</span><span></span><span></span></div>
     </div>
   </div>
 </section>
 
-<section class="passo">
-  <h2><span class="num">8</span> Abra e use</h2>
-  <p>O ícone aparece na tela inicial. Abra, cadastre o seu veículo (<strong>caminhão ou carro</strong>) e trace uma rota quando for sair.</p>
-  <div class="app"><img src="icones/icone-192.png" alt="">Rota Liberada</div>
-</section>
-
-<section class="importante">
-  <h2>⚠️ Importante</h2>
+<section class="dica">
+  <h2>💡 Bom saber</h2>
   <ul>
-    <li><strong>Não desinstale</strong> e <strong>não saia do teste</strong> por <strong>15 dias</strong>. A Google conta esses dias.</li>
-    <li>Não precisa usar todo dia: <strong>use quando for sair</strong> com o veículo.</li>
-    <li>Quando terminar o passo 7, <strong>avise o Ricardo</strong>: "Instalei".</li>
+    <li><strong>Não precisa criar conta nem senha.</strong></li>
+    <li>Na primeira vez, cadastre o seu veículo (<strong>caminhão ou carro</strong>) e trace uma rota.</li>
     <li>Achou algo estranho ou tem ideia? Mande pelo WhatsApp, com print (com o veículo parado).</li>
     <li>Não mexa no celular dirigindo. O app é ferramenta de apoio: respeite sempre as placas.</li>
+    <li>Em breve o app vai para a <strong>Google Play</strong>. Para participar do teste, mande ao Ricardo o seu <strong>e-mail do Gmail</strong>.</li>
   </ul>
 </section>
 
-<p class="rodape">Rota Liberada · <a href="privacidade.html">Política de privacidade</a> · contato@topvtrine.com</p>
+<p class="rodape">Rota Liberada · <a href="./">Abrir o app</a> · <a href="privacidade.html">Política de privacidade</a> · contato@topvtrine.com</p>
 </main>
 </body>
 </html>
