@@ -203,7 +203,11 @@ body.navegando .btn-centro { left: max(12px, env(safe-area-inset-left, 0px)); ri
 .amigo-info p { margin: 4px 0; }
 .amigo-info ul { margin: 4px 0 6px; padding-left: 4px; list-style: none; }
 .amigo-info li { margin: 3px 0; }
-body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+/* Na navegação, a bússola fica no alto à direita, ao lado do cartão azul (sai de cima das ruas) */
+body.navegando .btn-bussola { top: 10px; bottom: auto; right: max(10px, env(safe-area-inset-right, 0px)); }
+body.navegando .nav-cima { right: calc(max(10px, env(safe-area-inset-right, 0px)) + 66px); }
+/* Crédito do mapa (obrigatório pela licença do OpenStreetMap): pequeno e discreto na navegação */
+body.navegando .leaflet-control-attribution { font-size: 9px; opacity: .6; padding: 0 4px; }
 .troca { animation: aparecer .3s ease-out; }
 @keyframes descer { from { opacity: 0; transform: translateY(-10px); } }
 @keyframes subir { from { opacity: 0; transform: translateY(10px); } }
@@ -858,6 +862,7 @@ body { font-size: 16px; }
     rotate: true, bearing: 0, touchRotate: false, shiftKeyRotate: false, rotateControl: false
   }).setView([-23.56, -46.64], 12);
   if (location.hostname === "localhost") window._mapa = mapa; // só para testes no computador
+  mapa.attributionControl.setPrefix(false); // tira o "Leaflet"; o crédito do OpenStreetMap continua (é obrigatório)
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
     attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">colaboradores do OpenStreetMap</a>'
