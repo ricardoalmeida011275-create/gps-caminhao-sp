@@ -3,18 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Rota Caminhão SP</title>
+<title>Rota Liberada – GPS de caminhão</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="description" content="GPS para caminhão em São Paulo: traça a rota respeitando ZMRC, rodízio e avenidas proibidas por horário.">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Rota Caminhão SP">
-<meta property="og:title" content="Rota Caminhão SP - GPS para caminhão">
+<meta property="og:site_name" content="Rota Liberada">
+<meta property="og:title" content="Rota Liberada - GPS de caminhão que respeita as restrições">
 <meta property="og:description" content="Rota que respeita as restrições da CET em São Paulo (ZMRC, rodízio e horários). Versão de teste.">
 <meta property="og:url" content="https://ricardoalmeida011275-create.github.io/gps-caminhao-sp/">
 <meta property="og:image" content="https://ricardoalmeida011275-create.github.io/gps-caminhao-sp/icones/icone-512.png">
 <meta property="og:image:width" content="512">
 <meta property="og:image:height" content="512">
-<meta property="og:image:alt" content="Ícone do app Rota Caminhão SP">
+<meta property="og:image:alt" content="Ícone do app Rota Liberada">
 <meta property="og:locale" content="pt_BR">
 <meta name="twitter:card" content="summary">
 <meta name="theme-color" content="#0b1a33">
@@ -22,7 +22,7 @@
 <link rel="apple-touch-icon" href="icones/apple-icone.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="GPS Caminhão">
+<meta name="apple-mobile-web-app-title" content="Rota Liberada">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -447,7 +447,7 @@ body { font-size: 16px; }
 
   <aside class="painel" id="painel">
     <div class="painel-topo">
-      <h1 class="marca">Rota Caminhão SP <span class="selo">Teste piloto</span><small>Rota que respeita as restrições</small></h1>
+      <h1 class="marca">Rota Liberada <span class="selo">Teste piloto</span><small>GPS de caminhão que respeita as restrições</small></h1>
       <button class="btn-painel" id="btnPainel" type="button" aria-expanded="true" aria-controls="painelCorpo">Esconder</button>
     </div>
 
@@ -570,9 +570,11 @@ body { font-size: 16px; }
           <li>Faixas e corredores de ônibus: <a href="https://geosampa.prefeitura.sp.gov.br" target="_blank" rel="noopener">GeoSampa</a> (faixas da CET/Prefeitura e corredores da SPTrans, baixados em 17/11/2026). Regra: Código de Trânsito, art. 184.</li>
           <li>Zonas residenciais (ZER): <a href="https://geosampa.prefeitura.sp.gov.br" target="_blank" rel="noopener">GeoSampa</a>, zoneamento da Lei 18.081/2024 (baixado em 17/11/2026). Regra da ZERC: <a href="https://www.cetsp.com.br/consultas/caminhoes/locais-com-restricao-ao-caminhao/zona-especial-de-restricao-de-circulacao-zerc.aspx" target="_blank" rel="noopener">CET</a>, Decreto 56.920/16 e Portaria 137/18, art. 3º.</li>
           <li>Rodízio por placa: <a href="https://www.cetsp.com.br/consultas/rodizio-municipal.aspx" target="_blank" rel="noopener">CET, Rodízio Municipal</a>; liberação do VUC cadastrado: <a href="https://www.cetsp.com.br/media/808826/Portaria-DSV-G-09_19-cadastro-Rodizio.pdf" target="_blank" rel="noopener">Portaria DSV.G 09/19</a>.</li>
-          <li>Cálculo da rota e busca de endereços: <a href="https://openrouteservice.org" target="_blank" rel="noopener">OpenRouteService</a> (HeiGIT), com mapas do OpenStreetMap.</li>
+          <li>Cálculo da rota: <a href="https://openrouteservice.org" target="_blank" rel="noopener">OpenRouteService</a> (HeiGIT), com mapas do OpenStreetMap.</li>
+          <li>Busca de endereços: TomTom; reservas: OpenRouteService e OpenStreetMap (Nominatim); CEP: <a href="https://viacep.com.br" target="_blank" rel="noopener">ViaCEP</a>.</li>
           <li>Mapa de fundo: © colaboradores do OpenStreetMap.</li>
         </ol>
+        <p class="nota"><a href="privacidade.html">Política de privacidade e aviso de uso</a> · Rota Liberada, mantido por Ricardo Almeida · <a href="mailto:contato@topvtrine.com">contato@topvtrine.com</a></p>
       </section>
 
       <section aria-labelledby="tituloAparencia">
@@ -1021,7 +1023,7 @@ body { font-size: 16px; }
   // O link não leva mais a chave: as rotas passam pela central (gps.topvtrine.com), que guarda a chave escondida.
   function linkConvite() { return location.origin + location.pathname; }
   function textoConvite() {
-    return "Fala! Estou fazendo um teste piloto de um aplicativo de GPS para caminhão em São Paulo. " +
+    return "Fala! Estou fazendo um teste piloto do Rota Liberada, um aplicativo de GPS para caminhão em São Paulo. " +
       "Ele traça a rota respeitando as restrições da CET (ZMRC, rodízio e avenidas proibidas por horário), de acordo com o tipo de veículo.\n\n" +
       "É uma versão de teste: ainda vai melhorar bastante, inclusive o visual. Se der certo, a ideia é lançar no mercado, então a sua opinião vale muito.\n\n" +
       "Como usar:\n" +
@@ -1035,7 +1037,7 @@ body { font-size: 16px; }
   document.getElementById("btnConvidar").addEventListener("click", function () {
     var texto = textoConvite();
     if (navigator.share) {
-      navigator.share({ title: "Teste do Rota Caminhão SP", text: texto }).catch(function () {});
+      navigator.share({ title: "Teste do Rota Liberada", text: texto }).catch(function () {});
       return;
     }
     var area = document.getElementById("txtConvite");
@@ -2599,7 +2601,7 @@ body { font-size: 16px; }
 #dicaIphone .caixa b{color:#1565c0}
 #dicaIphone button{margin-top:12px;width:100%;padding:12px;border:0;border-radius:10px;background:#1565c0;color:#fff;font:600 16px Barlow,system-ui,sans-serif}
 </style>
-<button id="instalarApp" type="button" aria-label="Instalar o GPS Caminhão">
+<button id="instalarApp" type="button" aria-label="Instalar o Rota Liberada">
   <img src="icones/icone-192.png" alt="">📲 Instalar o GPS<span class="fechar" aria-label="Fechar">✕</span>
 </button>
 <div id="dicaIphone" role="dialog" aria-label="Como instalar no iPhone">

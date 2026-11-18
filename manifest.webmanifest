@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "Rota Caminhão SP",
-  "short_name": "GPS Caminhão",
-  "description": "GPS para caminhão em São Paulo que respeita as restrições de circulação.",
+  "name": "Rota Liberada – GPS de caminhão",
+  "short_name": "Rota Liberada",
+  "description": "GPS de caminhão que respeita as restrições de circulação (ZMRC, rodízio e horários) em São Paulo.",
   "lang": "pt-BR",
   "start_url": "./",
   "scope": "./",
