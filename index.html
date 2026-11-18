@@ -181,7 +181,28 @@ body.navegando .leaflet-bottom { bottom: calc(92px + env(safe-area-inset-bottom,
   min-height: 48px; border: 1px solid var(--linha); background: var(--papel); color: var(--asfalto); border-radius: 999px; padding: 10px 18px;
   font-weight: 700; font-size: 15px; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.22);
 }
-body.navegando .btn-centro { left: max(12px, env(safe-area-inset-left, 0px)); right: auto; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+body.navegando .btn-centro { left: max(12px, env(safe-area-inset-left, 0px)); right: auto; bottom: calc(172px + env(safe-area-inset-bottom, 0px)); }
+/* Velocímetro (só na navegação) */
+.velocimetro {
+  position: absolute; z-index: 1000; left: max(12px, env(safe-area-inset-left, 0px)); bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  width: 66px; height: 66px; border-radius: 50%; background: var(--papel); color: var(--asfalto); border: 3px solid var(--asfalto);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(0,0,0,.25); pointer-events: none;
+}
+.velocimetro[hidden] { display: none; }
+.velocimetro strong { font-family: var(--f-titulo); font-weight: 700; font-size: 26px; line-height: 1; font-variant-numeric: tabular-nums; }
+.velocimetro span { font-size: 11px; color: var(--suave); font-weight: 600; }
+/* Amigo Caminhoneiro (em breve) */
+.amigo { margin-top: 12px; }
+.btn-amigo {
+  width: 100%; display: flex; align-items: center; gap: 8px; justify-content: space-between; cursor: pointer;
+  border: 2px dashed var(--botao-borda, #0b5cad); background: var(--botao-fundo, #e3eefb); color: var(--botao-texto, #0a3a70);
+  border-radius: 12px; padding: 11px 14px; font-family: var(--f-titulo); font-weight: 700; font-size: 18px; text-align: left;
+}
+.selo-breve { flex: none; background: var(--aviso); color: var(--aviso-texto); border-radius: 999px; padding: 2px 10px; font-size: 13px; letter-spacing: .03em; text-transform: uppercase; }
+.amigo-info { border: 1px solid var(--linha); border-top: 0; border-radius: 0 0 12px 12px; padding: 10px 14px; background: var(--papel); font-size: 15px; }
+.amigo-info p { margin: 4px 0; }
+.amigo-info ul { margin: 4px 0 6px; padding-left: 4px; list-style: none; }
+.amigo-info li { margin: 3px 0; }
 body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
 .troca { animation: aparecer .3s ease-out; }
 @keyframes descer { from { opacity: 0; transform: translateY(-10px); } }
@@ -449,6 +470,7 @@ body { font-size: 16px; }
   <div class="mapa-caixa">
     <div id="mapa" aria-label="Mapa de São Paulo com as restrições a caminhões"></div>
     <button class="btn-centro" type="button" id="btnCentro" hidden>Centralizar</button>
+    <div class="velocimetro" id="velocimetro" hidden aria-label="Velocidade atual em quilômetros por hora"><strong id="velNum">0</strong><span>km/h</span></div>
     <button class="btn-bussola" type="button" id="btnBussola" hidden aria-label="Alternar direção para cima ou norte para cima">
       <span class="agulha" id="agulhaBussola" aria-hidden="true"><b>N</b></span>
       <small id="txtBussola">Direção</small>
@@ -532,6 +554,20 @@ body { font-size: 16px; }
           <ul class="lista-favoritos" id="listaFavoritos" hidden></ul>
         </div>
         <p class="nota">Dica: segure o dedo em qualquer ponto do mapa para escolher "Ir para cá" (bom para condomínio, galpão, doca).</p>
+
+        <div class="amigo">
+          <button class="btn-amigo" type="button" id="btnAmigo" aria-expanded="false" aria-controls="amigoInfo">🤝 Amigo Caminhoneiro <span class="selo-breve">Em breve</span></button>
+          <div class="amigo-info" id="amigoInfo" hidden>
+            <p><strong>Fale com quem está na estrada com você.</strong> Mande alertas e recados para os caminhoneiros que estão passando pelo mesmo trecho:</p>
+            <ul>
+              <li>🚨 Acidente na pista</li>
+              <li>⛔ Rua ou pista fechada</li>
+              <li>⚠️ Perigo, obra ou buraco</li>
+              <li>💬 Recado rápido para os companheiros</li>
+            </ul>
+            <p class="nota" style="margin:0">Esta função será ativada após o período de teste. Fique de olho nas atualizações!</p>
+          </div>
+        </div>
 
         <button class="btn-rota" type="button" id="btnRota">Traçar rota</button>
         <p class="nota" id="msgRota" role="status"></p>
@@ -1558,6 +1594,12 @@ body { font-size: 16px; }
     this.setAttribute("aria-expanded", abrir ? "true" : "false");
   });
   document.getElementById("btnSalvarFav").addEventListener("click", function () { salvarFavorito(estado.B); });
+  // Amigo Caminhoneiro: por enquanto só mostra a explicação (será ativado após o período de teste)
+  document.getElementById("btnAmigo").addEventListener("click", function () {
+    var info = document.getElementById("amigoInfo"), abrir = info.hidden;
+    info.hidden = !abrir;
+    this.setAttribute("aria-expanded", abrir ? "true" : "false");
+  });
   desenharFavoritos();
 
   /* Com o destino escolhido, já traça a rota (se não houver saída, usa a localização do aparelho) */
@@ -2327,6 +2369,9 @@ body { font-size: 16px; }
     }
     if (!giro.ultimaFix || (dirMov !== null)) giro.ultimaFix = { lon: lon, lat: lat, t: agora };
     giro.velocidade = giro.velocidade * 0.6 + (v || 0) * 0.4;
+    // Velocímetro: velocidade do GPS (média suave). Abaixo de 3 km/h mostra 0 (parado).
+    var kmh = Math.round(giro.velocidade * 3.6);
+    document.getElementById("velNum").textContent = kmh < 3 ? "0" : String(kmh);
 
     var nova = null;
     if (giro.velocidade >= 2.5 && dirGps !== null && !isNaN(dirGps)) nova = dirGps;
@@ -2598,6 +2643,8 @@ body { font-size: 16px; }
     giro.velocidade = 0; giro.ultimaFix = null; giro.zoomAtual = 17; limparDestaque();
     limparOpcoes(); // durante a navegação, só a rota escolhida aparece
     document.getElementById("btnBussola").hidden = false;
+    document.getElementById("velNum").textContent = "0";
+    document.getElementById("velocimetro").hidden = false;
     mostrarModoMapa();
     ligarBussola();
     iniciarAnimacao();
@@ -2616,7 +2663,7 @@ body { font-size: 16px; }
     limparDestaque();
     mapa.setBearing(0);
     document.body.classList.remove("navegando");
-    ["navTopo", "navBase", "navAlerta", "navFaixa", "btnBussola", "btnCentro"].forEach(function (id) { document.getElementById(id).hidden = true; });
+    ["navTopo", "navBase", "navAlerta", "navFaixa", "btnBussola", "btnCentro", "velocimetro", "navOpcoes"].forEach(function (id) { document.getElementById(id).hidden = true; });
     setTimeout(function () {
       mapa.invalidateSize();
       if (estado.opcoes && estado.opcoes.length > 1) { desenharOpcoes(estado.opcoes, estado.escolhida || 0); exibirResultado(estado.rota); }
