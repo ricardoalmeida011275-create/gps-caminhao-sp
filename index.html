@@ -298,6 +298,25 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
 }
 .sugestoes button:hover, .sugestoes button:focus-visible { background: var(--fundo); }
 .sugestoes small { display: block; color: var(--suave); font-size: 12px; }
+.sugestoes .fonte-busca { font-size: 11px; color: var(--suave); padding: 4px 10px 2px; }
+
+/* Favoritos */
+.favoritos { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; padding-left: 32px; }
+.lista-favoritos { list-style: none; margin: 4px 0 0; padding: 0; width: 100%; display: flex; flex-direction: column; gap: 6px; }
+.lista-favoritos li { border: 1px solid var(--linha); border-radius: 10px; background: var(--papel); padding: 6px; }
+.fav-ir { display: block; width: 100%; text-align: left; border: 0; background: transparent; padding: 6px 8px; font-size: 15px; cursor: pointer; color: inherit; border-radius: 8px; }
+.fav-ir:hover, .fav-ir:focus-visible { background: var(--fundo); }
+.fav-ir small { display: block; color: var(--suave); font-size: 12px; }
+.fav-acoes { display: flex; gap: 6px; justify-content: flex-end; }
+.fav-vazio { font-size: 13px; color: var(--suave); padding: 4px 2px; margin: 0; }
+
+/* Menu de "segurar o dedo no mapa" */
+.menu-ponto { display: flex; flex-direction: column; gap: 8px; min-width: 210px; }
+.menu-ponto .btn-rota { margin-top: 0; font-size: 17px; padding: 10px 14px; }
+.menu-ponto small { color: var(--suave); }
+
+/* Aviso de número aproximado */
+.nota-aprox { margin: 0; padding: 8px 10px; border-radius: 8px; background: var(--aviso); color: var(--aviso-texto); font-weight: 700; font-size: 14px; }
 
 .btn-rota {
   width: 100%; border: 0; border-radius: 10px; padding: 13px 16px; margin-top: 12px;
@@ -366,6 +385,30 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
 .marcador span { transform: rotate(45deg); color: #fff; font-family: var(--f-titulo); font-weight: 700; font-size: 15px; }
 .marcador.a { background: #1f7a3d; }
 .marcador.b { background: #1d2226; }
+
+/* ===== Botões de menu bem destacados (não se confundem com o texto) ===== */
+:root { --botao-fundo: #e3eefb; --botao-borda: #0b5cad; --botao-texto: #0a3a70; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --botao-fundo: #183654; --botao-borda: #7db7ff; --botao-texto: #e8f2ff; } }
+:root[data-theme="dark"] { --botao-fundo: #183654; --botao-borda: #7db7ff; --botao-texto: #e8f2ff; }
+
+body { font-size: 16px; }
+.btn-pequeno, .btn-painel {
+  background: var(--botao-fundo); color: var(--botao-texto); border: 2px solid var(--botao-borda);
+  border-radius: 10px; padding: 7px 14px; min-height: 40px;
+  font-family: var(--f-titulo); font-size: 16px; font-weight: 700; letter-spacing: .02em;
+  box-shadow: 0 2px 0 var(--botao-borda); cursor: pointer;
+}
+.btn-pequeno:active, .btn-painel:active { transform: translateY(2px); box-shadow: none; }
+.btn-pequeno:focus-visible, .btn-painel:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+.btn-pequeno[aria-pressed="true"] { box-shadow: none; }
+.btn-pequeno:disabled { opacity: .5; cursor: default; }
+
+/* "Cadastrar / Trocar caminhão": botão grande, fácil de achar */
+#btnEditarVeiculo { display: block; width: 100%; margin-top: 8px; font-size: 19px; padding: 10px 14px; text-align: center; }
+#btnEditarVeiculo::before { content: "🚚 "; }
+
+/* Títulos de cada parte do painel: mais fortes, com a faixa amarela de placa */
+.rotulo { color: var(--asfalto); font-size: 15px; font-weight: 700; border-left: 4px solid var(--aviso); padding-left: 8px; }
 </style>
 </head>
 <body>
@@ -428,13 +471,20 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
         <div class="ponto" id="pontoB">
           <div class="ponto-cabeca">
             <span class="pino b" aria-hidden="true">B</span>
-            <input class="campo-texto" id="txtB" type="search" placeholder="Destino: rua, número, bairro" autocomplete="off" aria-label="Endereço de destino">
+            <input class="campo-texto" id="txtB" type="search" placeholder="Destino: rua e número, ou CEP e número" autocomplete="off" aria-label="Endereço de destino">
           </div>
           <div class="acoes-ponto">
             <button class="btn-pequeno" type="button" id="marcaB" aria-pressed="false">Tocar no mapa</button>
           </div>
           <ul class="sugestoes" id="sugB" hidden></ul>
         </div>
+
+        <div class="favoritos">
+          <button class="btn-pequeno" type="button" id="btnFavoritos" aria-expanded="false" aria-controls="listaFavoritos">⭐ Meus favoritos <span id="qtdFavoritos"></span></button>
+          <button class="btn-pequeno" type="button" id="btnSalvarFav">☆ Salvar destino nos favoritos</button>
+          <ul class="lista-favoritos" id="listaFavoritos" hidden></ul>
+        </div>
+        <p class="nota">Dica: segure o dedo em qualquer ponto do mapa para escolher "Ir para cá" (bom para condomínio, galpão, doca).</p>
 
         <button class="btn-rota" type="button" id="btnRota">Traçar rota</button>
         <p class="nota" id="msgRota" role="status"></p>
@@ -1094,93 +1144,262 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
       .slice(0, 4).map(function (r) { return r.x.l; });
   }
 
-  /* Tem número de casa? Ex.: "Rua Augusta 1500", "Av. Paulista, 1000" */
+  /* ---------- Busca de endereços ----------
+     Ordem de procura:
+       1) TomTom (principal: numeração de casas do Brasil mais completa)
+       2) busca do OpenRouteService (reserva, quando a chave dele está salva no aparelho)
+       3) OpenStreetMap/Nominatim (reserva; só quando o motorista toca em "Buscar" no teclado, regra de uso do Nominatim)
+     CEP: o ViaCEP (gratuito, sem chave) completa a rua e o bairro, depois a posição é procurada como acima.
+     Se o número não for achado, o app leva até a rua e avisa "Número aproximado – confira na chegada". */
+
+  // Chave do TomTom: plano grátis, sem cartão (2.500 buscas por dia).
+  // Ela está protegida no painel do TomTom para funcionar SÓ no site ricardoalmeida011275-create.github.io.
+  // Em qualquer outro site o TomTom recusa. Se a cota do dia acabar, o app usa as reservas sozinho.
+  var TOMTOM_CHAVE = "RWlB1L4NB3BtIWyLuusFbjK1Lx5qUqNL";
+  var TOMTOM = "https://api.tomtom.com/search/2";
+  var tomtomDescansaAte = 0;   // quando o TomTom recusa (cota do dia), fica 10 minutos sem perguntar a ele
+  var memoriaBusca = {};       // não gasta cota buscando o mesmo texto duas vezes
+
+  function pedirJson(url, segundos) {
+    var controle = window.AbortController ? new AbortController() : null;
+    var relogio = controle ? setTimeout(function () { controle.abort(); }, (segundos || 10) * 1000) : null;
+    return fetch(url, controle ? { signal: controle.signal } : {}).then(function (r) {
+      clearTimeout(relogio);
+      if (!r.ok) { var e = new Error("HTTP " + r.status); e.status = r.status; throw e; }
+      return r.json();
+    }, function () { clearTimeout(relogio); var e = new Error("sem conexão"); e.status = 0; throw e; });
+  }
+  function pedirGuardado(url, segundos) {
+    if (memoriaBusca[url]) return Promise.resolve(memoriaBusca[url]);
+    return pedirJson(url, segundos).then(function (j) { memoriaBusca[url] = j; return j; });
+  }
+
+  /* Todos os serviços viram o mesmo formato: { nome, rua, numero, detalhe, lat, lon, tipo, fonte }
+     tipo: "exato" (número conhecido), "faixa" (número calculado pela numeração da rua), "rua", "lugar" */
+  function itemTomTom(r) {
+    var a = r.address || {}, tipo;
+    if (r.type === "Point Address") tipo = "exato";
+    else if (r.type === "Address Range") tipo = "faixa";
+    else if (r.type === "Street" || r.type === "Cross Street") tipo = "rua";
+    else tipo = "lugar";
+    var comNumero = (tipo === "exato" || tipo === "faixa") && a.streetNumber;
+    var nome = r.type === "POI" && r.poi ? r.poi.name :
+      (a.streetName ? a.streetName + (comNumero ? ", " + a.streetNumber : "") : (a.freeformAddress || "Lugar"));
+    return {
+      nome: nome, rua: a.streetName || "", numero: comNumero ? a.streetNumber : "",
+      detalhe: [a.municipalitySubdivision, a.municipality, a.postalCode].filter(Boolean).join(", "),
+      lat: r.position.lat, lon: r.position.lon, tipo: tipo, fonte: "TomTom"
+    };
+  }
+  function tomtomBuscar(texto, comNumero) {
+    if (Date.now() < tomtomDescansaAte) return Promise.reject(new Error("TomTom descansando"));
+    var q = new URLSearchParams({ key: TOMTOM_CHAVE, countrySet: "BR", language: "pt-BR", limit: "6", lat: "-23.55", lon: "-46.63", radius: "100000" });
+    if (!comNumero) { q.set("typeahead", "true"); q.set("idxSet", "PAD,Addr,Str,Geo,POI"); }
+    var url = TOMTOM + "/" + (comNumero ? "geocode" : "search") + "/" + encodeURIComponent(texto) + ".json?" + q.toString();
+    return pedirGuardado(url, 10).then(function (j) {
+      return (j.results || []).map(itemTomTom);
+    }, function (e) {
+      if (e.status === 403 || e.status === 401) tomtomDescansaAte = Date.now() + 10 * 60 * 1000;
+      throw e;
+    });
+  }
+
+  function itemPelias(f) {
+    var p = f.properties || {}, c = f.geometry.coordinates, ehEnd = p.layer === "address";
+    return {
+      nome: ehEnd ? (p.street || p.name) + ", " + (p.housenumber || "") : (p.name || p.label),
+      rua: p.street || (p.layer === "street" ? p.name : ""), numero: ehEnd ? (p.housenumber || "") : "",
+      detalhe: [p.neighbourhood, p.locality || p.county].filter(Boolean).join(", "),
+      lat: c[1], lon: c[0], tipo: ehEnd ? "exato" : (p.layer === "street" ? "rua" : "lugar"), fonte: "OpenRouteService"
+    };
+  }
+  function peliasBuscar(texto, numero) {
+    return Promise.all([
+      numero ? buscarComNumero(texto).catch(function () { return null; }) : Promise.resolve(null),
+      buscar(texto)
+    ]).then(function (res) {
+      return ((res[0] && res[0].features) || []).concat((res[1] && res[1].features) || []).map(itemPelias);
+    });
+  }
+
+  function nominatimBuscar(texto) {
+    var q = new URLSearchParams({ q: texto, format: "jsonv2", addressdetails: "1", limit: "6", countrycodes: "br",
+      "accept-language": "pt-BR", viewbox: "-47.10,-23.30,-46.30,-24.05", bounded: "1" });
+    return pedirGuardado("https://nominatim.openstreetmap.org/search?" + q.toString(), 12).then(function (lista) {
+      return (lista || []).map(function (x) {
+        var a = x.address || {}, rua = a.road || a.pedestrian || "", temNum = !!(a.house_number && rua);
+        return {
+          nome: rua ? rua + (temNum ? ", " + a.house_number : "") : (x.name || String(x.display_name || "").split(",")[0]),
+          rua: rua, numero: temNum ? a.house_number : "",
+          detalhe: [a.suburb || a.neighbourhood, a.city || a.town, a.postcode].filter(Boolean).join(", "),
+          lat: +x.lat, lon: +x.lon, tipo: temNum ? "exato" : (rua ? "rua" : "lugar"), fonte: "OpenStreetMap"
+        };
+      });
+    });
+  }
+
+  /* ---------- CEP (ViaCEP) ---------- */
+  function acharCep(texto) {
+    var m = texto.match(/(^|\D)(\d{5})-?(\d{3})(?!\d)/);
+    if (!m) return null;
+    var resto = texto.replace(m[0], m[1] + " ");
+    var n = resto.match(/\d{1,5}[A-Za-z]?/);
+    return { cep: m[2] + m[3], formatado: m[2] + "-" + m[3], numero: n ? n[0] : "" };
+  }
+  function consultarCep(cep) {
+    return pedirGuardado("https://viacep.com.br/ws/" + cep + "/json/", 8).then(function (c) { return c && !c.erro ? c : null; });
+  }
+
+  /* Número da casa digitado. Ex.: "Rua Augusta 1500", "Av. Paulista, 1000", "Rua 25 de Março, 100" (pega o 100) */
   function numeroDigitado(texto) {
-    var m = texto.match(/(?:^|[\s,])(\d{1,5}[A-Za-z]?)(?:\s*[-,]|\s|$)/);
-    return m && /[A-Za-zÀ-ú]{3,}/.test(texto) ? m[1] : null;
+    if (!/[A-Za-zÀ-ú]{3,}/.test(texto)) return null;
+    var t = texto.replace(/\d{5}-?\d{3}/g, " ");
+    var re = /(^|[\s,])(\d{1,5}[A-Za-z]?)(?=\s*[-,]|\s|$)/g, m, achados = [];
+    while ((m = re.exec(t))) {
+      if (/^\s+de\s/i.test(t.slice(m.index + m[0].length))) continue;   // "25 de Março", "9 de Julho" são nomes de rua
+      var antes = t.slice(0, m.index + m[1].length).replace(/\s+$/, "");
+      achados.push({ n: m[2], virgula: antes.slice(-1) === "," });
+    }
+    if (!achados.length) return null;
+    var comVirgula = achados.filter(function (a) { return a.virgula; });
+    return (comVirgula.length ? comVirgula[0] : achados[achados.length - 1]).n;
+  }
+  function mesmoNumero(a, b) { return String(a || "").replace(/\s/g, "").toLowerCase() === String(b || "").replace(/\s/g, "").toLowerCase(); }
+
+  /* Pergunta aos serviços na ordem. explicito = o motorista tocou em "Buscar" no teclado. */
+  function procurarNosServicos(texto, numero, explicito) {
+    var itens = [], fontes = [], principalFora = false;
+    return tomtomBuscar(texto, !!numero).then(function (l) { itens = l; fontes.push("TomTom"); }, function () {
+      principalFora = true;
+      if (!estado.chave) return;
+      return peliasBuscar(texto, numero).then(function (l) { itens = l; fontes.push("OpenRouteService"); }, function () {});
+    }).then(function () {
+      var faltaNumero = numero && !itens.some(function (i) { return mesmoNumero(i.numero, numero); });
+      if (!explicito || (itens.length && !faltaNumero)) return;
+      return nominatimBuscar(texto).then(function (l) {
+        if (!l.length) return;
+        fontes.push("OpenStreetMap");
+        var comNum = l.filter(function (i) { return numero && mesmoNumero(i.numero, numero); });
+        itens = comNum.concat(itens, l.filter(function (i) { return comNum.indexOf(i) < 0; }));
+      }, function () {});
+    }).then(function () {
+      return { itens: itens, fontes: fontes, principalFora: principalFora && !fontes.length };
+    });
+  }
+
+  /* Monta a lista que o motorista vê: número exato primeiro; se não houver, "número aproximado" na rua */
+  function montarResultados(itens, numero) {
+    var saida = [], vistos = {}, ruasIguais = {};
+    function guardarItem(it) {
+      var chave = semAcento(it.nome) + "|" + it.lat.toFixed(4) + "|" + it.lon.toFixed(4);
+      if (vistos[chave]) return; vistos[chave] = true;
+      if (it.tipo === "rua") {   // a mesma avenida vem em vários pedaços: mostra no máximo 2
+        var n = semAcento(it.nome);
+        ruasIguais[n] = (ruasIguais[n] || 0) + 1;
+        if (ruasIguais[n] > 2) return;
+      }
+      saida.push(it);
+    }
+    if (numero) {
+      var comNumero = itens.filter(function (i) { return (i.tipo === "exato" || i.tipo === "faixa") && mesmoNumero(i.numero, numero); });
+      comNumero.sort(function (a, b) { return (a.tipo === "exato" ? 0 : 1) - (b.tipo === "exato" ? 0 : 1); });
+      comNumero.forEach(guardarItem);
+      if (!comNumero.length) {
+        var base = itens.filter(function (i) { return i.rua && i.tipo !== "lugar"; })[0];
+        if (base) guardarItem({ nome: base.rua + ", " + numero, rua: base.rua, numero: numero, detalhe: base.detalhe,
+                       lat: base.lat, lon: base.lon, tipo: "aprox", fonte: base.fonte });
+      }
+    }
+    itens.forEach(function (i) { if (!numero || !(i.tipo === "exato" || i.tipo === "faixa") || !mesmoNumero(i.numero, numero)) guardarItem(i); });
+    return saida.slice(0, 8);
   }
 
   function configurarBusca(letra) {
-    var campo = document.getElementById("txt" + letra), lista = document.getElementById("sug" + letra), espera = null, ultimo = "";
-    function botao(f, destaque) {
-      var p = f.properties || {};
+    var campo = document.getElementById("txt" + letra), lista = document.getElementById("sug" + letra), espera = null, vez = 0;
+
+    function linha(icone, titulo, sub, acao) {
       var li = document.createElement("li"), b = document.createElement("button");
       b.type = "button";
-      var titulo = p.layer === "address" ? (p.street || p.name) + ", " + (p.housenumber || "") : (p.name || p.label);
-      b.innerHTML = (destaque ? "📍 " : "") + escapar(titulo) + "<small>" + escapar([destaque ? "Endereço com número" : "", p.neighbourhood, p.locality || p.county, p.region_a || p.region].filter(Boolean).join(", ")) + "</small>";
-      b.addEventListener("click", function () {
-        var c = f.geometry.coordinates;
-        definirPonto(letra, c[1], c[0], p.label || p.name);
-        lista.hidden = true;
-        mapa.setView([c[1], c[0]], Math.max(mapa.getZoom(), 15));
-      });
-      li.appendChild(b);
-      return li;
+      b.innerHTML = icone + " " + escapar(titulo) + (sub ? "<small>" + escapar(sub) + "</small>" : "");
+      if (acao) b.addEventListener("click", acao); else b.disabled = true;
+      li.appendChild(b); lista.appendChild(li);
     }
-    function botaoLocal(l) {
-      var li = document.createElement("li"), b = document.createElement("button");
-      b.type = "button";
-      b.innerHTML = "⭐ " + escapar(l.nome) + "<small>" + escapar(["Lugar conhecido", l.bairro, l.cidade || "São Paulo"].filter(Boolean).join(", ")) + "</small>";
-      b.addEventListener("click", function () {
-        definirPonto(letra, l.lat, l.lon, l.nome);
-        lista.hidden = true;
-        mapa.setView([l.lat, l.lon], Math.max(mapa.getZoom(), 15));
-      });
-      li.appendChild(b);
-      return li;
+    function irPara(lat, lon, nome, extra) {
+      definirPonto(letra, lat, lon, nome, extra);
+      lista.hidden = true;
+      mapa.setView([lat, lon], Math.max(mapa.getZoom(), 16));
+      if (extra && extra.aproximado) mostrarMsg("Número aproximado – confira na chegada. Se souber o lugar certo, segure o dedo no mapa em cima dele e escolha \"Ir para cá\".");
+      else mostrarMsg("");
     }
-    function mostrarLocais(locais) {
+    function mostrarRapidos(texto) {
       lista.innerHTML = "";
-      locais.forEach(function (l) { lista.appendChild(botaoLocal(l)); });
-      lista.hidden = !locais.length;
+      var q = semAcento(texto).trim();
+      if (q.length >= 2) {
+        lerFavoritos().filter(function (f) { return semAcento(f.nome).indexOf(q) >= 0 || semAcento(f.end).indexOf(q) >= 0; }).slice(0, 4)
+          .forEach(function (f) { linha("⭐", f.nome, "Favorito · " + f.end, function () { irPara(f.lat, f.lon, f.nome, { aproximado: f.aprox }); }); });
+      }
+      if (!numeroDigitado(texto) && !acharCep(texto)) {
+        buscarLocal(texto).forEach(function (l) {
+          linha("📌", l.nome, ["Lugar conhecido", l.bairro, l.cidade || "São Paulo"].filter(Boolean).join(", "), function () { irPara(l.lat, l.lon, l.nome); });
+        });
+      }
+      lista.hidden = !lista.children.length;
     }
+    function desenhar(texto, r, explicito) {
+      mostrarRapidos(texto);
+      if (r.aviso) linha("ℹ️", r.aviso, "", null);
+      if (r.cep) linha("📮", "CEP " + r.cep.cep + ": " + r.cep.logradouro, [r.cep.bairro, r.cep.localidade + " - " + r.cep.uf, "dados do ViaCEP"].filter(Boolean).join(", "), null);
+      var res = r.itens ? montarResultados(r.itens, r.numero) : [];
+      res.forEach(function (it) {
+        var nome = it.nome + (it.detalhe ? " – " + it.detalhe : "");
+        if (it.tipo === "aprox") linha("📍", it.nome, "⚠️ Número aproximado – confira na chegada · " + it.detalhe, function () { irPara(it.lat, it.lon, nome + " (número aproximado)", { aproximado: true }); });
+        else if (it.tipo === "exato") linha("📍", it.nome, "Endereço com número · " + it.detalhe, function () { irPara(it.lat, it.lon, nome); });
+        else if (it.tipo === "faixa") linha("📍", it.nome, "Número pela numeração da rua · " + it.detalhe, function () { irPara(it.lat, it.lon, nome); });
+        else linha(it.tipo === "rua" ? "🛣️" : "📌", it.nome, it.detalhe, function () { irPara(it.lat, it.lon, nome); });
+      });
+      if (r.principalFora && !explicito) linha("ℹ️", "A busca principal não respondeu agora.", "Toque em Buscar (🔍) no teclado para procurar no OpenStreetMap.", null);
+      if (!lista.children.length) linha("ℹ️", "Nada encontrado.", explicito ? "Confira o nome da rua, tente com o bairro, ou segure o dedo no mapa no lugar certo." : "Toque em Buscar (🔍) no teclado para procurar também no OpenStreetMap, ou segure o dedo no mapa no lugar certo.", null);
+      if (r.fontes && r.fontes.length) {
+        var li = document.createElement("li"); li.className = "fonte-busca";
+        li.textContent = "Endereços: " + r.fontes.join(" + ") + (r.cep ? " · CEP: ViaCEP" : "");
+        lista.appendChild(li);
+      }
+      lista.hidden = false;
+    }
+    function pesquisar(texto, explicito) {
+      var minhaVez = ++vez, p, cep = acharCep(texto);
+      if (cep) {
+        p = consultarCep(cep.cep).then(function (c) {
+          if (!c) return { aviso: "Não achei o CEP " + cep.formatado + ". Confira os números." };
+          if (!c.logradouro) return { aviso: "O CEP " + cep.formatado + " vale para " + c.localidade + " inteira, sem rua. Digite o nome da rua e o número." };
+          var t = c.logradouro + (cep.numero ? ", " + cep.numero : "") + ", " + (c.bairro ? c.bairro + ", " : "") + c.localidade + " - " + c.uf;
+          return procurarNosServicos(t, cep.numero, explicito).then(function (r) { r.cep = c; r.numero = cep.numero; return r; });
+        }, function () { return { aviso: "Não consegui consultar o CEP agora (sem internet ou o ViaCEP não respondeu)." }; });
+      } else {
+        var numero = numeroDigitado(texto);
+        p = procurarNosServicos(texto, numero, explicito).then(function (r) { r.numero = numero; return r; });
+      }
+      p.then(function (r) { if (minhaVez === vez) desenhar(texto, r, explicito); })
+       .catch(function () { if (minhaVez === vez) desenhar(texto, { aviso: "Não consegui buscar agora. Confira a internet." }, explicito); });
+    }
+
     campo.addEventListener("input", function () {
       estado[letra] = null; atualizarMarcadores();
-      clearTimeout(espera);
+      clearTimeout(espera); vez++;
       var texto = campo.value.trim();
-      // Lugares conhecidos aparecem na hora, mesmo sem internet ou sem chave
-      var locais = numeroDigitado(texto) ? [] : buscarLocal(texto);
-      mostrarLocais(locais);
-      if (texto.length < 4) { if (!locais.length) lista.hidden = true; return; }
-      if (!estado.chave) { if (!locais.length) mostrarMsg("Para buscar endereços, salve a chave do serviço de rotas no fim do painel."); return; }
-      espera = setTimeout(function () {
-        ultimo = texto;
-        var numero = numeroDigitado(texto);
-        Promise.all([
-          buscar(texto),
-          numero ? buscarComNumero(texto).catch(function () { return null; }) : Promise.resolve(null)
-        ]).then(function (res) {
-          if (texto !== ultimo) return;
-          mostrarLocais(locais);
-          var rapidos = ((res[0] && res[0].features) || []).slice();
-          // Prioriza resultados da cidade de São Paulo
-          rapidos.sort(function (x, y) {
-            var sx = semAcento(x.properties && x.properties.locality) === "sao paulo" ? 0 : 1;
-            var sy = semAcento(y.properties && y.properties.locality) === "sao paulo" ? 0 : 1;
-            return sx - sy;
-          });
-          // Só aceita como "endereço com número" o que tem exatamente o número digitado
-          var exatos = ((res[1] && res[1].features) || []).filter(function (f) {
-            var hn = String((f.properties && f.properties.housenumber) || "").toLowerCase();
-            return f.properties && f.properties.layer === "address" && hn.replace(/\s/g, "") === numero.toLowerCase();
-          });
-          var vistos = {};
-          exatos.forEach(function (f) { vistos[f.properties.label] = true; lista.appendChild(botao(f, true)); });
-          if (numero && !exatos.length) {
-            lista.insertAdjacentHTML("beforeend", '<li><button type="button" disabled>O número ' + escapar(numero) + ' não está no mapa. Escolha a rua abaixo e, se precisar, ajuste tocando no mapa.</button></li>');
-          }
-          rapidos.forEach(function (f) {
-            var lab = f.properties && f.properties.label;
-            if (lab && vistos[lab]) return;
-            vistos[lab] = true;
-            lista.appendChild(botao(f, false));
-          });
-          if (!exatos.length && !rapidos.length && !locais.length) lista.innerHTML = '<li><button type="button" disabled>Nada encontrado. Tente com o bairro ou toque no mapa.</button></li>';
-          lista.hidden = false;
-        }).catch(function (e) { mostrarMsg(e.message); });
-      }, 450);
+      // Favoritos e lugares conhecidos aparecem na hora, mesmo sem internet
+      mostrarRapidos(texto);
+      if (texto.length < 4) return;
+      espera = setTimeout(function () { pesquisar(texto, false); }, 600);
     });
-    campo.addEventListener("keydown", function (ev) { if (ev.key === "Escape") lista.hidden = true; });
+    campo.addEventListener("keydown", function (ev) {
+      if (ev.key === "Escape") lista.hidden = true;
+      if (ev.key === "Enter") {
+        ev.preventDefault(); clearTimeout(espera);
+        var texto = campo.value.trim();
+        if (texto.length >= 3) pesquisar(texto, true);
+      }
+    });
     document.addEventListener("click", function (ev) { if (!document.getElementById("ponto" + letra).contains(ev.target)) lista.hidden = true; });
   }
   configurarBusca("A"); configurarBusca("B");
@@ -1190,8 +1409,8 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
   function icone(letra) {
     return L.divIcon({ className: "", html: '<div class="marcador ' + letra.toLowerCase() + '"><span>' + letra + '</span></div>', iconSize: [28, 28], iconAnchor: [14, 28] });
   }
-  function definirPonto(letra, lat, lon, nome) {
-    estado[letra] = { lat: lat, lon: lon, nome: nome || (lat.toFixed(5) + ", " + lon.toFixed(5)) };
+  function definirPonto(letra, lat, lon, nome, extra) {
+    estado[letra] = { lat: lat, lon: lon, nome: nome || (lat.toFixed(5) + ", " + lon.toFixed(5)), aproximado: !!(extra && extra.aproximado) };
     document.getElementById("txt" + letra).value = estado[letra].nome;
     atualizarMarcadores();
   }
@@ -1221,6 +1440,141 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
     mostrarMsg("Ponto " + l + " marcado.");
     if (painel.classList.contains("fechado")) btnPainel.click();
   });
+
+  /* ---------- Favoritos (guardados só neste aparelho) ---------- */
+  function lerFavoritos() {
+    try { var l = JSON.parse(ler("favoritos") || "[]"); return Array.isArray(l) ? l : []; } catch (e) { return []; }
+  }
+  function gravarFavoritos(l) { gravar("favoritos", JSON.stringify(l)); desenharFavoritos(); }
+  function salvarFavorito(ponto) {
+    if (!ponto) { mostrarMsg("Primeiro escolha o destino (B): busque o endereço ou segure o dedo no mapa."); return; }
+    var sugestao = ponto.nome && ponto.nome !== "Ponto marcado no mapa" ? ponto.nome.split(" – ")[0] : "";
+    var nome = window.prompt("Nome do favorito (ex.: Casa, Galpão Cangaíba, Cliente João):", sugestao);
+    if (nome === null) return;
+    nome = nome.trim() || sugestao || "Favorito";
+    var l = lerFavoritos();
+    l.unshift({ id: Date.now().toString(36), nome: nome.slice(0, 60), end: ponto.nome || "", lat: ponto.lat, lon: ponto.lon, aprox: !!ponto.aproximado });
+    gravarFavoritos(l.slice(0, 100));
+    mostrarMsg("Salvo nos favoritos: " + nome + ".");
+  }
+  function desenharFavoritos() {
+    var l = lerFavoritos(), ul = document.getElementById("listaFavoritos");
+    document.getElementById("qtdFavoritos").textContent = l.length ? "(" + l.length + ")" : "";
+    ul.innerHTML = "";
+    if (!l.length) { ul.innerHTML = '<li><p class="fav-vazio">Nenhum favorito ainda. Escolha um destino e toque em "☆ Salvar destino nos favoritos", ou segure o dedo no mapa.</p></li>'; return; }
+    l.forEach(function (f) {
+      var li = document.createElement("li");
+      li.innerHTML = '<button type="button" class="fav-ir">⭐ <strong></strong><small></small></button>' +
+        '<div class="fav-acoes"><button type="button" class="btn-pequeno" data-acao="renomear">Renomear</button><button type="button" class="btn-pequeno" data-acao="apagar">Apagar</button></div>';
+      li.querySelector("strong").textContent = f.nome;
+      li.querySelector("small").textContent = f.end + (f.aprox && f.end.indexOf("aproximado") < 0 ? " · número aproximado" : "");
+      li.querySelector(".fav-ir").addEventListener("click", function () {
+        definirPonto("B", f.lat, f.lon, f.nome, { aproximado: f.aprox });
+        document.getElementById("listaFavoritos").hidden = true;
+        document.getElementById("btnFavoritos").setAttribute("aria-expanded", "false");
+        mapa.setView([f.lat, f.lon], Math.max(mapa.getZoom(), 15));
+        tracarAteDestino();
+      });
+      li.querySelector('[data-acao="renomear"]').addEventListener("click", function () {
+        var novo = window.prompt("Novo nome para este favorito:", f.nome);
+        if (novo === null || !novo.trim()) return;
+        var lista = lerFavoritos();
+        lista.forEach(function (x) { if (x.id === f.id) x.nome = novo.trim().slice(0, 60); });
+        gravarFavoritos(lista);
+      });
+      li.querySelector('[data-acao="apagar"]').addEventListener("click", function () {
+        if (!window.confirm('Apagar o favorito "' + f.nome + '"?')) return;
+        gravarFavoritos(lerFavoritos().filter(function (x) { return x.id !== f.id; }));
+      });
+      ul.appendChild(li);
+    });
+  }
+  document.getElementById("btnFavoritos").addEventListener("click", function () {
+    var ul = document.getElementById("listaFavoritos"), abrir = ul.hidden;
+    desenharFavoritos();
+    ul.hidden = !abrir;
+    this.setAttribute("aria-expanded", abrir ? "true" : "false");
+  });
+  document.getElementById("btnSalvarFav").addEventListener("click", function () { salvarFavorito(estado.B); });
+  desenharFavoritos();
+
+  /* Com o destino escolhido, já traça a rota (se não houver saída, usa a localização do aparelho) */
+  function tracarAteDestino() {
+    if (painel.classList.contains("fechado")) btnPainel.click();
+    if (estado.A) { document.getElementById("btnRota").click(); return; }
+    if (!navigator.geolocation) { mostrarMsg("Destino escolhido. Agora escolha a saída (A) e toque em Traçar rota."); return; }
+    mostrarMsg("Destino escolhido. Pegando sua localização para a saída…");
+    navigator.geolocation.getCurrentPosition(function (p) {
+      definirPonto("A", p.coords.latitude, p.coords.longitude, "Minha localização");
+      document.getElementById("btnRota").click();
+    }, function () {
+      mostrarMsg("Destino escolhido. Não consegui pegar sua localização: escolha a saída (A) e toque em Traçar rota.");
+    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
+  }
+
+  /* ---------- Segurar o dedo no mapa: "Ir para cá" ---------- */
+  function nomeDoPonto(lat, lon) {
+    var tt = Date.now() >= tomtomDescansaAte ?
+      pedirJson(TOMTOM + "/reverseGeocode/" + lat.toFixed(6) + "," + lon.toFixed(6) + ".json?" +
+        new URLSearchParams({ key: TOMTOM_CHAVE, language: "pt-BR", radius: "80" }).toString(), 8)
+        .then(function (j) {
+          var a = j.addresses && j.addresses[0] && j.addresses[0].address;
+          if (!a || !a.streetName) throw new Error("sem rua");
+          return a.streetName + (a.streetNumber ? ", " + a.streetNumber : "") + (a.municipalitySubdivision ? " – " + a.municipalitySubdivision : "");
+        }) : Promise.reject(new Error("TomTom descansando"));
+    return tt.catch(function () {
+      return pedirJson("https://nominatim.openstreetmap.org/reverse?" + new URLSearchParams({ format: "jsonv2", lat: lat, lon: lon, zoom: "18", "accept-language": "pt-BR" }).toString(), 8)
+        .then(function (j) { var a = j.address || {}; if (!a.road) throw new Error("sem rua"); return a.road + (a.house_number ? ", " + a.house_number : "") + (a.suburb ? " – " + a.suburb : ""); });
+    });
+  }
+  function abrirMenuPonto(latlng) {
+    if (nav.ativo || estado.marcando) return;
+    var lat = latlng.lat, lon = latlng.lng, nome = "";
+    var div = document.createElement("div");
+    div.className = "menu-ponto";
+    div.innerHTML = '<strong>Ponto escolhido</strong><small>Procurando o nome da rua…</small>' +
+      '<button type="button" class="btn-rota">🚚 Ir para cá</button>' +
+      '<button type="button" class="btn-pequeno" data-acao="fav">⭐ Salvar nos favoritos</button>' +
+      '<button type="button" class="btn-pequeno" data-acao="saida">Sair daqui (ponto A)</button>';
+    var pop = L.popup({ closeButton: true, autoPan: true, maxWidth: 260 }).setLatLng(latlng).setContent(div).openOn(mapa);
+    nomeDoPonto(lat, lon).then(function (n) { nome = "Perto de " + n; div.querySelector("small").textContent = nome; },
+      function () { div.querySelector("small").textContent = lat.toFixed(5) + ", " + lon.toFixed(5); });
+    div.querySelector(".btn-rota").addEventListener("click", function () {
+      definirPonto("B", lat, lon, nome || "Ponto marcado no mapa");
+      mapa.closePopup(pop);
+      tracarAteDestino();
+    });
+    div.querySelector('[data-acao="fav"]').addEventListener("click", function () {
+      salvarFavorito({ lat: lat, lon: lon, nome: nome || "Ponto marcado no mapa" });
+    });
+    div.querySelector('[data-acao="saida"]').addEventListener("click", function () {
+      definirPonto("A", lat, lon, nome || "Ponto marcado no mapa");
+      mapa.closePopup(pop);
+      mostrarMsg("Saída (A) marcada no mapa.");
+    });
+  }
+  (function () {
+    var el = document.getElementById("mapa"), relogio = null, x0 = 0, y0 = 0, ultimo = 0;
+    function cancelar() { clearTimeout(relogio); relogio = null; }
+    el.addEventListener("touchstart", function (ev) {
+      cancelar();
+      if (ev.touches.length !== 1) return;
+      x0 = ev.touches[0].clientX; y0 = ev.touches[0].clientY;
+      relogio = setTimeout(function () {
+        relogio = null; ultimo = Date.now();
+        abrirMenuPonto(mapa.mouseEventToLatLng({ clientX: x0, clientY: y0 }));
+      }, 650);
+    }, { passive: true });
+    el.addEventListener("touchmove", function (ev) {
+      if (!relogio) return;
+      var t = ev.touches[0];
+      if (ev.touches.length !== 1 || Math.hypot(t.clientX - x0, t.clientY - y0) > 12) cancelar();
+    }, { passive: true });
+    el.addEventListener("touchend", cancelar, { passive: true });
+    el.addEventListener("touchcancel", cancelar, { passive: true });
+    // No computador: botão direito do mouse. No celular o aparelho também avisa o "segurar"; evita abrir duas vezes.
+    mapa.on("contextmenu", function (ev) { if (Date.now() - ultimo > 1500) { ultimo = Date.now(); abrirMenuPonto(ev.latlng); } });
+  })();
 
   document.getElementById("gpsA").addEventListener("click", function () {
     if (!navigator.geolocation) { mostrarMsg("Este aparelho não informa a localização."); return; }
@@ -1709,6 +2063,7 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
           '<span class="op-tempo">' + tempo(o.duracao) + '</span><span class="op-km">' + km(o.distancia) + (i === 0 ? " · mais rápida" : "") + '</span></button>';
       }).join("") + '</div><p class="nota" style="margin:0">Todas as opções respeitam as restrições conhecidas. Toque numa opção (ou na linha dela no mapa) para escolher.</p>' + numeros;
     }
+    if (estado.B && estado.B.aproximado) numeros = '<p class="nota-aprox">⚠️ Número aproximado – confira na chegada.</p>' + numeros;
 
     if (res.problemas.length) {
       mostrarResultado("alerta", "Atenção: esta rota passa por restrição",
@@ -2108,9 +2463,11 @@ body.navegando .btn-bussola { top: auto; bottom: calc(96px + env(safe-area-inset
     nav.chegou = true;
     document.getElementById("navSeta").textContent = SETAS[10];
     document.getElementById("navDist").textContent = "Chegou";
-    document.getElementById("navTexto").textContent = "Você chegou ao destino.";
+    var aprox = estado.B && estado.B.aproximado;
+    var frase = aprox ? "Você chegou perto do destino. Número aproximado, confira na chegada." : "Você chegou ao destino.";
+    document.getElementById("navTexto").textContent = frase;
     document.getElementById("navRestante").textContent = "0 m";
-    falar("Você chegou ao destino.");
+    falar(frase);
   }
 
   function iniciarNavegacao() {
