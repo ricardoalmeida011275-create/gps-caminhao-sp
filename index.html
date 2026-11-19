@@ -182,6 +182,31 @@ body.navegando .leaflet-bottom { bottom: calc(92px + env(safe-area-inset-bottom,
   font-weight: 700; font-size: 15px; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.22);
 }
 body.navegando .btn-centro { left: max(12px, env(safe-area-inset-left, 0px)); right: auto; bottom: calc(172px + env(safe-area-inset-bottom, 0px)); }
+/* Marcar problema (um toque, durante a navegação) */
+.btn-marcar {
+  position: absolute; z-index: 1000; right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  min-width: 96px; min-height: 72px; border: 3px solid #fff; border-radius: 16px; padding: 8px 12px; cursor: pointer;
+  background: #e65100; color: #fff; font-family: var(--f-titulo); font-weight: 700; font-size: 17px; line-height: 1.15; box-shadow: 0 4px 14px rgba(0,0,0,.3);
+}
+.btn-marcar[hidden] { display: none; }
+.btn-marcar:active { transform: scale(.96); }
+/* Revisão do fim da viagem */
+.rev-legenda { margin: 0 0 8px; font-size: 14px; color: var(--suave); }
+.leg-azul, .leg-laranja { display: inline-block; width: 22px; height: 5px; border-radius: 3px; vertical-align: middle; background: #1565c0; }
+.leg-laranja { background: #ef6c00; }
+.rev-item { border: 2px solid var(--linha); border-radius: 14px; padding: 10px; margin: 10px 0; }
+.rev-cab { margin: 0 0 4px; font-size: 16px; }
+.rev-instr { margin: 0 0 8px; font-size: 15px; }
+.rev-mapa { height: 170px; border-radius: 10px; overflow: hidden; margin-bottom: 10px; }
+.rev-botoes { display: flex; flex-direction: column; gap: 8px; }
+.rev-botoes button {
+  min-height: 56px; border: 2px solid var(--linha); background: var(--fundo); color: var(--asfalto); border-radius: 12px;
+  font-family: var(--f-titulo); font-weight: 700; font-size: 18px; cursor: pointer;
+}
+.rev-botoes button.rev-sim { border-color: #c62828; color: #c62828; }
+.rev-botoes button[aria-pressed="true"] { background: var(--botao-fundo, #e3eefb); border-color: var(--botao-borda, #0b5cad); color: var(--botao-texto, #0a3a70); }
+.rev-botoes button.rev-sim[aria-pressed="true"] { background: #c62828; border-color: #c62828; color: #fff; }
+.btn-pendentes { margin-bottom: 12px; border-style: solid; border-color: #e65100; background: #fff3e0; color: #8a3200; }
 /* Velocímetro (só na navegação) */
 .velocimetro {
   position: absolute; z-index: 1000; left: max(12px, env(safe-area-inset-left, 0px)); bottom: calc(96px + env(safe-area-inset-bottom, 0px));
@@ -474,6 +499,7 @@ body { font-size: 16px; }
   <div class="mapa-caixa">
     <div id="mapa" aria-label="Mapa de São Paulo com as restrições a caminhões"></div>
     <button class="btn-centro" type="button" id="btnCentro" hidden>Centralizar</button>
+    <button class="btn-marcar" type="button" id="btnMarcar" hidden aria-label="Marcar problema neste local">⚠️ Marcar<br>problema</button>
     <div class="velocimetro" id="velocimetro" hidden aria-label="Velocidade atual em quilômetros por hora"><strong id="velNum">0</strong><span>km/h</span></div>
     <button class="btn-bussola" type="button" id="btnBussola" hidden aria-label="Alternar direção para cima ou norte para cima">
       <span class="agulha" id="agulhaBussola" aria-hidden="true"><b>N</b></span>
@@ -518,6 +544,17 @@ body { font-size: 16px; }
     </div>
   </div>
 
+  <!-- Revisão no fim da viagem: pontos onde saiu da rota ou marcou problema -->
+  <div class="nav-opcoes" id="revisao" role="dialog" aria-modal="true" aria-labelledby="revTitulo" hidden>
+    <div class="nav-opcoes-caixa">
+      <p class="nav-opcoes-titulo" id="revTitulo"></p>
+      <p class="rev-legenda"><span class="leg-azul"></span> rota do app &nbsp; <span class="leg-laranja"></span> caminho que você fez</p>
+      <div id="revLista"></div>
+      <button type="button" class="btn-rota btn-chegada" id="btnRevEnviar" hidden>📲 Enviar pelo WhatsApp</button>
+      <button type="button" class="btn-pequeno op-fechar" id="btnRevFechar">Fechar</button>
+    </div>
+  </div>
+
   <aside class="painel" id="painel">
     <div class="painel-topo">
       <h1 class="marca">Rota Liberada <span class="selo">Teste piloto</span><small>GPS de caminhão que respeita as restrições</small></h1>
@@ -525,6 +562,7 @@ body { font-size: 16px; }
     </div>
 
     <div class="painel-corpo" id="painelCorpo">
+      <button type="button" class="btn-amigo btn-pendentes" id="btnRevisarPendentes" hidden></button>
 
       <section aria-labelledby="tituloRota">
         <p class="rotulo" id="tituloRota">Rota</p>
@@ -2620,6 +2658,7 @@ body { font-size: 16px; }
     }
     nav.ultimaBoa = agoraMs; nav.ultimaFixBoa = { lon: lon, lat: lat, t: agoraMs };
     nav.ultimaPos = { lon: lon, lat: lat };
+    anotarPosicao(lon, lat);
 
     if (nav.recalculando) { atualizarDirecao(p, null); moverMarcador(lat, lon); seguirCaminhao(lat, lon); return; }
     var pos = localizarNaRota(lon, lat), rotaGraus = null;
@@ -2641,6 +2680,11 @@ body { font-size: 16px; }
     var limite = Math.max(45, Math.min(prec * 1.5, 80));
     if (pos.d > limite || nav.precisaRecalc) {
       if (!nav.foraDesde) nav.foraDesde = Date.now();
+      // Não seguiu a instrução: grava sozinho o ponto, a instrução dada, o caminho e a hora (uma vez por saída)
+      if (!nav.precisaRecalc && !nav.foraRegistrado && Date.now() - nav.foraDesde > 4000 && nav.ultimoNaRota) {
+        nav.foraRegistrado = true;
+        registrarOcorrencia("saiu", nav.ultimoNaRota.lon, nav.ultimoNaRota.lat, nav.ultimoNaRota.instr, nav.ultimoNaRota.s);
+      }
       if (nav.precisaRecalc || Date.now() - nav.foraDesde > 4000) {
         recalcular(nav.precisaRecalc ? "Ajustando a rota a partir de onde você está…" : "Você saiu da rota. Recalculando…", lon, lat);
         if (nav.recalculando) return;
@@ -2648,10 +2692,13 @@ body { font-size: 16px; }
       mostrarAlertaNav("Fora da rota…", "info");
       seguirCaminhao(lat, lon);
     } else {
-      nav.foraDesde = null;
-      if (document.getElementById("navAlerta").className.indexOf("info") >= 0) mostrarAlertaNav("");
+      nav.foraDesde = null; nav.foraRegistrado = false;
+      nav.ultimoNaRota = { lon: lon, lat: lat, s: pos.s, instr: nav.instrAtual };
+      if (document.getElementById("navAlerta").className.indexOf("info") >= 0 && document.getElementById("navAlerta").textContent.indexOf("✅") !== 0) mostrarAlertaNav("");
     }
     var manobra = atualizarInstrucao(pos.s);
+    nav.sAtual = pos.s;
+    nav.instrAtual = (manobra.k >= 0 && estado.rota.passos[manobra.k]) ? estado.rota.passos[manobra.k].instruction : "";
     atualizarBase(pos.s);
     // Faixa de ônibus funcionando ou corredor onde o caminhão está agora: aviso na tela (e falado uma vez)
     if (estado.rota.pts[pos.i + 1]) {
@@ -2740,8 +2787,12 @@ body { font-size: 16px; }
   }
 
   function chegou() {
-    if (nav.chegou) return;
-    nav.chegou = true;
+    if (nav.chegou) {
+      // já chegou: assim que o veículo parar, abre a revisão dos pontos (uma vez)
+      if (nav.revisarAoParar && revisarSePuder()) nav.revisarAoParar = false;
+      return;
+    }
+    nav.chegou = true; nav.revisarAoParar = true;
     document.getElementById("navSeta").textContent = SETAS[10];
     document.getElementById("navDist").textContent = "Chegou";
     var aprox = estado.B && estado.B.aproximado;
@@ -2758,6 +2809,8 @@ body { font-size: 16px; }
     // A navegação usa sempre o horário de agora
     if (estado.modo !== "agora") { document.getElementById("mAgora").click(); nav.precisaRecalc = true; }
     nav.ativo = true; nav.seguindo = true; nav.idx = 0; nav.falados = {}; nav.foraDesde = null; nav.chegou = false; nav.ultimaRecalc = 0;
+    nav.foraRegistrado = false; nav.ultimoNaRota = null; nav.instrAtual = ""; nav.sAtual = 0; nav.revisarAoParar = false; trilha = [];
+    document.getElementById("btnMarcar").hidden = false; document.getElementById("btnRevisarPendentes").hidden = true;
     nav.sUltimoOnibus = 0; nav.onibusAtual = null;
     document.body.classList.add("navegando");
     ["navTopo", "navBase"].forEach(function (id) { document.getElementById(id).hidden = false; });
@@ -2797,7 +2850,10 @@ body { font-size: 16px; }
     limparDestaque();
     mapa.setBearing(0);
     document.body.classList.remove("navegando");
-    ["navTopo", "navBase", "navAlerta", "navFaixa", "btnBussola", "btnCentro", "velocimetro", "navOpcoes"].forEach(function (id) { document.getElementById(id).hidden = true; });
+    ["navTopo", "navBase", "navAlerta", "navFaixa", "btnBussola", "btnCentro", "velocimetro", "navOpcoes", "btnMarcar"].forEach(function (id) { document.getElementById(id).hidden = true; });
+    // Fim da viagem: com o veículo parado, mostra os pontos para revisar (andando, ficam guardados no botão do painel)
+    if (giro.velocidade < 1.5) revisarSePuder();
+    atualizarBotaoPendentes();
     setTimeout(function () {
       mapa.invalidateSize();
       if (estado.opcoes && estado.opcoes.length > 1) { desenharOpcoes(estado.opcoes, estado.escolhida || 0); exibirResultado(estado.rota); }
@@ -2861,6 +2917,146 @@ body { font-size: 16px; }
     if (navigator.share) { navigator.share({ text: texto }).catch(function () {}); return; }
     window.open("https://wa.me/?text=" + encodeURIComponent(texto), "_blank");
   });
+
+  /* ================= Avisos de erro do app (o motorista não mexe no celular dirigindo) ================= */
+  // Número de WhatsApp que recebe os pontos "Sim, era proibido": só números, com 55 e DDD. Ex.: "5511999999999".
+  // Se ficar vazio, o WhatsApp abre para escolher o contato.
+  var WHATSAPP_ERROS = "";
+  var CHAVE_OC = "rotaCaminhaoSP.ocorrencias";
+  var ocorrencias = (function () { try { return JSON.parse(ler(CHAVE_OC) || "[]") || []; } catch (e) { return []; } })();
+  function salvarOcorrencias() { ocorrencias = ocorrencias.slice(-60); gravar(CHAVE_OC, JSON.stringify(ocorrencias)); }
+  function pendentes() { return ocorrencias.filter(function (o) { return o.resposta === null; }); }
+  var trilha = [];   // caminho real: posições do último minuto e meio
+  function anotarPosicao(lon, lat) {
+    var agora = Date.now(), mudou = false;
+    trilha.push([+lon.toFixed(6), +lat.toFixed(6), agora]);
+    while (trilha.length && agora - trilha[0][2] > 90000) trilha.shift();
+    // ocorrências recentes continuam juntando o caminho real por mais 40 s
+    ocorrencias.forEach(function (o) { if (o.ate && agora < o.ate) { o.real.push([+lon.toFixed(6), +lat.toFixed(6)]); mudou = true; } });
+    if (mudou) salvarOcorrencias();
+  }
+  function trechoRota(s) {
+    var r = estado.rota, out = [];
+    if (!r || !r.acum) return out;
+    for (var i = 0; i < r.coords.length; i++) if (r.acum[i] >= s - 150 && r.acum[i] <= s + 250) out.push([+r.coords[i][0].toFixed(6), +r.coords[i][1].toFixed(6)]);
+    return out;
+  }
+  function registrarOcorrencia(tipo, lon, lat, instrucao, s) {
+    var agora = Date.now();
+    ocorrencias.push({
+      id: "o" + agora, tipo: tipo, data: new Date(agora).toISOString(), lat: +lat.toFixed(6), lon: +lon.toFixed(6),
+      instrucao: instrucao || "", prevista: (s !== null && s !== undefined) ? trechoRota(s) : [],
+      real: trilha.filter(function (p) { return agora - p[2] < 60000; }).map(function (p) { return [p[0], p[1]]; }),
+      resposta: null, enviado: false, ate: agora + 40000
+    });
+    salvarOcorrencias();
+    atualizarBotaoPendentes();
+  }
+  function atualizarBotaoPendentes() {
+    var b = document.getElementById("btnRevisarPendentes"), n = pendentes().length;
+    b.hidden = !n || nav.ativo;
+    b.textContent = "⚠️ Revisar " + n + (n === 1 ? " ponto" : " pontos") + " da última viagem";
+  }
+  function quando(iso) { var d = new Date(iso); return String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0") + " " + hhmm(d.getHours() * 60 + d.getMinutes()); }
+
+  // Botão grande na navegação: um toque grava o local, sem escrever nada
+  document.getElementById("btnMarcar").addEventListener("click", function () {
+    if (!nav.ultimaPos) { mostrarAlertaNav("Ainda sem sinal de GPS para marcar o local.", "info"); return; }
+    registrarOcorrencia("marcado", nav.ultimaPos.lon, nav.ultimaPos.lat, nav.instrAtual, nav.sAtual);
+    mostrarAlertaNav("✅ Problema marcado. Você confere no fim da viagem.", "info");
+    falar("Problema marcado.", "manobra");
+    vibrar(120);
+    setTimeout(function () { if (document.getElementById("navAlerta").textContent.indexOf("✅") === 0) mostrarAlertaNav(""); }, 4000);
+  });
+
+  /* Revisão no fim da viagem (só com o veículo parado) */
+  var mapasRevisao = [];
+  function mostrarRevisao() {
+    var lista = pendentes().concat(ocorrencias.filter(function (o) { return o.resposta === "proibido" && !o.enviado; }));
+    lista = lista.filter(function (o, i) { return lista.indexOf(o) === i; }).slice(-20);
+    if (!lista.length) return;
+    var nSaiu = lista.filter(function (o) { return o.tipo === "saiu"; }).length, nMarc = lista.length - nSaiu;
+    var titulo = (nSaiu ? "Você saiu da rota em " + nSaiu + (nSaiu === 1 ? " ponto" : " pontos") : "") +
+                 (nMarc ? (nSaiu ? " e marcou " : "Você marcou ") + nMarc + (nMarc === 1 ? " problema" : " problemas") : "") + ". Foi erro do app?";
+    document.getElementById("revTitulo").textContent = titulo;
+    var el = document.getElementById("revLista");
+    el.innerHTML = lista.map(function (o, i) {
+      return '<div class="rev-item" data-id="' + o.id + '">' +
+        '<p class="rev-cab"><b>' + (i + 1) + '.</b> ' + (o.tipo === "saiu" ? "Saiu da rota" : "Você marcou aqui") + ' · ' + quando(o.data) + '</p>' +
+        (o.instrucao ? '<p class="rev-instr">O app disse: <b>' + escapar(o.instrucao) + '</b></p>' : '') +
+        '<div class="rev-mapa" id="revMapa' + i + '"></div>' +
+        '<div class="rev-botoes">' +
+          '<button type="button" class="rev-sim" data-r="proibido">Sim, era proibido</button>' +
+          '<button type="button" data-r="quis">Não, eu quis mudar</button>' +
+          '<button type="button" data-r="naosei">Não lembro</button>' +
+        '</div></div>';
+    }).join("");
+    document.getElementById("revisao").hidden = false;
+    mapasRevisao.forEach(function (m) { try { m.remove(); } catch (e) {} });
+    mapasRevisao = [];
+    lista.forEach(function (o, i) {
+      var mm = L.map("revMapa" + i, { zoomControl: false, attributionControl: false, dragging: false, scrollWheelZoom: false, doubleClickZoom: false, touchZoom: false, boxZoom: false, keyboard: false, rotate: false });
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(mm);
+      var camadas = [];
+      if (o.prevista.length > 1) camadas.push(L.polyline(o.prevista.map(function (c) { return [c[1], c[0]]; }), { color: "#1565c0", weight: 6, opacity: 0.85 }).addTo(mm));
+      if (o.real.length > 1) camadas.push(L.polyline(o.real.map(function (c) { return [c[1], c[0]]; }), { color: "#ef6c00", weight: 4, dashArray: "6 6" }).addTo(mm));
+      L.circleMarker([o.lat, o.lon], { radius: 9, color: "#fff", weight: 3, fillColor: "#c62828", fillOpacity: 1 }).addTo(mm);
+      mm.setView([o.lat, o.lon], 17);
+      mapasRevisao.push(mm);
+    });
+    [].forEach.call(el.querySelectorAll(".rev-item"), function (item) {
+      var o = ocorrencias.filter(function (x) { return x.id === item.getAttribute("data-id"); })[0];
+      [].forEach.call(item.querySelectorAll("button"), function (b) {
+        if (o && o.resposta === b.getAttribute("data-r")) b.setAttribute("aria-pressed", "true");
+        b.addEventListener("click", function () {
+          if (!o) return;
+          o.resposta = b.getAttribute("data-r");
+          [].forEach.call(item.querySelectorAll("button"), function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+          salvarOcorrencias();
+          atualizarEnvio();
+          atualizarBotaoPendentes();
+        });
+      });
+    });
+    atualizarEnvio();
+  }
+  function paraEnviar() { return ocorrencias.filter(function (o) { return o.resposta === "proibido" && !o.enviado; }); }
+  function atualizarEnvio() {
+    var n = paraEnviar().length, b = document.getElementById("btnRevEnviar");
+    b.hidden = !n;
+    b.textContent = "📲 Enviar " + n + (n === 1 ? " ponto" : " pontos") + " pelo WhatsApp";
+  }
+  document.getElementById("btnRevEnviar").addEventListener("click", function () {
+    var lista = paraEnviar();
+    if (!lista.length) return;
+    var texto = "Rota Liberada: " + lista.length + (lista.length === 1 ? " ponto" : " pontos") + " com erro do app (motorista confirmou que era proibido)\n";
+    lista.forEach(function (o, i) {
+      texto += "\n" + (i + 1) + ") " + quando(o.data) + " · " + (o.tipo === "saiu" ? "saiu da rota" : "marcado pelo motorista") +
+               (o.instrucao ? "\nO app disse: " + o.instrucao : "") +
+               "\nLocal: https://maps.google.com/?q=" + o.lat.toFixed(6) + "," + o.lon.toFixed(6) + "\n";
+      o.enviado = true;
+    });
+    salvarOcorrencias();
+    atualizarEnvio();
+    window.open("https://wa.me/" + WHATSAPP_ERROS + "?text=" + encodeURIComponent(texto), "_blank");
+  });
+  function fecharRevisao() {
+    document.getElementById("revisao").hidden = true;
+    mapasRevisao.forEach(function (m) { try { m.remove(); } catch (e) {} });
+    mapasRevisao = [];
+    atualizarBotaoPendentes();
+  }
+  document.getElementById("btnRevFechar").addEventListener("click", fecharRevisao);
+  document.getElementById("btnRevisarPendentes").addEventListener("click", mostrarRevisao);
+  // No fim da viagem: só abre a revisão com o veículo parado
+  function revisarSePuder() {
+    if (nav.ativo && giro.velocidade >= 0.8) return false;
+    if (!pendentes().length) return true;
+    mostrarRevisao();
+    return true;
+  }
+  atualizarBotaoPendentes();
+
   setInterval(vigiarRestricoes, 60000);
 
   if (!dados.length) {
