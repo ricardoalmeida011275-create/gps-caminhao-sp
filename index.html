@@ -206,6 +206,23 @@ body.navegando .btn-centro { left: max(12px, env(safe-area-inset-left, 0px)); ri
 .rev-botoes button.rev-sim { border-color: #c62828; color: #c62828; }
 .rev-botoes button[aria-pressed="true"] { background: var(--botao-fundo, #e3eefb); border-color: var(--botao-borda, #0b5cad); color: var(--botao-texto, #0a3a70); }
 .rev-botoes button.rev-sim[aria-pressed="true"] { background: #c62828; border-color: #c62828; color: #fff; }
+/* Chegada automática: aviso com contagem e botão "Ainda não cheguei" */
+.chegada-aviso { position: fixed; inset: 0; z-index: 3500; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.chegada-aviso[hidden] { display: none; }
+.chegada-caixa { width: 100%; max-width: 440px; background: var(--papel); color: var(--asfalto); border-radius: 20px; padding: 22px 18px; text-align: center; box-shadow: 0 8px 30px rgba(0,0,0,.4); }
+.chegada-titulo { font-family: var(--f-titulo); font-weight: 700; font-size: 30px; margin: 0 0 6px; color: #1f7a3d; }
+.chegada-texto { font-size: 19px; margin: 0 0 10px; }
+.chegada-num { font-family: var(--f-titulo); font-weight: 700; font-size: 72px; line-height: 1; margin: 4px 0 16px; }
+.btn-ainda-nao {
+  display: block; width: 100%; min-height: 76px; border: 3px solid #fff; border-radius: 16px; cursor: pointer;
+  background: #e65100; color: #fff; font-family: var(--f-titulo); font-weight: 700; font-size: 24px; box-shadow: 0 4px 14px rgba(0,0,0,.3);
+}
+.viagem-concluida {
+  position: fixed; z-index: 3400; left: 50%; top: 40%; transform: translate(-50%, -50%); max-width: calc(100% - 32px);
+  background: #1f7a3d; color: #fff; border-radius: 18px; padding: 18px 26px; font-family: var(--f-titulo); font-weight: 700; font-size: 26px;
+  text-align: center; box-shadow: 0 8px 30px rgba(0,0,0,.35);
+}
+.viagem-concluida[hidden] { display: none; }
 .btn-pendentes { margin-bottom: 12px; border-style: solid; border-color: #e65100; background: #fff3e0; color: #8a3200; }
 .btn-tempos { display: block; width: 100%; margin-bottom: 12px; }
 .tempos-resumo { margin: 4px 0 10px; font-size: 16px; }
@@ -570,6 +587,17 @@ body { font-size: 16px; }
       <button type="button" class="btn-pequeno op-fechar" id="btnRevFechar">Fechar</button>
     </div>
   </div>
+
+  <!-- Chegada automática: contagem para encerrar a viagem sozinho -->
+  <div class="chegada-aviso" id="chegadaAviso" role="alertdialog" aria-modal="true" aria-labelledby="chegadaTitulo" hidden>
+    <div class="chegada-caixa">
+      <p class="chegada-titulo" id="chegadaTitulo">Você chegou!</p>
+      <p class="chegada-texto">Encerrando a viagem em <b id="chegadaSeg">10</b> segundos</p>
+      <p class="chegada-num" id="chegadaNum" aria-hidden="true">10</p>
+      <button type="button" class="btn-ainda-nao" id="btnAindaNao">Ainda não cheguei</button>
+    </div>
+  </div>
+  <div class="viagem-concluida" id="viagemConcluida" role="status" hidden>✅ Viagem concluída</div>
 
   <!-- Tempo previsto x real das viagens -->
   <div class="nav-opcoes" id="telaTempos" role="dialog" aria-modal="true" aria-labelledby="tituloTempos" hidden>
@@ -2753,6 +2781,7 @@ body { font-size: 16px; }
 
     // Chegada
     var paraB = Math.hypot.apply(null, (function () { var q = xy(lon, lat), d = xy(estado.B.lon, estado.B.lat); return [q[0] - d[0], q[1] - d[1]]; })());
+    vigiarChegada(paraB);
     if (paraB < 40 || (estado.rota.total - pos.s < 25 && pos.d < 60)) { chegou(); return; }
 
     // Fora da rota: mais de ~45 m da linha por 4 segundos (com GPS ruim, tolera um pouco mais)
@@ -2866,12 +2895,9 @@ body { font-size: 16px; }
   }
 
   function chegou() {
-    if (nav.chegou) {
-      // já chegou: assim que o veículo parar, abre a revisão dos pontos (uma vez)
-      if (nav.revisarAoParar && revisarSePuder()) nav.revisarAoParar = false;
-      return;
-    }
-    nav.chegou = true; nav.revisarAoParar = true;
+    // As perguntas agora abrem quando a viagem é encerrada (sozinha ou pelo botão)
+    if (nav.chegou) return;
+    nav.chegou = true; nav.revisarAoParar = false;
     guardarViagem();   // guarda o tempo previsto e o real desta viagem
     document.getElementById("navSeta").textContent = SETAS[10];
     document.getElementById("navDist").textContent = "Chegou";
@@ -2881,6 +2907,69 @@ body { font-size: 16px; }
     document.getElementById("navRestante").textContent = "0 m";
     falar(frase, "manobra");
     vibrar([300, 150, 300, 150, 300]);
+  }
+
+  /* ===== Chegada automática =====
+     Chegou = até 50 m do destino E quase parado (abaixo de ~5 km/h) por 20 segundos seguidos.
+     Aí mostra a contagem de 10 s; se o motorista não tocar em "Ainda não cheguei", encerra sozinho. */
+  var CHEGADA = { raio: 50, velMax: 5 / 3.6, segundosParado: 20, contagem: 10, raioRearmar: 80 };
+  function vigiarChegada(d) {
+    nav.distB = d;
+    // Tocou "Ainda não cheguei": só tenta de novo depois que ele se afastar do destino
+    if (nav.chegadaBloqueada) {
+      if (d > CHEGADA.raioRearmar) nav.chegadaBloqueada = false;
+      nav.pertoParadoDesde = null;
+      return;
+    }
+    if (d <= CHEGADA.raio && giro.velocidade < CHEGADA.velMax) {
+      if (!nav.pertoParadoDesde) nav.pertoParadoDesde = Date.now();
+    } else {
+      nav.pertoParadoDesde = null;
+      // Voltou a andar ou se afastou durante a contagem: cancela sem encerrar
+      if (nav.contagem && (d > CHEGADA.raioRearmar || giro.velocidade > 10 / 3.6)) pararContagem();
+    }
+  }
+  // Confere a cada segundo (parado, o GPS às vezes manda poucas leituras)
+  setInterval(function () {
+    if (!nav.ativo || nav.contagem || !nav.pertoParadoDesde) return;
+    if (Date.now() - nav.pertoParadoDesde >= CHEGADA.segundosParado * 1000) iniciarContagem();
+  }, 1000);
+  function iniciarContagem() {
+    var fim = Date.now() + CHEGADA.contagem * 1000;
+    nav.contagem = { fim: fim, timer: null };
+    function mostrarNum() {
+      var s = Math.max(0, Math.ceil((fim - Date.now()) / 1000));
+      document.getElementById("chegadaSeg").textContent = s;
+      document.getElementById("chegadaNum").textContent = s;
+      return s;
+    }
+    mostrarNum();
+    document.getElementById("navOpcoes").hidden = true;
+    document.getElementById("chegadaAviso").hidden = false;
+    falar("Você chegou! Encerrando a viagem em " + CHEGADA.contagem + " segundos.", "manobra");
+    vibrar([300, 150, 300]);
+    nav.contagem.timer = setInterval(function () {
+      if (mostrarNum() > 0) return;
+      pararContagem();
+      encerrarNavegacao(true);
+    }, 250);
+  }
+  function pararContagem() {
+    if (nav.contagem) clearInterval(nav.contagem.timer);
+    nav.contagem = null;
+    document.getElementById("chegadaAviso").hidden = true;
+  }
+  document.getElementById("btnAindaNao").addEventListener("click", function () {
+    pararContagem();
+    nav.chegadaBloqueada = true; nav.pertoParadoDesde = null;
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    falar("Tudo bem. A navegação continua.", "manobra");
+  });
+  function mostrarConcluida() {
+    var el = document.getElementById("viagemConcluida");
+    el.hidden = false;
+    clearTimeout(mostrarConcluida.t);
+    mostrarConcluida.t = setTimeout(function () { el.hidden = true; }, 4000);
   }
 
   function iniciarNavegacao() {
@@ -2893,6 +2982,8 @@ body { font-size: 16px; }
                    semAjuste: Math.round((estado.rota.duracaoServico || estado.rota.duracao) / 60), fator: estado.rota.fatorTempo || 1,
                    de: estado.A && estado.A.nome || "", para: estado.B && estado.B.nome || "" };
     nav.foraRegistrado = false; nav.ultimoNaRota = null; nav.instrAtual = ""; nav.sAtual = 0; nav.revisarAoParar = false; trilha = [];
+    nav.pertoParadoDesde = null; nav.chegadaBloqueada = false; pararContagem();
+    document.getElementById("viagemConcluida").hidden = true;
     document.getElementById("btnMarcar").hidden = false; document.getElementById("btnRevisarPendentes").hidden = true;
     nav.sUltimoOnibus = 0; nav.onibusAtual = null;
     document.body.classList.add("navegando");
@@ -2923,7 +3014,9 @@ body { font-size: 16px; }
     nav.watch = navigator.geolocation.watchPosition(aoReceberPosicao, aoFalharPosicao, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
   }
 
-  function encerrarNavegacao() {
+  function encerrarNavegacao(automatico) {
+    automatico = automatico === true;   // pelo botão, chega aqui o clique (não é automático)
+    pararContagem(); nav.pertoParadoDesde = null;
     nav.ativo = false;
     if (nav.watch !== null) { navigator.geolocation.clearWatch(nav.watch); nav.watch = null; }
     if (nav.tela) { try { nav.tela.release(); } catch (e) {} nav.tela = null; }
@@ -2934,8 +3027,15 @@ body { font-size: 16px; }
     mapa.setBearing(0);
     document.body.classList.remove("navegando");
     ["navTopo", "navBase", "navAlerta", "navFaixa", "btnBussola", "btnCentro", "velocimetro", "navOpcoes", "btnMarcar"].forEach(function (id) { document.getElementById(id).hidden = true; });
-    // Fim da viagem: com o veículo parado, mostra os pontos para revisar (andando, ficam guardados no botão do painel)
-    if (giro.velocidade < 1.5) revisarSePuder();
+    if (automatico) {
+      // Encerrou sozinho na chegada: perguntas só se nesta viagem ele marcou problema ou saiu da rota
+      var inicio = nav.viagem ? nav.viagem.inicio : 0;
+      var desta = ocorrencias.filter(function (o) { return new Date(o.data).getTime() >= inicio; });
+      if (desta.length && (pendentes().length || paraEnviar().length)) mostrarRevisao();
+      else mostrarConcluida();
+    }
+    // Fim da viagem pelo botão: com o veículo parado, mostra os pontos para revisar (andando, ficam guardados no botão do painel)
+    else if (giro.velocidade < 1.5) revisarSePuder();
     atualizarBotaoPendentes();
     setTimeout(function () {
       mapa.invalidateSize();
@@ -3108,6 +3208,8 @@ body { font-size: 16px; }
     var n = paraEnviar().length, b = document.getElementById("btnRevEnviar");
     b.hidden = !n;
     b.textContent = "📲 Enviar " + n + (n === 1 ? " ponto" : " pontos") + " pelo WhatsApp";
+    // Com perguntas sem resposta (ou pontos sem enviar), o botão de sair vira "Responder depois": tudo fica guardado
+    document.getElementById("btnRevFechar").textContent = (pendentes().length || n) ? "Responder depois" : "Fechar";
   }
   document.getElementById("btnRevEnviar").addEventListener("click", function () {
     var lista = paraEnviar();
@@ -3139,6 +3241,9 @@ body { font-size: 16px; }
     return true;
   }
   atualizarBotaoPendentes();
+  // Rede de segurança: ficou pergunta sem resposta (app fechado, celular desligou, "Responder depois")?
+  // Mostra assim que o GPS abre, antes de digitar o novo destino.
+  if (pendentes().length || paraEnviar().length) setTimeout(function () { if (!nav.ativo) mostrarRevisao(); }, 400);
 
 
   /* ================= Tempo de chegada mais realista (sem trânsito ao vivo) ================= */
