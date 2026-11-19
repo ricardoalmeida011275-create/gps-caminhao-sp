@@ -1981,6 +1981,56 @@ body { font-size: 16px; }
     return turf.buffer(linha, 18, { units: "meters" });
   }
 
+
+  /* ================= Frases das instruções, do jeito que o motorista fala ================= */
+  var FEM = /^(Rua|Avenida|Av\.|Praça|Estrada|Ponte|Marginal|Radial|Alameda|Travessa|Rodovia|Alça|Via|Ladeira|Passagem|Saída|Ligação|Pista|Rotatória)\b/i;
+  var MASC = /^(Acesso|Viaduto|Largo|Complexo|Elevado|Túnel|Anel|Corredor|Trevo|Parque|Retorno|Pátio|Terminal)\b/i;
+  var VIA_RAPIDA = /^(Avenida|Av\.|Radial|Marginal|Via|Rodovia|Elevado|Viaduto|Ponte|Complexo|Corredor|Anel)\b/i;
+  var ALCA = /^(Acesso|Alça|Saída|Ligação|Retorno|Pista)\b/i;
+  function temNome(n) { return !!n && n !== "-" && n.trim() !== ""; }
+  function paraNome(n) { return FEM.test(n) ? "para a " + n : MASC.test(n) ? "para o " + n : "para " + n; }
+  function aoNome(n) { return FEM.test(n) ? "à " + n : MASC.test(n) ? "ao " + n : "a " + n; }
+  function pelaNome(n) { return FEM.test(n) ? "pela " + n : MASC.test(n) ? "pelo " + n : "por " + n; }
+  function fraseMotorista(st, anterior, proximo) {
+    var nome = temNome(st.name) ? st.name : "", atual = anterior && temNome(anterior.name) ? anterior.name : "";
+    var lado = { 0: "à esquerda", 1: "à direita", 2: "à esquerda", 3: "à direita", 4: "à esquerda", 5: "à direita", 12: "à esquerda", 13: "à direita" }[st.type];
+    var depois = proximo && temNome(proximo.name) ? proximo.name : "";
+    // destino da manobra: nome da rua/acesso; sem nome, "acesso à" próxima rua; sem nada, "na próxima saída"
+    function destinoSaida() {
+      if (nome && nome === atual) return "para a pista lateral";
+      if (nome) return paraNome(nome);
+      if (depois) return "para o acesso " + aoNome(depois);
+      return "na próxima saída";
+    }
+    function destinoRua() { return nome ? paraNome(nome) : (depois ? "para o acesso " + aoNome(depois) : "na próxima rua"); }
+    var pegaAlca = !nome || ALCA.test(nome) || (nome === atual && VIA_RAPIDA.test(atual));
+    switch (st.type) {
+      case 12: case 13:     // bifurcação: saída para pista lateral/alça, ou manter faixa
+        return (pegaAlca ? "Saia " + lado + " " + destinoSaida() : "Mantenha-se " + lado + (nome ? " " + paraNome(nome) : ""));
+      case 4: case 5:       // curva leve
+        if (pegaAlca || VIA_RAPIDA.test(atual)) return "Saia " + lado + " " + destinoSaida();
+        return "Vire " + lado + " " + destinoRua();
+      case 0: case 1:       // conversão normal
+        if (pegaAlca && VIA_RAPIDA.test(atual) && (!nome || ALCA.test(nome))) return "Saia " + lado + " " + destinoSaida();
+        return "Vire " + lado + " " + destinoRua();
+      case 2: case 3:       // curva fechada
+        return "Faça a curva fechada " + lado + " " + destinoRua();
+      case 6:  return "Siga em frente" + (nome ? " " + pelaNome(nome) : "");
+      case 7:  return "Na rotatória, pegue a " + (st.exit_number ? st.exit_number + "ª " : "") + "saída" + (nome ? " " + paraNome(nome) : "");
+      case 8:  return "Saia da rotatória" + (nome ? " " + paraNome(nome) : "");
+      case 9:  return "Faça o retorno" + (nome ? " " + paraNome(nome) : "");
+      case 10: { var m = /,\s*(à direita|à esquerda)\s*$/.exec(st.instruction || ""); return "Você chegou ao destino" + (m ? ", " + m[1] : ""); }
+      case 11: return nome ? "Siga " + pelaNome(nome) : "Siga em frente";
+    }
+    return st.instruction;
+  }
+  function aplicarFrases(passos) {
+    passos.forEach(function (st, i) {
+      st.instrucaoServico = st.instruction;
+      st.instruction = fraseMotorista(st, passos[i - 1], passos[i + 1]);
+    });
+  }
+
   /* ================= Lista de bloqueios e retornos (erros do mapa) ================= */
   // Barreira redonda bem pequena em volta de um ponto (raio em metros)
   function barreira(lon, lat, raio) {
@@ -2248,6 +2298,7 @@ body { font-size: 16px; }
         ((res.f.properties && res.f.properties.segments) || []).forEach(function (sg) {
           (sg.steps || []).forEach(function (st) { res.passos.push(Object.assign({}, st)); });
         });
+        aplicarFrases(res.passos);   // mesmas frases na tela e na voz
         return res;
       });
     });
@@ -2995,7 +3046,7 @@ body { font-size: 16px; }
     mapasRevisao.forEach(function (m) { try { m.remove(); } catch (e) {} });
     mapasRevisao = [];
     lista.forEach(function (o, i) {
-      var mm = L.map("revMapa" + i, { zoomControl: false, attributionControl: false, dragging: false, scrollWheelZoom: false, doubleClickZoom: false, touchZoom: false, boxZoom: false, keyboard: false, rotate: false });
+      var mm = L.map("revMapa" + i, { rotateControl: false, zoomControl: false, attributionControl: false, dragging: false, scrollWheelZoom: false, doubleClickZoom: false, touchZoom: false, boxZoom: false, keyboard: false, rotate: false });
       L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(mm);
       var camadas = [];
       if (o.prevista.length > 1) camadas.push(L.polyline(o.prevista.map(function (c) { return [c[1], c[0]]; }), { color: "#1565c0", weight: 6, opacity: 0.85 }).addTo(mm));
@@ -3084,7 +3135,7 @@ body { font-size: 16px; }
   });
   mostrarNotaTema();
   // Só para testes (abrir o app com ?teste=1 no endereço): deixa conferir as rotas pelo console
-  if (/[?&]teste=1/.test(location.search)) window._teste = { calcularRota: calcularRota, manobrasRuins: manobrasRuins, momentoAtual: momentoAtual, bloqueios: BLOQ };
+  if (/[?&]teste=1/.test(location.search)) window._teste = { fraseMotorista: fraseMotorista, calcularRota: calcularRota, manobrasRuins: manobrasRuins, momentoAtual: momentoAtual, bloqueios: BLOQ };
 })();
 </script>
 
