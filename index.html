@@ -2435,7 +2435,7 @@ body { font-size: 16px; }
   }
 
   /* ---------- Mapa que gira e segue o caminhão ---------- */
-  var giro = { modo: "direcao", alvo: 0, bussola: null, velocidade: 0, ultimaFix: null, zoomAtual: 17,
+  var giro = { modo: "direcao", alvo: 0, suave: 0, bussola: null, velocidade: 0, ultimaFix: null, zoomAtual: 17,
                ultimoToque: 0, animando: false, destaque: null, destaqueIdx: -1 };
   if (ler("rotaCaminhaoSP.modoMapa") === "norte") giro.modo = "norte";
 
@@ -2485,13 +2485,15 @@ body { font-size: 16px; }
     var kmh = Math.round(giro.velocidade * 3.6);
     document.getElementById("velNum").textContent = kmh < 3 ? "0" : String(kmh);
 
-    var nova = null;
-    if (giro.velocidade >= 2.5 && dirGps !== null && !isNaN(dirGps)) nova = dirGps;
-    else if (giro.velocidade >= 2.5 && dirMov !== null) nova = dirMov;
+    // Direção que o GPS mede (só confiável andando)
+    var gps = (dirGps !== null && !isNaN(dirGps)) ? dirGps : dirMov;
+    var vel = giro.velocidade, nova = null;
     // Guarda para onde o caminhão andava por último (o recálculo usa para não mandar voltar)
-    if (giro.velocidade >= 2.5 && nova !== null) { giro.rumoMov = nova; giro.rumoMovT = agora; }
-    else if (giro.bussola !== null) nova = giro.bussola;
-    else if (rotaGraus !== null) nova = rotaGraus;
+    if (vel >= 2.5 && gps !== null) { giro.rumoMov = gps; giro.rumoMovT = agora; }
+    if (vel < 0.8) nova = null;                                                   // parado: o mapa não gira
+    else if (rotaGraus !== null && (vel < 2.8 || gps === null || Math.abs(difAngulo(rotaGraus, gps)) < 60)) nova = rotaGraus;  // na rota (ou devagar): direção da própria rota
+    else if (vel >= 2.8 && gps !== null) nova = gps;                              // fora da rota e andando acima de ~10 km/h: direção do GPS
+    // Devagar e fora da rota: mantém a direção que já estava (não fica "adivinhando")
     // Ignora mexidinhas pequenas para o mapa não ficar tremendo
     if (nova !== null && Math.abs(difAngulo(giro.alvo, nova)) > 4) giro.alvo = (nova + 360) % 360;
   }
@@ -2499,10 +2501,13 @@ body { font-size: 16px; }
   /* Gira o mapa e a seta de forma suave, quadro a quadro */
   function animarGiro() {
     if (!nav.ativo) { giro.animando = false; return; }
-    if (giro.velocidade < 2.5 && giro.bussola !== null && Math.abs(difAngulo(giro.alvo, giro.bussola)) > 4) giro.alvo = giro.bussola;
-    var alvoMapa = giro.modo === "direcao" ? -giro.alvo : 0;
+    // Giro suave: vai aos poucos até a direção nova, no máximo ~3 graus por quadro (sem trancos)
+    var dd = difAngulo(giro.suave, giro.alvo), passo = dd * 0.07;
+    if (Math.abs(passo) > 3) passo = passo > 0 ? 3 : -3;
+    if (Math.abs(dd) > 0.3) giro.suave = (giro.suave + passo + 360) % 360;
+    var alvoMapa = giro.modo === "direcao" ? -giro.suave : 0;
     var atual = mapa.getBearing() || 0, d = difAngulo(atual, alvoMapa);
-    if (Math.abs(d) > 0.4) mapa.setBearing(atual + d * 0.12);
+    if (Math.abs(d) > 0.3) mapa.setBearing(atual + d * 0.5);
     atualizarSetaEBussola();
     requestAnimationFrame(animarGiro);
   }
@@ -2512,7 +2517,7 @@ body { font-size: 16px; }
     var b = mapa.getBearing() || 0;
     var el = nav.marcador && nav.marcador.getElement && nav.marcador.getElement();
     var seta = el && el.querySelector(".pos-seta");
-    if (seta) seta.style.transform = "rotate(" + Math.round(giro.alvo + b) + "deg)";
+    if (seta) seta.style.transform = "rotate(" + Math.round(giro.suave + b) + "deg)";
     var agulha = document.getElementById("agulhaBussola");
     if (agulha) agulha.style.transform = "rotate(" + Math.round(b) + "deg)";
   }
@@ -2548,7 +2553,7 @@ body { font-size: 16px; }
     var centro = [lon, lat];
     if (desloc > 0) {
       var mpp = 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, z);
-      centro = turf.destination(turf.point([lon, lat]), desloc * mpp / 1000, giro.alvo, { units: "kilometers" }).geometry.coordinates;
+      centro = turf.destination(turf.point([lon, lat]), desloc * mpp / 1000, giro.suave, { units: "kilometers" }).geometry.coordinates;
     }
     mapa.setView([centro[1], centro[0]], z, { animate: true, duration: 0.8 });
   }
@@ -2605,16 +2610,28 @@ body { font-size: 16px; }
   function aoReceberPosicao(p) {
     var lon = p.coords.longitude, lat = p.coords.latitude, prec = p.coords.accuracy || 20;
     if (!nav.ativo) return;
+    // Sinal fraco do GPS (erro maior que 50 m): ignora a leitura, a não ser que faz tempo sem leitura boa
+    var agoraMs = Date.now();
+    if (prec > 50 && nav.ultimaBoa && agoraMs - nav.ultimaBoa < 15000) return;
+    // Pulo impossível (mais de 180 km/h entre duas leituras): ignora
+    if (nav.ultimaFixBoa) {
+      var q0 = xy(nav.ultimaFixBoa.lon, nav.ultimaFixBoa.lat), q1 = xy(lon, lat), dtq = (agoraMs - nav.ultimaFixBoa.t) / 1000;
+      if (dtq > 0 && dtq < 10 && Math.hypot(q1[0] - q0[0], q1[1] - q0[1]) / dtq > 50) return;
+    }
+    nav.ultimaBoa = agoraMs; nav.ultimaFixBoa = { lon: lon, lat: lat, t: agoraMs };
     nav.ultimaPos = { lon: lon, lat: lat };
 
     if (nav.recalculando) { atualizarDirecao(p, null); moverMarcador(lat, lon); seguirCaminhao(lat, lon); return; }
     var pos = localizarNaRota(lon, lat), rotaGraus = null;
-    if (pos.d < 60 && estado.rota.pts[pos.i + 1]) {
-      var a = estado.rota.pts[pos.i], b = estado.rota.pts[pos.i + 1];
-      rotaGraus = (90 - rumo(a, b) * 180 / Math.PI + 360) % 360;
+    if (pos.d < 30 && estado.rota.pts[pos.i + 1]) {
+      // direção da rota olhando uns 20 m à frente (não pula nas esquinas do desenho)
+      rotaGraus = grausEntre(pontoNaRota(estado.rota, pos.s).p, pontoNaRota(estado.rota, pos.s + 20).p);
     }
     atualizarDirecao(p, rotaGraus);
-    moverMarcador(lat, lon);
+    // Perto da rota (até 20 m): a seta "gruda" na linha da rota
+    var latV = lat, lonV = lon;
+    if (pos.d < 20) { var cg = pontoNaRota(estado.rota, pos.s).c; lonV = cg[0]; latV = cg[1]; }
+    moverMarcador(latV, lonV);
 
     // Chegada
     var paraB = Math.hypot.apply(null, (function () { var q = xy(lon, lat), d = xy(estado.B.lon, estado.B.lat); return [q[0] - d[0], q[1] - d[1]]; })());
@@ -2648,7 +2665,7 @@ body { font-size: 16px; }
     else limparDestaque();
     var z = zoomDesejado(manobra.dist, tipoManobra);
     if (Math.abs(z - giro.zoomAtual) >= 0.25) giro.zoomAtual = z;
-    seguirCaminhao(lat, lon);
+    seguirCaminhao(latV, lonV);
   }
 
   function mostrarAvisoOnibus(o, s) {
@@ -2756,6 +2773,7 @@ body { font-size: 16px; }
     // Mapa girando: começa olhando na direção da rota
     var r0 = estado.rota;
     giro.alvo = r0.pts[1] ? (90 - rumo(r0.pts[0], r0.pts[1]) * 180 / Math.PI + 360) % 360 : 0;
+    giro.suave = giro.alvo; nav.ultimaBoa = 0; nav.ultimaFixBoa = null;
     giro.velocidade = 0; giro.ultimaFix = null; giro.zoomAtual = 17; limparDestaque();
     limparOpcoes(); // durante a navegação, só a rota escolhida aparece
     document.getElementById("btnBussola").hidden = false;
