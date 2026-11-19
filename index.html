@@ -1995,15 +1995,16 @@ body { font-size: 16px; }
       if (s < 20 || total - s < 40) continue;
       var antes = pontoNaRota(r, s - 30), depois = pontoNaRota(r, s + 30);
       var gIn = grausEntre(antes.p, r.pts[i]), gOut = grausEntre(r.pts[i], depois.p);
-      if (Math.abs(difAngulo(gIn, gOut)) < 150) continue;
+      if (Math.abs(difAngulo(gIn, gOut)) < 140) continue;
       if (Math.hypot(antes.p[0] - depois.p[0], antes.p[1] - depois.p[1]) > 25) continue;   // curva larga (alça), não é retorno no canteiro
-      // a travessia do canteiro: trecho curto, atravessado em relação à avenida
+      // a travessia do canteiro: trecho curto, atravessado em relação à avenida (direção de quem chega, antes da curva)
+      var gChega = grausEntre(pontoNaRota(r, s - 45).p, pontoNaRota(r, s - 20).p);
       var melhor = null;
       for (var k = 0; k < n - 1; k++) {
         if (r.acum[k + 1] < s - 30 || r.acum[k] > s + 30) continue;
         var L = r.acum[k + 1] - r.acum[k];
         if (L < 4 || L > 40) continue;
-        var dif = Math.abs(difAngulo(gIn, grausEntre(r.pts[k], r.pts[k + 1])));
+        var dif = Math.abs(difAngulo(gChega, grausEntre(r.pts[k], r.pts[k + 1])));
         if (dif < 55 || dif > 125) continue;
         var dist = Math.abs((r.acum[k] + L / 2) - s);
         if (!melhor || dist < melhor.dist) melhor = { k: k, dist: dist, L: L };
