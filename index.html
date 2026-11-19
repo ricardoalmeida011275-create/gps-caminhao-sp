@@ -705,6 +705,7 @@ body { font-size: 16px; }
 <script src="locais-sp.js"></script>
 <script src="zer-sp.js"></script>
 <script src="onibus-sp.js"></script>
+<script src="bloqueios-sp.js"></script>
 <script>
 (function () {
   "use strict";
@@ -1942,6 +1943,88 @@ body { font-size: 16px; }
     return turf.buffer(linha, 18, { units: "meters" });
   }
 
+  /* ================= Lista de bloqueios e retornos (erros do mapa) ================= */
+  // Barreira redonda bem pequena em volta de um ponto (raio em metros)
+  function barreira(lon, lat, raio) {
+    return turf.circle([lon, lat], (raio || 3) / 1000, { units: "kilometers", steps: 10 });
+  }
+  var BLOQ = (typeof BLOQUEIOS_SP !== "undefined" ? BLOQUEIOS_SP : []).filter(function (b) { return b && b.depois && b.barreira; }).map(function (b, i) {
+    return { b: b, id: "bq" + i, depois: xy(b.depois[0], b.depois[1]), antes: b.antes ? xy(b.antes[0], b.antes[1]) : null };
+  });
+  function medirRota(coords) {
+    var pts = coords.map(function (c) { return xy(c[0], c[1]); }), acum = [0];
+    for (var i = 1; i < pts.length; i++) acum.push(acum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+    return { pts: pts, acum: acum, coords: coords };
+  }
+  // Ponto (x,y e lon,lat) a "s" metros do começo da rota
+  function pontoNaRota(r, s) {
+    var n = r.pts.length;
+    if (s <= 0) return { p: r.pts[0], c: r.coords[0] };
+    for (var i = 1; i < n; i++) {
+      if (r.acum[i] >= s) {
+        var L = r.acum[i] - r.acum[i - 1], t = L > 0 ? (s - r.acum[i - 1]) / L : 0, a = r.pts[i - 1], b = r.pts[i], ca = r.coords[i - 1], cb = r.coords[i];
+        return { p: [a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1])], c: [ca[0] + t * (cb[0] - ca[0]), ca[1] + t * (cb[1] - ca[1])] };
+      }
+    }
+    return { p: r.pts[n - 1], c: r.coords[n - 1] };
+  }
+  function grausEntre(a, b) { return (90 - rumo(a, b) * 180 / Math.PI + 360) % 360; }
+
+  /* Procura na rota: manobras da lista de bloqueios, retornos (meia-volta) e, no recálculo, rota que manda voltar.
+     Devolve as barreiras a colocar no próximo pedido. */
+  function manobrasRuins(coords, rumoInicial) {
+    var r = medirRota(coords), n = r.pts.length, total = r.acum[n - 1] || 0, ruins = [];
+    if (n < 2) return ruins;
+    // 1) Lista de bloqueios: a rota passa pelo caminho proibido, vindo do lado proibido
+    BLOQ.forEach(function (q) {
+      for (var j = 0; j < n - 1; j++) {
+        if (distSeg(q.depois, r.pts[j], r.pts[j + 1]) > 6) continue;
+        var veioDoLado = !q.antes;
+        for (var k = j; !veioDoLado && k >= 0 && r.acum[j] - r.acum[k] < 120; k--) {
+          if (distSeg(q.antes, r.pts[k], r.pts[k + 1]) <= 5) veioDoLado = true;
+        }
+        if (veioDoLado) {
+          ruins.push({ tipo: "bloqueio", id: q.id, nome: q.b.nome, fixo: true, poli: barreira(q.b.barreira[0], q.b.barreira[1], q.b.raio) });
+          return;
+        }
+      }
+    });
+    // 2) Retorno pelo canteiro: a rota dá meia-volta em poucos metros (ida e volta lado a lado)
+    for (var i = 1; i < n - 1; i++) {
+      var s = r.acum[i];
+      if (s < 20 || total - s < 40) continue;
+      var antes = pontoNaRota(r, s - 30), depois = pontoNaRota(r, s + 30);
+      var gIn = grausEntre(antes.p, r.pts[i]), gOut = grausEntre(r.pts[i], depois.p);
+      if (Math.abs(difAngulo(gIn, gOut)) < 150) continue;
+      if (Math.hypot(antes.p[0] - depois.p[0], antes.p[1] - depois.p[1]) > 25) continue;   // curva larga (alça), não é retorno no canteiro
+      // a travessia do canteiro: trecho curto, atravessado em relação à avenida
+      var melhor = null;
+      for (var k = 0; k < n - 1; k++) {
+        if (r.acum[k + 1] < s - 30 || r.acum[k] > s + 30) continue;
+        var L = r.acum[k + 1] - r.acum[k];
+        if (L < 4 || L > 40) continue;
+        var dif = Math.abs(difAngulo(gIn, grausEntre(r.pts[k], r.pts[k + 1])));
+        if (dif < 55 || dif > 125) continue;
+        var dist = Math.abs((r.acum[k] + L / 2) - s);
+        if (!melhor || dist < melhor.dist) melhor = { k: k, dist: dist, L: L };
+      }
+      if (melhor) {
+        var a = r.coords[melhor.k], b = r.coords[melhor.k + 1];
+        ruins.push({ tipo: "retorno", fixo: true, nome: "retorno", poli: barreira((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, Math.min(2.5, melhor.L / 2 - 1)) });
+      }
+      while (i < n - 1 && r.acum[i] < s + 30) i++;     // não conta o mesmo retorno duas vezes
+    }
+    // 3) Recálculo: a rota nova começa voltando para trás do caminhão
+    if (rumoInicial !== null && rumoInicial !== undefined && total > 60) {
+      var g0 = grausEntre(pontoNaRota(r, 3).p, pontoNaRota(r, 35).p);
+      if (Math.abs(difAngulo(rumoInicial, g0)) > 110) {
+        var pv = pontoNaRota(r, 15).c;
+        ruins.push({ tipo: "volta", fixo: false, nome: "voltar", poli: barreira(pv[0], pv[1], 4) });
+      }
+    }
+    return ruins;
+  }
+
   function pedirRota(orig, dest, desvios, alternativas) {
     var ehCarro = estado.veiculo === "carro";
     var corpo = {
@@ -2023,7 +2106,14 @@ body { font-size: 16px; }
     if (situacao("rodizio", m) === "atencao") avisos.push("Informe o final da placa: neste horário o rodízio pode valer para o seu " + (m.veiculo === "carro" ? "carro." : "caminhão."));
 
     // Desvios de trechos já descobertos antes (ex.: rota anterior). Só valem se o trecho continua proibido agora.
-    var desviosTrecho = (opcoes.desviosAnteriores || []).filter(function (d) { return situacao(d.tipo, m) === "proibido"; });
+    // (barreiras da lista de bloqueios e de retornos valem sempre; a de "não voltar" só vale para aquele recálculo)
+    var desviosTrecho = (opcoes.desviosAnteriores || []).filter(function (d) {
+      if (d.fixo) return true;
+      if (d.tipo === "volta") return false;
+      return situacao(d.tipo, m) === "proibido";
+    });
+    var rumoInicial = (opcoes.rumoInicial === undefined) ? null : opcoes.rumoInicial;
+    var jaEstendeu = false;
     var a0 = xy(orig.lon, orig.lat), b0 = xy(dest.lon, dest.lat);
     var querAlternativas = !!opcoes.alternativas && Math.hypot(b0[0] - a0[0], b0[1] - a0[1]) < 60000;
     var querQuantas = querAlternativas ? 3 : 1;
@@ -2050,7 +2140,17 @@ body { font-size: 16px; }
         feats.forEach(function (f) {
           var c = { f: f, coords: f.geometry.coordinates };
           c.problemas = conferir(c.coords, m, ignorar);
-          if (!c.problemas.length) { if (!repetida(c)) validas.push(c); return; }
+          // Manobras proibidas da lista, retornos e (no recálculo) mandar voltar: aprende a barreira e pede de novo
+          c.ruins = manobrasRuins(c.coords, rumoInicial);
+          c.ruins.forEach(function (rb) {
+            var jaTem = desviosTrecho.concat(novos).some(function (d) { return (rb.id && d.id === rb.id) || (d.poli && rb.poli && turf.booleanEqual(d.poli, rb.poli)); });
+            if (!jaTem) novos.push(rb);
+          });
+          if (!c.problemas.length && !c.ruins.length) { if (!repetida(c)) validas.push(c); return; }
+          if (!c.problemas.length) {
+            if (!piorCaso || piorCaso.problemas.length || c.ruins.length < piorCaso.ruins.length) piorCaso = c;
+            return;
+          }
           // Rota com restrição: descarta, mas aprende os trechos proibidos para o próximo pedido
           c.problemas.filter(function (p) { return !p.area; }).forEach(function (tr) {
             novos.push({ tipo: tr.tipo, poli: desvioDoTrecho(tr) });
@@ -2060,8 +2160,10 @@ body { font-size: 16px; }
             var jaTem = desviosTrecho.concat(novos).some(function (d) { return d.zerId === p.zer.id; });
             if (!jaTem) novos.push({ tipo: "zerc", zerId: p.zer.id, poli: p.zer.f });
           });
-          if (!piorCaso || c.problemas.length < piorCaso.problemas.length) piorCaso = c;
+          if (!piorCaso || (piorCaso.problemas.length && c.problemas.length < piorCaso.problemas.length)) piorCaso = c;
         });
+        // Barreiras novas de manobra proibida/retorno: permite até 2 pedidos a mais
+        if (!jaEstendeu && novos.some(function (d) { return d.fixo || d.tipo === "volta"; })) { jaEstendeu = true; maxTentativas += 2; }
         if (validas.length < querQuantas && novos.length && tentativa < maxTentativas) {
           desviosTrecho = desviosTrecho.concat(novos);
           return rodar(usarAlternativas);
@@ -2088,7 +2190,11 @@ body { font-size: 16px; }
         res.distancia = sum.distance || 0;
         res.duracao = sum.duration || 0;
         res.avisos = avisos.slice();
-        if (tentativa > 1 && primeiraDistancia && res.distancia > primeiraDistancia * 1.3) {
+        (res.ruins || []).forEach(function (rb) {
+          if (rb.tipo === "bloqueio") res.avisos.push("Atenção: não achei outro caminho. " + rb.nome + ". Confira as placas.");
+          else if (rb.tipo === "retorno") res.avisos.push("Atenção: não achei caminho sem retorno. Se não puder fazer o retorno, siga em frente que o GPS recalcula.");
+        });
+        if (tentativa > 1 && primeiraDistancia && res.distancia > primeiraDistancia * 1.3 && !desviosTrecho.every(function (d) { return d.fixo || d.tipo === "volta"; })) {
           res.avisos.push("Para fugir das avenidas proibidas neste horário, a rota ficou " + km(res.distancia - primeiraDistancia) + " mais longa que o caminho mais curto (" + km(primeiraDistancia) + "). Talvez valha esperar o horário liberado.");
         }
         res.chegada = somarMinutos(m, res.duracao / 60);
@@ -2381,6 +2487,8 @@ body { font-size: 16px; }
     var nova = null;
     if (giro.velocidade >= 2.5 && dirGps !== null && !isNaN(dirGps)) nova = dirGps;
     else if (giro.velocidade >= 2.5 && dirMov !== null) nova = dirMov;
+    // Guarda para onde o caminhão andava por último (o recálculo usa para não mandar voltar)
+    if (giro.velocidade >= 2.5 && nova !== null) { giro.rumoMov = nova; giro.rumoMovT = agora; }
     else if (giro.bussola !== null) nova = giro.bussola;
     else if (rotaGraus !== null) nova = rotaGraus;
     // Ignora mexidinhas pequenas para o mapa não ficar tremendo
@@ -2577,8 +2685,10 @@ body { font-size: 16px; }
     falar(/saiu da rota/.test(motivo) ? "Recalculando" : motivo.replace("…", ""), "manobra");
     var orig = { lon: lon, lat: lat, nome: "Posição atual" };
     // Mesmo caminhão, mesmas restrições; reaproveita os desvios já descobertos para ser mais rápido
+    // Direção em que o caminhão vinha andando (últimos 30 s): a rota nova deve seguir em frente, sem retorno
+    var rumoInicial = (giro.rumoMovT && Date.now() - giro.rumoMovT < 30000) ? giro.rumoMov : null;
     calcularRota(orig, estado.B, momentoAtual(), null, {
-      alternativas: false, desviosAnteriores: estado.rota ? estado.rota.desviosTrecho : []
+      alternativas: false, desviosAnteriores: estado.rota ? estado.rota.desviosTrecho : [], rumoInicial: rumoInicial
     }).then(function (lista) {
       var res = lista[0];
       estado.opcoes = [res]; estado.escolhida = 0;
@@ -2758,6 +2868,8 @@ body { font-size: 16px; }
     if (estado.opcoes && estado.opcoes.length > 1 && !nav.ativo) desenharOpcoes(estado.opcoes, estado.escolhida || 0, false);
   });
   mostrarNotaTema();
+  // Só para testes (abrir o app com ?teste=1 no endereço): deixa conferir as rotas pelo console
+  if (/[?&]teste=1/.test(location.search)) window._teste = { calcularRota: calcularRota, manobrasRuins: manobrasRuins, momentoAtual: momentoAtual, bloqueios: BLOQ };
 })();
 </script>
 
