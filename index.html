@@ -225,6 +225,21 @@ body.navegando .btn-centro { left: max(12px, env(safe-area-inset-left, 0px)); ri
 .viagem-concluida[hidden] { display: none; }
 .btn-pendentes { margin-bottom: 12px; border-style: solid; border-color: #e65100; background: #fff3e0; color: #8a3200; }
 .btn-tempos { display: block; width: 100%; margin-bottom: 12px; }
+/* Cadastro rápido e mural de novidades */
+.cad-texto { margin: 0 0 10px; font-size: 16px; }
+.cad-rotulo { display: block; font-weight: 700; font-size: 15px; margin: 10px 0 4px; }
+.cad-campo { width: 100%; font-size: 18px; padding: 11px 12px; border: 2px solid var(--linha); border-radius: 10px; background: var(--fundo); color: var(--asfalto); }
+.cad-aceite { display: flex; gap: 10px; align-items: flex-start; margin: 12px 0 6px; font-size: 15px; }
+.cad-aceite input { width: 22px; height: 22px; flex: none; margin-top: 1px; }
+.cad-dica { font-size: 14px; color: var(--suave); margin: 8px 0 0; }
+.cad-erro { color: var(--proibido); font-weight: 700; margin: 8px 0 0; }
+.cad-erro:empty { display: none; }
+.btn-apagar-cad { display: block; width: 100%; margin-top: 10px; background: transparent; border: 0; color: var(--proibido); font-weight: 700; font-size: 15px; cursor: pointer; padding: 8px; }
+.nov-item { border-left: 4px solid var(--aviso); padding: 4px 0 4px 10px; margin: 10px 0; }
+.nov-item p { margin: 0; font-size: 17px; white-space: pre-wrap; }
+.nov-item small { color: var(--suave); font-size: 13px; }
+.painel-extras { display: flex; gap: 8px; margin-bottom: 12px; }
+.painel-extras button { flex: 1; }
 .tempos-resumo { margin: 4px 0 10px; font-size: 16px; }
 table.tempos { width: 100%; border-collapse: collapse; font-size: 15px; }
 table.tempos th, table.tempos td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--linha); }
@@ -599,6 +614,34 @@ body { font-size: 16px; }
   </div>
   <div class="viagem-concluida" id="viagemConcluida" role="status" hidden>✅ Viagem concluída</div>
 
+  <!-- Cadastro rápido (uma vez só, sem senha) -->
+  <div class="nav-opcoes" id="telaCadastro" role="dialog" aria-modal="true" aria-labelledby="cadTitulo" hidden>
+    <div class="nav-opcoes-caixa">
+      <p class="nav-opcoes-titulo" id="cadTitulo">🚚 Bem-vindo ao Rota Liberada!</p>
+      <p class="cad-texto" id="cadTexto">Deixe seu nome e WhatsApp para receber as novidades do app. Leva 10 segundos, sem senha.</p>
+      <label class="cad-rotulo" for="cadNome">Seu nome</label>
+      <input class="cad-campo" id="cadNome" type="text" maxlength="60" autocomplete="name" placeholder="Ex.: João da Silva">
+      <label class="cad-rotulo" for="cadWhats">Seu WhatsApp (com DDD)</label>
+      <input class="cad-campo" id="cadWhats" type="tel" inputmode="numeric" maxlength="20" autocomplete="tel" placeholder="Ex.: (11) 98765-4321">
+      <label class="cad-aceite"><input type="checkbox" id="cadAceite"> <span>Aceito receber mensagens do Rota Liberada pelo WhatsApp e pelo app.</span></label>
+      <p class="cad-dica">💡 Salve o número do Ricardo <b>(11) 96195-0268</b> para receber as novidades no WhatsApp.</p>
+      <p class="cad-dica"><a href="privacidade.html" target="_blank" rel="noopener">Como usamos seus dados</a></p>
+      <p class="cad-erro" id="cadErro" role="alert"></p>
+      <button type="button" class="btn-rota" id="btnCadSalvar">Começar</button>
+      <button type="button" class="btn-apagar-cad" id="btnCadApagar" hidden>Apagar meu cadastro</button>
+      <button type="button" class="btn-pequeno op-fechar" id="btnCadPular">Pular</button>
+    </div>
+  </div>
+
+  <!-- Mural de novidades -->
+  <div class="nav-opcoes" id="telaNovidade" role="dialog" aria-modal="true" aria-labelledby="novTitulo" hidden>
+    <div class="nav-opcoes-caixa">
+      <p class="nav-opcoes-titulo" id="novTitulo">📢 Novidades do Rota Liberada</p>
+      <div id="novLista"></div>
+      <button type="button" class="btn-rota" id="btnNovOk">Entendi</button>
+    </div>
+  </div>
+
   <!-- Tempo previsto x real das viagens -->
   <div class="nav-opcoes" id="telaTempos" role="dialog" aria-modal="true" aria-labelledby="tituloTempos" hidden>
     <div class="nav-opcoes-caixa">
@@ -616,6 +659,10 @@ body { font-size: 16px; }
 
     <div class="painel-corpo" id="painelCorpo">
       <button type="button" class="btn-amigo btn-pendentes" id="btnRevisarPendentes" hidden></button>
+      <div class="painel-extras">
+        <button type="button" class="btn-pequeno" id="btnNovidades">📢 Novidades</button>
+        <button type="button" class="btn-pequeno" id="btnMeuCadastro">👤 Meu cadastro</button>
+      </div>
       <button type="button" class="btn-pequeno btn-tempos" id="btnTempos">📊 Tempo previsto x real das viagens</button>
 
       <section aria-labelledby="tituloRota">
@@ -2983,6 +3030,8 @@ body { font-size: 16px; }
                    de: estado.A && estado.A.nome || "", para: estado.B && estado.B.nome || "" };
     nav.foraRegistrado = false; nav.ultimoNaRota = null; nav.instrAtual = ""; nav.sAtual = 0; nav.revisarAoParar = false; trilha = [];
     nav.pertoParadoDesde = null; nav.chegadaBloqueada = false; pararContagem();
+    centralApp({ acao: "sinal", evento: "viagem", versao: VERSAO_APP }).catch(function () {});   // conta a viagem (sem localização)
+    ["telaCadastro", "telaNovidade"].forEach(function (id) { document.getElementById(id).hidden = true; });
     document.getElementById("viagemConcluida").hidden = true;
     document.getElementById("btnMarcar").hidden = false; document.getElementById("btnRevisarPendentes").hidden = true;
     nav.sUltimoOnibus = 0; nav.onibusAtual = null;
@@ -3230,6 +3279,7 @@ body { font-size: 16px; }
     mapasRevisao.forEach(function (m) { try { m.remove(); } catch (e) {} });
     mapasRevisao = [];
     atualizarBotaoPendentes();
+    setTimeout(proximaJanela, 300);   // depois das perguntas: cadastro ou novidade, se tiver
   }
   document.getElementById("btnRevFechar").addEventListener("click", fecharRevisao);
   document.getElementById("btnRevisarPendentes").addEventListener("click", mostrarRevisao);
@@ -3244,6 +3294,158 @@ body { font-size: 16px; }
   // Rede de segurança: ficou pergunta sem resposta (app fechado, celular desligou, "Responder depois")?
   // Mostra assim que o GPS abre, antes de digitar o novo destino.
   if (pendentes().length || paraEnviar().length) setTimeout(function () { if (!nav.ativo) mostrarRevisao(); }, 400);
+
+  /* ================= Cadastro rápido, contador de uso e mural de novidades =================
+     Tudo passa pela central gps.topvtrine.com/app.php (HostGator do Ricardo).
+     - Cada celular ganha um código sorteado (não diz quem é) para contar quantos usam o app.
+     - Nome e WhatsApp: só de quem preencher e aceitar. Pede UMA vez; quem pular vê de novo em 7 dias.
+     - Novidades: aparece só a mais recente, uma vez, e nunca durante a navegação. */
+  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v29";
+  var CHAVE_CAD = "rotaCaminhaoSP.cadastro", CHAVE_PULOU = "rotaCaminhaoSP.cadastroPulado", CHAVE_VISTAS = "rotaCaminhaoSP.novidadesVistas";
+  var aparelhoId = (function () {
+    var id = ler("rotaCaminhaoSP.aparelho") || "";
+    if (!/^[a-z0-9]{16,40}$/.test(id)) {
+      var a = new Uint8Array(12);
+      try { crypto.getRandomValues(a); } catch (e) { for (var i = 0; i < a.length; i++) a[i] = Math.floor(Math.random() * 256); }
+      id = Array.prototype.map.call(a, function (b) { return ("0" + b.toString(16)).slice(-2); }).join("");
+      gravar("rotaCaminhaoSP.aparelho", id);
+    }
+    return id;
+  })();
+  function centralApp(dados) {
+    dados.id = aparelhoId;
+    return fetch(CENTRAL_APP, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(dados) })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) throw new Error(j.erro || "Sem resposta da central."); return j; }); });
+  }
+  function lerJsonLocal(chave, padrao) { try { var v = JSON.parse(ler(chave) || "null"); return v === null ? padrao : v; } catch (e) { return padrao; } }
+  function cadastroLocal() { return lerJsonLocal(CHAVE_CAD, null); }
+  function precisaCadastro() {
+    if (cadastroLocal()) return false;
+    var pulou = +(ler(CHAVE_PULOU) || 0);
+    return !pulou || Date.now() - pulou > 7 * 86400000;
+  }
+  function janelaAberta() {
+    return ["revisao", "telaCadastro", "telaNovidade", "navOpcoes", "telaTempos", "chegadaAviso"].some(function (id) { var el = document.getElementById(id); return el && !el.hidden; });
+  }
+  var novidadePendente = null;
+  // Abre UMA janela por vez, só com o app parado (fora da navegação): perguntas > cadastro > novidade
+  function proximaJanela() {
+    if (nav.ativo || janelaAberta()) return;
+    if (precisaCadastro()) { abrirCadastro(false); return; }
+    var vistas = lerJsonLocal(CHAVE_VISTAS, []);
+    if (novidadePendente && vistas.indexOf(novidadePendente.id) < 0) mostrarNovidades([novidadePendente], true);
+  }
+
+  // Cadastro
+  var cadEditando = false;
+  function abrirCadastro(editar) {
+    cadEditando = editar;
+    var c = cadastroLocal() || {};
+    document.getElementById("cadTitulo").textContent = editar ? "👤 Meu cadastro" : "🚚 Bem-vindo ao Rota Liberada!";
+    document.getElementById("cadTexto").textContent = editar
+      ? (c.nome ? "Confira ou corrija seus dados." : "Deixe seu nome e WhatsApp para receber as novidades do app. Sem senha.")
+      : "Deixe seu nome e WhatsApp para receber as novidades do app. Leva 10 segundos, sem senha.";
+    document.getElementById("cadNome").value = c.nome || "";
+    document.getElementById("cadWhats").value = c.whats ? c.whats.replace(/^55/, "") : "";
+    document.getElementById("cadAceite").checked = !!c.nome;
+    document.getElementById("cadErro").textContent = "";
+    document.getElementById("btnCadSalvar").textContent = editar && c.nome ? "Salvar" : "Começar";
+    document.getElementById("btnCadSalvar").disabled = false;
+    document.getElementById("btnCadPular").textContent = editar ? "Fechar" : "Pular";
+    document.getElementById("btnCadApagar").hidden = !(editar && c.nome);
+    document.getElementById("telaCadastro").hidden = false;
+  }
+  function fecharCadastro() { document.getElementById("telaCadastro").hidden = true; setTimeout(proximaJanela, 300); }
+  function enviarCadastro(c) {
+    return centralApp({ acao: "cadastro", nome: c.nome, whats: c.whats, aceite: true }).then(function () {
+      c.enviado = true; gravar(CHAVE_CAD, JSON.stringify(c));
+    });
+  }
+  document.getElementById("btnCadSalvar").addEventListener("click", function () {
+    var nome = document.getElementById("cadNome").value.replace(/\s+/g, " ").trim();
+    var whats = document.getElementById("cadWhats").value.replace(/\D/g, "");
+    if (whats.length === 10 || whats.length === 11) whats = "55" + whats;
+    var erro = document.getElementById("cadErro");
+    if (nome.length < 2) { erro.textContent = "Escreva o seu nome."; return; }
+    if (!/^55\d{10,11}$/.test(whats)) { erro.textContent = "Confira o WhatsApp: DDD + número, ex.: 11 98765-4321."; return; }
+    if (!document.getElementById("cadAceite").checked) { erro.textContent = "Marque a caixinha aceitando receber as mensagens."; return; }
+    var c = { nome: nome, whats: whats, enviado: false };
+    gravar(CHAVE_CAD, JSON.stringify(c));          // guarda no celular já: se estiver sem internet, envia depois
+    var b = this; b.disabled = true; b.textContent = "Salvando…";
+    enviarCadastro(c).then(function () {
+      document.getElementById("telaCadastro").hidden = true;
+      mostrarAlertaCadastro("✅ Cadastro feito. Obrigado, " + nome.split(" ")[0] + "!");
+      setTimeout(proximaJanela, 300);
+    }).catch(function () {
+      document.getElementById("telaCadastro").hidden = true;
+      mostrarAlertaCadastro("Cadastro guardado no celular. Ele é enviado quando tiver internet.");
+      setTimeout(proximaJanela, 300);
+    });
+  });
+  document.getElementById("btnCadPular").addEventListener("click", function () {
+    if (!cadEditando) gravar(CHAVE_PULOU, String(Date.now()));
+    fecharCadastro();
+  });
+  document.getElementById("btnCadApagar").addEventListener("click", function () {
+    if (!confirm("Apagar seu nome e WhatsApp do Rota Liberada? Você para de receber as novidades no WhatsApp.")) return;
+    var b = this; b.disabled = true;
+    centralApp({ acao: "apagar" }).then(function () {
+      gravar(CHAVE_CAD, null); gravar(CHAVE_PULOU, String(Date.now()));
+      document.getElementById("telaCadastro").hidden = true;
+      mostrarAlertaCadastro("Seu cadastro foi apagado.");
+    }).catch(function () {
+      document.getElementById("cadErro").textContent = "Sem internet agora. Tente de novo mais tarde.";
+    }).then(function () { b.disabled = false; });
+  });
+  document.getElementById("btnMeuCadastro").addEventListener("click", function () { abrirCadastro(true); });
+  function mostrarAlertaCadastro(t) {
+    var el = document.getElementById("viagemConcluida");
+    el.textContent = t; el.hidden = false;
+    clearTimeout(mostrarAlertaCadastro.t);
+    mostrarAlertaCadastro.t = setTimeout(function () { el.hidden = true; el.textContent = "✅ Viagem concluída"; }, 3500);
+  }
+
+  // Novidades
+  var novidadesNaTela = [];
+  function dataCurta(iso) { var d = new Date(iso); return isNaN(d) ? "" : String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0"); }
+  function mostrarNovidades(lista, marcarVista) {
+    novidadesNaTela = marcarVista ? lista : [];
+    document.getElementById("novLista").innerHTML = lista.length
+      ? lista.map(function (n) { return '<div class="nov-item"><p>' + escapar(n.texto) + '</p><small>' + dataCurta(n.data) + '</small></div>'; }).join("")
+      : '<p class="cad-texto">Nenhuma novidade por enquanto.</p>';
+    document.getElementById("telaNovidade").hidden = false;
+  }
+  document.getElementById("btnNovOk").addEventListener("click", function () {
+    var vistas = lerJsonLocal(CHAVE_VISTAS, []);
+    novidadesNaTela.forEach(function (n) {
+      if (vistas.indexOf(n.id) < 0) { vistas.push(n.id); centralApp({ acao: "lida", nid: n.id }).catch(function () {}); }
+    });
+    gravar(CHAVE_VISTAS, JSON.stringify(vistas.slice(-30)));
+    novidadesNaTela = [];
+    document.getElementById("telaNovidade").hidden = true;
+    setTimeout(proximaJanela, 300);
+  });
+  document.getElementById("btnNovidades").addEventListener("click", function () {
+    var b = this; b.disabled = true;
+    centralApp({ acao: "novidades" }).then(function (j) {
+      var lista = j.lista || [];
+      // abrindo pelo botão, a mais recente também conta como vista
+      mostrarNovidades(lista, false);
+      novidadesNaTela = lista.slice(0, 1);
+    }).catch(function () {
+      document.getElementById("novLista").innerHTML = '<p class="cad-texto">Sem internet agora. Tente de novo mais tarde.</p>';
+      document.getElementById("telaNovidade").hidden = false;
+    }).then(function () { b.disabled = false; });
+  });
+
+  // Sinal de "abri o app": conta o uso e traz a novidade mais recente
+  centralApp({ acao: "sinal", evento: "abriu", versao: VERSAO_APP }).then(function (j) {
+    novidadePendente = j.novidade || null;
+    var c = cadastroLocal();
+    if (c && !c.enviado) enviarCadastro(c).catch(function () {});   // cadastro feito sem internet: envia agora
+    proximaJanela();
+  }).catch(function () {});
+  setTimeout(proximaJanela, 900);   // sem internet: o cadastro aparece assim mesmo
 
 
   /* ================= Tempo de chegada mais realista (sem trânsito ao vivo) ================= */
