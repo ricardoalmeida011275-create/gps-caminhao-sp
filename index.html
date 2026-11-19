@@ -376,9 +376,19 @@ body.navegando .leaflet-control-attribution { font-size: 9px; opacity: .6; paddi
 .favoritos { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; padding-left: 32px; }
 .lista-favoritos { list-style: none; margin: 4px 0 0; padding: 0; width: 100%; display: flex; flex-direction: column; gap: 6px; }
 .lista-favoritos li { border: 1px solid var(--linha); border-radius: 10px; background: var(--papel); padding: 6px; }
-.fav-ir { display: block; width: 100%; text-align: left; border: 0; background: transparent; padding: 6px 8px; font-size: 15px; cursor: pointer; color: inherit; border-radius: 8px; }
-.fav-ir:hover, .fav-ir:focus-visible { background: var(--fundo); }
-.fav-ir small { display: block; color: var(--suave); font-size: 12px; }
+/* Cada favorito é um botão grande e destacado: tocar em qualquer lugar dele leva ao destino */
+.fav-ir {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 58px; text-align: left; cursor: pointer;
+  border: 2px solid var(--botao-borda, #0b5cad); background: var(--botao-fundo, #e3eefb); color: var(--botao-texto, #0a3a70);
+  padding: 10px 12px; font-family: var(--f-titulo); font-weight: 700; font-size: 18px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,.12);
+}
+.fav-ir::after { content: "➜"; margin-left: auto; font-size: 22px; }
+.fav-ir:hover, .fav-ir:focus-visible { filter: brightness(.95); }
+.fav-ir:active { transform: scale(.98); }
+.fav-ir strong { display: block; }
+.fav-ir small { display: block; color: inherit; opacity: .8; font-size: 13px; font-weight: 600; font-family: inherit; }
+.fav-texto { display: block; min-width: 0; }
+.fav-acoes { margin-top: 6px; }
 .fav-acoes { display: flex; gap: 6px; justify-content: flex-end; }
 .fav-vazio { font-size: 13px; color: var(--suave); padding: 4px 2px; margin: 0; }
 
@@ -1621,7 +1631,7 @@ body { font-size: 16px; }
     if (!l.length) { ul.innerHTML = '<li><p class="fav-vazio">Nenhum favorito ainda. Escolha um destino e toque em "☆ Salvar destino nos favoritos", ou segure o dedo no mapa.</p></li>'; return; }
     l.forEach(function (f) {
       var li = document.createElement("li");
-      li.innerHTML = '<button type="button" class="fav-ir">⭐ <strong></strong><small></small></button>' +
+      li.innerHTML = '<button type="button" class="fav-ir"><span aria-hidden="true">⭐</span><span class="fav-texto"><strong></strong><small></small></span></button>' +
         '<div class="fav-acoes"><button type="button" class="btn-pequeno" data-acao="renomear">Renomear</button><button type="button" class="btn-pequeno" data-acao="apagar">Apagar</button></div>';
       li.querySelector("strong").textContent = f.nome;
       li.querySelector("small").textContent = f.end + (f.aprox && f.end.indexOf("aproximado") < 0 ? " · número aproximado" : "");
