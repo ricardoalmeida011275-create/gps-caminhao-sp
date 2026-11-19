@@ -3003,7 +3003,7 @@ body { font-size: 16px; }
   /* ================= Avisos de erro do app (o motorista não mexe no celular dirigindo) ================= */
   // Número de WhatsApp que recebe os pontos "Sim, era proibido": só números, com 55 e DDD. Ex.: "5511999999999".
   // Se ficar vazio, o WhatsApp abre para escolher o contato.
-  var WHATSAPP_ERROS = "";
+  var WHATSAPP_ERROS = "5511961950268";
   var CHAVE_OC = "rotaCaminhaoSP.ocorrencias";
   var ocorrencias = (function () { try { return JSON.parse(ler(CHAVE_OC) || "[]") || []; } catch (e) { return []; } })();
   function salvarOcorrencias() { ocorrencias = ocorrencias.slice(-60); gravar(CHAVE_OC, JSON.stringify(ocorrencias)); }
