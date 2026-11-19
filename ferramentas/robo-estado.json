@@ -1,0 +1,797 @@
+{
+ "lugares": {
+  "Shopping Cidade Jardim": {
+   "osm": "way/96482010",
+   "nomes": [
+    "shopping cidade jardim"
+   ],
+   "nome": "Shopping Cidade Jardim"
+  },
+  "Ginásio do Ibirapuera": {
+   "osm": "way/33798359",
+   "nomes": [
+    "ginasio estadual geraldo jose de almeida",
+    "ginasio do ibirapuera",
+    "ginasio estadual"
+   ],
+   "nome": "Ginásio Estadual Geraldo José de Almeida"
+  },
+  "Terminal Rodoviário Barra Funda": {
+   "osm": "node/4593556120",
+   "nomes": [
+    "terminal rodoviario barra funda"
+   ],
+   "nome": "Terminal Rodoviário Barra Funda"
+  },
+  "Centro de Convenções Frei Caneca": {
+   "osm": "node/9711932319",
+   "nomes": [
+    "centro de convencoes frei caneca"
+   ],
+   "nome": "Centro de Convenções Frei Caneca"
+  },
+  "Shopping Metrô Tucuruvi": {
+   "osm": "node/4569580985",
+   "nomes": [
+    "shopping metro tucuruvi"
+   ],
+   "nome": "Shopping Metrô Tucuruvi"
+  },
+  "Hospital das Clínicas": {
+   "osm": "way/376413268",
+   "nomes": [
+    "hospital das clinicas"
+   ],
+   "nome": "Hospital das Clínicas"
+  },
+  "Estádio do Morumbi (Morumbis)": {
+   "osm": "way/715674760",
+   "nomes": [
+    "morumbis",
+    "estadio do morumbi",
+    "estadio cicero pompeu de toledo"
+   ],
+   "nome": "MorumBIS"
+  },
+  "Shopping Maia": {
+   "osm": "way/409386811",
+   "nomes": [
+    "parque shopping maia"
+   ],
+   "nome": "Parque Shopping Maia"
+  },
+  "Estação da Luz": {
+   "osm": "way/8105832",
+   "nomes": [
+    "estacao da luz",
+    "luz"
+   ],
+   "nome": "Estação da Luz"
+  },
+  "Shopping Vila Olímpia": {
+   "osm": "way/96481999",
+   "nomes": [
+    "shopping vila olimpia"
+   ],
+   "nome": "Shopping Vila Olímpia"
+  },
+  "Estádio do Canindé": {
+   "osm": "way/318729277",
+   "nomes": [
+    "estadio doutor osvaldo teixeira duarte",
+    "estadio do caninde"
+   ],
+   "nome": "Estádio Doutor Osvaldo Teixeira Duarte"
+  },
+  "Centro Empresarial de São Paulo (CENESP)": {
+   "osm": "way/1243996149",
+   "nomes": [
+    "centro empresarial de sao paulo"
+   ],
+   "nome": "Centro Empresarial de São Paulo"
+  },
+  "Shopping Eldorado": {
+   "osm": "relation/3523651",
+   "nomes": [
+    "eldorado"
+   ],
+   "nome": "Eldorado"
+  },
+  "Shopping Nações Unidas": {
+   "osm": "way/1056620039",
+   "nomes": [
+    "shopping nacoes unidas"
+   ],
+   "nome": "Shopping Nações Unidas"
+  },
+  "Neo Química Arena": {
+   "osm": "way/218667236",
+   "nomes": [
+    "neo quimica arena",
+    "arena de sao paulo",
+    "arena corinthians"
+   ],
+   "nome": "Neo Química Arena"
+  },
+  "MASP": {
+   "osm": "way/1370081491",
+   "nomes": [
+    "museu de arte de sao paulo",
+    "museu de arte de sao paulo assis chateaubriand",
+    "masp"
+   ],
+   "nome": "Museu de Arte de São Paulo"
+  },
+  "WTC Events Center": {
+   "osm": "way/563180211",
+   "nomes": [
+    "world trade center"
+   ],
+   "nome": "World Trade Center"
+  },
+  "Shopping Frei Caneca": {
+   "osm": "relation/19749086",
+   "nomes": [
+    "shopping frei caneca"
+   ],
+   "nome": "Shopping Frei Caneca"
+  },
+  "Nubank Parque (antigo Allianz Parque)": {
+   "osm": "way/231044849",
+   "nomes": [
+    "nubank parque",
+    "arena do palmeiras",
+    "allianz parque"
+   ],
+   "nome": "Nubank Parque"
+  },
+  "Shopping Plaza Sul": {
+   "osm": "way/531314140",
+   "nomes": [
+    "shopping plaza sul"
+   ],
+   "nome": "Shopping Plaza Sul"
+  },
+  "Terminal Rodoviário Jabaquara": {
+   "osm": "way/191734182",
+   "nomes": [
+    "terminal rodoviario jabaquara",
+    "rodoviaria de sao paulo jabaquara",
+    "rodoviaria do jabaquara"
+   ],
+   "nome": "Terminal Rodoviário Jabaquara"
+  },
+  "Shopping Light": {
+   "osm": "way/421318705",
+   "nomes": [
+    "shopping light",
+    "predio da light",
+    "edificio alexandre mackenzie",
+    "edificio light"
+   ],
+   "nome": "Shopping Light"
+  },
+  "Shopping Market Place": {
+   "osm": "way/123814367",
+   "nomes": [
+    "shopping market place",
+    "market place shopping"
+   ],
+   "nome": "Shopping Market Place"
+  },
+  "Shopping Metrô Itaquera": {
+   "osm": "way/155185740",
+   "nomes": [
+    "shopping metro itaquera"
+   ],
+   "nome": "Shopping Metrô Itaquera"
+  },
+  "Shopping Taboão": {
+   "osm": "way/161661768",
+   "nomes": [
+    "shopping taboao"
+   ],
+   "nome": "Shopping Taboão"
+  },
+  "Shopping Metrô Tatuapé": {
+   "osm": "way/17925935",
+   "nomes": [
+    "shopping metro tatuape"
+   ],
+   "nome": "Shopping Metrô Tatuapé"
+  },
+  "Shopping Jardim Sul": {
+   "osm": "way/340007132",
+   "nomes": [
+    "shopping jardim sul"
+   ],
+   "nome": "Shopping Jardim Sul"
+  },
+  "Teatro Municipal": {
+   "osm": "way/46927931",
+   "nomes": [
+    "teatro municipal de sao paulo",
+    "theatro mvnicipal de sao paulo",
+    "theatro municipal de sao paulo",
+    "teatro municipal"
+   ],
+   "nome": "Teatro Municipal de São Paulo"
+  },
+  "Mercado Municipal de Pinheiros": {
+   "osm": "way/76791418",
+   "nomes": [
+    "mercado municipal de pinheiros"
+   ],
+   "nome": "Mercado Municipal de Pinheiros"
+  },
+  "Golden Square Shopping": {
+   "osm": "node/2981055305",
+   "nomes": [
+    "golden square"
+   ],
+   "nome": "Golden Square"
+  },
+  "Morumbi Shopping": {
+   "osm": "way/123814341",
+   "nomes": [
+    "morumbi shopping",
+    "shopping morumbi"
+   ],
+   "nome": "Morumbi Shopping"
+  },
+  "Mercado Municipal da Lapa": {
+   "osm": "way/520679189",
+   "nomes": [
+    "mercado municipal da lapa",
+    "mercado municipal rinaldo rivetti",
+    "mercado municipal"
+   ],
+   "nome": "Mercado Municipal da Lapa"
+  },
+  "Shopping Leste Aricanduva": {
+   "osm": "way/37498465",
+   "nomes": [
+    "shopping leste aricanduva"
+   ],
+   "nome": "Shopping Leste Aricanduva"
+  },
+  "Vibra São Paulo": {
+   "osm": "relation/1676406",
+   "nomes": [
+    "vibra sao paulo",
+    "citibank hall",
+    "credicard hall"
+   ],
+   "nome": "Vibra São Paulo"
+  },
+  "Ponte do Limão": {
+   "osm": "way/1007651806",
+   "nomes": [
+    "ponte do limao"
+   ],
+   "nome": "Ponte do Limão"
+  },
+  "Sesc Pompeia": {
+   "osm": "way/128025157",
+   "nomes": [
+    "sesc pompeia",
+    "sesc fabrica pompeia"
+   ],
+   "nome": "Sesc Pompéia"
+  },
+  "Shopping Pátio Paulista": {
+   "osm": "way/151882390",
+   "nomes": [
+    "shopping patio paulista"
+   ],
+   "nome": "Shopping Pátio Paulista"
+  },
+  "Shopping Bonsucesso": {
+   "osm": "way/193111452",
+   "nomes": [
+    "shopping bonsucesso"
+   ],
+   "nome": "Shopping Bonsucesso"
+  },
+  "Santa Casa de São Paulo": {
+   "osm": "way/420089988",
+   "nomes": [
+    "santa casa"
+   ],
+   "nome": "Santa Casa"
+  },
+  "Hospital Sírio-Libanês": {
+   "osm": "way/191510469",
+   "nomes": [
+    "hospital sirio libanes"
+   ],
+   "nome": "Hospital Sírio Libanês"
+  },
+  "Pro Magno Centro de Eventos": {
+   "osm": "way/642983738",
+   "nomes": [
+    "pro magno"
+   ],
+   "nome": "Pro Magno"
+  },
+  "Shopping Metrô Santa Cruz": {
+   "osm": "node/247905111",
+   "nomes": [
+    "santa cruz",
+    "metro santa cruz"
+   ],
+   "nome": "Santa Cruz"
+  },
+  "Shopping Villa-Lobos": {
+   "osm": "way/520151950",
+   "nomes": [
+    "shopping villa lobos"
+   ],
+   "nome": "Shopping Villa Lobos"
+  },
+  "Tietê Plaza Shopping": {
+   "osm": "way/152635636",
+   "nomes": [
+    "tiete plaza shopping"
+   ],
+   "nome": "Tietê Plaza Shopping"
+  },
+  "Mooca Plaza Shopping": {
+   "osm": "way/236296034",
+   "nomes": [
+    "mooca plaza shopping"
+   ],
+   "nome": "Mooca Plaza Shopping"
+  },
+  "Shopping Ibirapuera": {
+   "osm": "way/126139375",
+   "nomes": [
+    "shopping ibirapuera"
+   ],
+   "nome": "Shopping Ibirapuera"
+  },
+  "Jockey Club de São Paulo": {
+   "osm": "node/4998886893",
+   "nomes": [
+    "hipodromo de cidade jardim",
+    "jockey club de sao paulo",
+    "joquei clube"
+   ],
+   "nome": "Hipódromo de Cidade Jardim"
+  },
+  "Internacional Shopping Guarulhos": {
+   "osm": "way/46975192",
+   "nomes": [
+    "internacional shopping"
+   ],
+   "nome": "Internacional Shopping"
+  },
+  "Shopping Campo Limpo": {
+   "osm": "way/143331553",
+   "nomes": [
+    "shopping campo limpo"
+   ],
+   "nome": "Shopping Campo Limpo"
+  },
+  "Shopping Butantã": {
+   "osm": "way/144016849",
+   "nomes": [
+    "shopping butanta"
+   ],
+   "nome": "Shopping Butantã"
+  },
+  "Hospital Israelita Albert Einstein": {
+   "osm": "relation/14315762",
+   "nomes": [
+    "hospital israelita albert einstein"
+   ],
+   "nome": "Hospital Israelita Albert Einstein"
+  },
+  "Shopping Granja Viana": {
+   "osm": "way/199417313",
+   "nomes": [
+    "shopping granja viana"
+   ],
+   "nome": "Shopping Granja Viana"
+  },
+  "Parque da Juventude": {
+   "osm": "way/329322171",
+   "nomes": [
+    "parque da juventude",
+    "parque da juventude dom paulo evaristo arns"
+   ],
+   "nome": "Parque da Juventude"
+  },
+  "Correios – Centro de Tratamento de Encomendas (Cajamar)": {
+   "osm": "way/672197602",
+   "nomes": [
+    "centro de tratamento de encomendas dos correios",
+    "cte cajamar",
+    "correios"
+   ],
+   "nome": "Centro de Tratamento de Encomendas dos Correios"
+  },
+  "Shopping Cidade São Paulo": {
+   "osm": "node/13605432711",
+   "nomes": [
+    "shopping cidade sao paulo"
+   ],
+   "nome": "Shopping Cidade São Paulo"
+  },
+  "Shopping West Plaza": {
+   "osm": "way/231141419",
+   "nomes": [
+    "shopping west plaza"
+   ],
+   "nome": "Shopping West Plaza"
+  },
+  "Terminal de Cargas Fernão Dias": {
+   "osm": "way/701105781",
+   "nomes": [
+    "terminal de cargas fernao dias"
+   ],
+   "nome": "Terminal de Cargas Fernão Dias"
+  },
+  "Shopping Center 3": {
+   "osm": "relation/7787959",
+   "nomes": [
+    "shopping center 3"
+   ],
+   "nome": "Shopping Center 3"
+  },
+  "Shopping Anália Franco": {
+   "osm": "way/38693422",
+   "nomes": [
+    "shopping analia franco"
+   ],
+   "nome": "Shopping Anália Franco"
+  },
+  "Iguatemi Alphaville": {
+   "osm": "way/479557279",
+   "nomes": [
+    "iguatemi alphaville"
+   ],
+   "nome": "Iguatemi Alphaville"
+  },
+  "Terminal Rodoviário Tietê": {
+   "osm": "relation/8546826",
+   "nomes": [
+    "terminal rodoviario tiete"
+   ],
+   "nome": "Terminal Rodoviário Tietê"
+  },
+  "Estádio do Pacaembu": {
+   "osm": "way/666148829",
+   "nomes": [
+    "mercado livre arena pacaembu",
+    "estadio do pacaembu",
+    "estadio municipal paulo machado de carvalho",
+    "estadio municipal do pacaembu"
+   ],
+   "nome": "Mercado Livre Arena Pacaembu"
+  },
+  "Expo Center Norte": {
+   "osm": "way/222841863",
+   "nomes": [
+    "expo center norte"
+   ],
+   "nome": "Expo Center Norte"
+  },
+  "Mercado Municipal (Mercadão)": {
+   "osm": "node/5129855297",
+   "nomes": [
+    "mercado municipal kinjo yamato",
+    "mercado municipal"
+   ],
+   "nome": "Mercado Municipal Kinjo Yamato"
+  },
+  "Shopping Metrô Boulevard Tatuapé": {
+   "osm": "way/124518853",
+   "nomes": [
+    "shopping boulevard metro tatuape"
+   ],
+   "nome": "Shopping Boulevard Metro Tatuapé"
+  },
+  "Shopping Interlar Aricanduva": {
+   "osm": "way/37498468",
+   "nomes": [
+    "shopping interlar aricanduva"
+   ],
+   "nome": "Shopping Interlar Aricanduva"
+  },
+  "Grand Plaza Shopping": {
+   "osm": "way/152910345",
+   "nomes": [
+    "grand plaza shopping"
+   ],
+   "nome": "Grand Plaza Shopping"
+  },
+  "Shopping Pátio Higienópolis": {
+   "osm": "relation/6256623",
+   "nomes": [
+    "shopping patio higienopolis"
+   ],
+   "nome": "Shopping Pátio Higienópolis"
+  },
+  "Shopping Tamboré": {
+   "osm": "way/164107613",
+   "nomes": [
+    "shopping tambore"
+   ],
+   "nome": "Shopping Tamboré"
+  },
+  "Universidade Presbiteriana Mackenzie": {
+   "osm": "node/3653382460",
+   "nomes": [
+    "mackenzie"
+   ],
+   "nome": "Mackenzie"
+  },
+  "Parque Ibirapuera": {
+   "osm": "way/125450993",
+   "nomes": [
+    "parque ibirapuera",
+    "parque do ibirapuera"
+   ],
+   "nome": "Parque Ibirapuera"
+  },
+  "Shopping SP Market": {
+   "osm": "way/96097823",
+   "nomes": [
+    "shopping sp market",
+    "sp market"
+   ],
+   "nome": "Shopping SP Market"
+  },
+  "Shopping JK Iguatemi": {
+   "osm": "way/172413602",
+   "nomes": [
+    "jk iguatemi",
+    "shopping jk"
+   ],
+   "nome": "JK Iguatemi"
+  },
+  "Shopping União de Osasco": {
+   "osm": "way/152906280",
+   "nomes": [
+    "shopping uniao de osasco"
+   ],
+   "nome": "Shopping União de Osasco"
+  },
+  "Lar Center": {
+   "osm": "way/104224197",
+   "nomes": [
+    "lar center"
+   ],
+   "nome": "Lar Center"
+  },
+  "Shopping Metrópole": {
+   "osm": "way/268453699",
+   "nomes": [
+    "shopping metropole"
+   ],
+   "nome": "Shopping Metrópole"
+  },
+  "Estação Barra Funda": {
+   "osm": "node/339680757",
+   "nomes": [
+    "metro barra funda"
+   ],
+   "nome": "Metro Barra Funda"
+  },
+  "Shopping D": {
+   "osm": "node/4593783204",
+   "nomes": [
+    "shopping center d",
+    "shopping d"
+   ],
+   "nome": "Shopping Center D"
+  },
+  "Shopping ABC": {
+   "osm": "way/154074027",
+   "nomes": [
+    "shopping abc"
+   ],
+   "nome": "Shopping ABC"
+  },
+  "Rua Santa Ifigênia": {
+   "osm": "node/3939556843",
+   "nomes": [
+    "santa ifigenia"
+   ],
+   "nome": "Santa Ifigênia"
+  },
+  "Shopping Center Norte": {
+   "osm": "way/17448129",
+   "nomes": [
+    "shopping center norte"
+   ],
+   "nome": "Shopping Center Norte"
+  },
+  "Autódromo de Interlagos": {
+   "osm": "relation/6781071",
+   "nomes": [
+    "autodromo jose carlos pace",
+    "autodromo de interlagos"
+   ],
+   "nome": "Autódromo José Carlos Pace"
+  },
+  "Rua José Paulino (Bom Retiro)": {
+   "osm": "relation/2731073",
+   "nomes": [
+    "bom retiro"
+   ],
+   "nome": "Bom Retiro"
+  },
+  "Aeroporto de Congonhas": {
+   "osm": "node/6292006030",
+   "nomes": [
+    "aeroporto de congonhas"
+   ],
+   "nome": "Aeroporto de Congonhas"
+  },
+  "Praça da Sé (Marco Zero)": {
+   "osm": "way/75488634",
+   "nomes": [
+    "praca da se"
+   ],
+   "nome": "Praça da Sé"
+  },
+  "Feira da Madrugada": {
+   "osm": "node/5354830707",
+   "nomes": [
+    "feira da madrugada"
+   ],
+   "nome": "Feira da Madrugada"
+  },
+  "Memorial da América Latina": {
+   "osm": "way/320839641",
+   "nomes": [
+    "memorial da america latina"
+   ],
+   "nome": "Memorial da América Latina"
+  },
+  "Ceasa Campinas": {
+   "osm": "way/531846808",
+   "nomes": [
+    "ceasa campinas"
+   ],
+   "nome": "CEASA Campinas"
+  },
+  "Ceagesp": {
+   "osm": "way/157905662",
+   "nomes": [
+    "ceagesp entreposto terminal de sao paulo",
+    "ceagesp"
+   ],
+   "nome": "CEAGESP - Entreposto Terminal de São Paulo"
+  },
+  "Distrito Anhembi": {
+   "osm": "way/1298219727",
+   "nomes": [
+    "distrito anhembi",
+    "centro de eventos internacional prefeito bruno covas",
+    "centro interamericano de feiras e saloes cifs",
+    "anhembi parque",
+    "complexo do anhembi"
+   ],
+   "nome": "Distrito Anhembi"
+  },
+  "Shopping Morumbi Town": {
+   "osm": "way/473202932",
+   "nomes": [
+    "shopping town morumbi"
+   ],
+   "nome": "Shopping Town Morumbi"
+  },
+  "Aeroporto Campo de Marte": {
+   "osm": "way/1421149166",
+   "nomes": [
+    "aeroporto campo de marte"
+   ],
+   "nome": "Aeroporto Campo de Marte"
+  },
+  "São Paulo Expo": {
+   "osm": "way/49734449",
+   "nomes": [
+    "sao paulo expo"
+   ],
+   "nome": "São Paulo Expo"
+  },
+  "Raposo Shopping": {
+   "osm": "node/5747516555",
+   "nomes": [
+    "teatro raposo shopping"
+   ],
+   "nome": "Teatro Raposo Shopping"
+  },
+  "Osasco Plaza Shopping": {
+   "osm": "way/157482401",
+   "nomes": [
+    "shopping osasco plaza"
+   ],
+   "nome": "Shopping Osasco Plaza"
+  },
+  "Transamerica Expo Center": {
+   "osm": "relation/1676407",
+   "nomes": [
+    "expo center transamerica"
+   ],
+   "nome": "Expo Center Transamérica"
+  },
+  "Rua 25 de Março": {
+   "osm": "way/424586970",
+   "nomes": [
+    "edificio xxv de marco",
+    "edicio 25 de marco"
+   ],
+   "nome": "Edifício XXV de Março"
+  },
+  "Zoológico de São Paulo": {
+   "osm": "way/75354058",
+   "nomes": [
+    "jardim zoologico de sao paulo",
+    "parque zoologico de sao paulo",
+    "zoo sao paulo"
+   ],
+   "nome": "Jardim Zoológico de São Paulo"
+  },
+  "Shopping Iguatemi São Paulo": {
+   "osm": "way/96124441",
+   "nomes": [
+    "shopping iguatemi",
+    "iguatemi sao paulo"
+   ],
+   "nome": "Shopping Iguatemi"
+  },
+  "Terminal de Cargas do Aeroporto de Guarulhos (TECA)": {
+   "osm": "relation/11126191",
+   "nomes": [
+    "terminal de cargas"
+   ],
+   "nome": "Terminal de Cargas"
+  },
+  "Shopping Interlagos": {
+   "osm": "way/168776040",
+   "nomes": [
+    "shopping interlar"
+   ],
+   "nome": "Shopping Interlar"
+  }
+ },
+ "fontes": {
+  "cet-mapa-grupo1": {
+   "impressao": "5743e12fdb98d9e15ece7121d45f4432183dff810465f56819ca72d1c604713d",
+   "desde": "2026-11-19"
+  },
+  "cet-mapa-grupos2e3": {
+   "impressao": "df8ff47683c4e0b5e661f97dca7d56f6c98a0a7db16d98e3bbf98a2d5d09af04",
+   "desde": "2026-11-19"
+  },
+  "cet-mapa-grupo4": {
+   "impressao": "a323daef22d95d7ccd50214bd3ff7d5a24e5479afdaac83281847b199dfa1471",
+   "desde": "2026-11-19"
+  },
+  "cet-pagina-mapas": {
+   "impressao": "eb4773efeb0726f6b61b56c309c8381506057a7369241a0e52f307a46bdc2a2d (3 links)",
+   "desde": "2026-11-19"
+  },
+  "cet-portaria-137-18": {
+   "impressao": "bbcab6c3ea19693908b2c5a958401c86ff2c81ae8db0f372a244c125490f6020",
+   "desde": "2026-11-19"
+  },
+  "geosampa-zer": {
+   "impressao": "4be9a5ec4fabed7c471e2800c89dc90f1ba4f2e55cd6d4411085b7d7b4056d04 (2979 itens)",
+   "desde": "2026-11-19"
+  },
+  "geosampa-faixas-onibus": {
+   "impressao": "b295a375e5218668a50b33c2113b7c93035cf8f41342bcf578d2ae219adc3f93 (7378 itens)",
+   "desde": "2026-11-19"
+  },
+  "geosampa-corredores-onibus": {
+   "impressao": "65f14e99c1874bb1197db762d9c76120f52b0c96c3dca9c05cee22af28ba8555 (45 itens)",
+   "desde": "2026-11-19"
+  }
+ },
+ "ultimaConferencia": "2026-11-19T22:57:31.051Z"
+}
