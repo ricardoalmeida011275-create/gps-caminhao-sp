@@ -136,6 +136,18 @@ body.navegando .leaflet-bottom { bottom: calc(92px + env(safe-area-inset-bottom,
   box-shadow: 0 4px 14px rgba(0,0,0,.18); animation: descer .3s ease-out;
 }
 .nota-onibus { color: var(--asfalto); }
+/* Aviso fixo de área/via proibida na navegação: amarelo (à frente), vermelho piscando (perto), vermelho (dentro), verde (saiu) */
+.nav-proibido {
+  border-radius: 14px; padding: 10px 14px; font-family: var(--f-titulo); font-weight: 700; font-size: 19px; line-height: 1.2;
+  box-shadow: 0 4px 16px rgba(0,0,0,.3); border: 3px solid transparent;
+}
+.nav-proibido small { display: block; font-family: inherit; font-weight: 600; font-size: 15px; margin-top: 2px; }
+.nav-proibido.amarelo { background: #ffd400; color: #1d2226; border-color: #1d2226; }
+.nav-proibido.vermelho { background: #c8102e; color: #fff; border-color: #fff; }
+.nav-proibido.pisca { animation: piscaProibido 1s steps(2, start) infinite; }
+.nav-proibido.verde { background: #1f7a3d; color: #fff; border-color: #fff; }
+@keyframes piscaProibido { 0% { background: #c8102e; color: #fff; } 50% { background: #ffd400; color: #1d2226; } }
+@media (prefers-reduced-motion: reduce) { .nav-proibido.pisca { animation: none; } }
 @media (prefers-reduced-motion: reduce) { .nav-faixa { animation: none; } }
 .nav-base {
   position: absolute; z-index: 1100;
@@ -541,6 +553,7 @@ body { font-size: 16px; }
         <p class="nav-texto" id="navTexto">Buscando o sinal do GPS…</p>
       </div>
     </div>
+    <div class="nav-proibido" id="navProibido" hidden role="alert"></div>
     <div class="nav-alerta" id="navAlerta" hidden role="alert"></div>
     <div class="nav-faixa" id="navFaixa" hidden></div>
   </div>
@@ -613,6 +626,18 @@ body { font-size: 16px; }
     </div>
   </div>
   <div class="viagem-concluida" id="viagemConcluida" role="status" hidden>✅ Viagem concluída</div>
+
+  <!-- Confirmação antes de navegar numa rota que passa por restrição -->
+  <div class="nav-opcoes" id="confirmaProibido" role="alertdialog" aria-modal="true" aria-labelledby="cpTitulo" hidden>
+    <div class="nav-opcoes-caixa">
+      <p class="nav-opcoes-titulo" id="cpTitulo" style="color:var(--proibido)">⛔ Esta rota passa por área proibida</p>
+      <ul class="res-lista" id="cpLista"></ul>
+      <p class="cad-texto">Não achei caminho livre agora. Se seguir, você pode levar multa. Tente outro horário ou outro ponto de saída.</p>
+      <p class="cad-dica">Se seguir, o app avisa na tela (amarelo e vermelho) antes de entrar no trecho proibido.</p>
+      <button type="button" class="btn-rota" id="btnCpVoltar">Voltar e mudar a rota</button>
+      <button type="button" class="btn-pequeno op-fechar" id="btnCpSeguir">Navegar assim mesmo</button>
+    </div>
+  </div>
 
   <!-- Cadastro rápido (uma vez só, sem senha) -->
   <div class="nav-opcoes" id="telaCadastro" role="dialog" aria-modal="true" aria-labelledby="cadTitulo" hidden>
@@ -2481,7 +2506,7 @@ body { font-size: 16px; }
     } else {
       mostrarResultado("ok", "Rota respeita as restrições conhecidas", numeros + (res.tentativa > 1 ? '<p class="nota" style="margin:0">A rota foi ajustada ' + (res.tentativa - 1) + ' vez(es) para desviar de vias proibidas.</p>' : "") + botaoNav + htmlPassos + rodape);
     }
-    document.getElementById("btnNavegar").addEventListener("click", iniciarNavegacao);
+    document.getElementById("btnNavegar").addEventListener("click", navegarOuConfirmar);
     [].forEach.call(document.querySelectorAll(".opcao-rota"), function (b) {
       b.addEventListener("click", function () { escolherOpcao(parseInt(b.getAttribute("data-i"), 10)); });
     });
@@ -2853,6 +2878,7 @@ body { font-size: 16px; }
     }
     var manobra = atualizarInstrucao(pos.s);
     nav.sAtual = pos.s;
+    atualizarAvisoProibido(pos.s);
     nav.instrAtual = (manobra.k >= 0 && estado.rota.passos[manobra.k]) ? estado.rota.passos[manobra.k].instruction : "";
     atualizarBase(pos.s);
     // Faixa de ônibus funcionando ou corredor onde o caminhão está agora: aviso na tela (e falado uma vez)
@@ -2956,6 +2982,107 @@ body { font-size: 16px; }
     vibrar([300, 150, 300, 150, 300]);
   }
 
+  /* ===== Aviso fixo de área/via proibida durante a navegação (ideia do motorista Cleverson) =====
+     Amarelo: tem trecho proibido à frente na rota (mostra a distância).
+     Vermelho piscando: faltam 300 m ou menos. Vermelho fixo: está dentro. Verde: saiu.
+     Usa as mesmas regras da conferência da rota (mesmo horário, veículo e placa). */
+  var AVISO_PROIB = { pisca: 300, falarAntes: 1000, verdeSeg: 6 };
+  function trechosProibidos(r, m) {
+    // Aqui NÃO pula as áreas "inevitáveis" (saída ou destino dentro da área): o motorista precisa ser avisado mesmo assim
+    var pts = amostrar(r.coords), out = [], atual = null, s = 0;
+    var viasProib = vias.filter(function (v) { return situacao(v.tipo, m) === "proibido"; });
+    var areasProib = ["rodizio", "zmrc"].filter(function (t) { return situacao(t, m) === "proibido"; });
+    var zerProib = situacao("zerc", m) === "proibido";
+    pts.forEach(function (q, idx) {
+      var achou = null;
+      for (var j = 0; j < viasProib.length && !achou; j++) {
+        var v = viasProib[j], c = v.caixa;
+        if (q.p[0] < c[0] || q.p[0] > c[2] || q.p[1] < c[1] || q.p[1] > c[3]) continue;
+        for (var k = 0; k < v.pts.length - 1; k++) {
+          if (distSeg(q.p, v.pts[k], v.pts[k + 1]) < 22 && paralelo(q.rumo, rumo(v.pts[k], v.pts[k + 1]))) { achou = { tipo: v.tipo, nome: v.nome || CAMADAS[v.tipo].curto, via: true }; break; }
+        }
+      }
+      if (!achou && idx % 2 === 0) {   // áreas: confere a cada ~40 m (mais leve)
+        for (var a = 0; a < areasProib.length && !achou; a++) if (dentroDe(areasProib[a], q.lon, q.lat)) achou = { tipo: areasProib[a], nome: CAMADAS[areasProib[a]].curto };
+        if (!achou && zerProib && zerEm(q.lon, q.lat)) achou = { tipo: "zerc", nome: CAMADAS.zerc.curto };
+      }
+      if (achou) {
+        var chave = achou.tipo + "|" + achou.nome;
+        if (atual && atual.chave === chave && s - atual.fim <= 80) atual.fim = s;
+        else { if (atual) out.push(atual); atual = { chave: chave, tipo: achou.tipo, nome: achou.nome, via: !!achou.via, ini: s, fim: s }; }
+      }
+      s += q.passo;
+    });
+    if (atual) out.push(atual);
+    // ignora pedacinhos (desenho do mapa): os mesmos limites da conferência da rota
+    return out.filter(function (t) { return t.fim - t.ini >= (t.via ? 120 : t.tipo === "zerc" ? 40 : 60); });
+  }
+  function textoTrecho(t) { return "a " + t.nome; }
+  function atualizarAvisoProibido(s) {
+    var r = estado.rota, el = document.getElementById("navProibido"), agora = Date.now(), p = nav.proib || (nav.proib = {});
+    var minuto = Math.floor(agora / 60000);
+    // recalcula quando a rota muda ou a cada minuto (as restrições dependem do horário)
+    if (p.rota !== r || p.minuto !== minuto) { p.lista = trechosProibidos(r, momentoAtual()); p.rota = r; p.minuto = minuto; }
+    var dentro = null, prox = null;
+    p.lista.forEach(function (t) {
+      if (s >= t.ini - 10 && s <= t.fim + 10) dentro = t;
+      else if (t.ini > s && (!prox || t.ini < prox.ini)) prox = t;
+    });
+    function mostrar(classe, titulo, detalhe) {
+      el.className = "nav-proibido " + classe;
+      el.innerHTML = escapar(titulo) + (detalhe ? "<small>" + escapar(detalhe) + "</small>" : "");
+      el.hidden = false;
+    }
+    function falarUmaVez(chave, frase, vib) {
+      p.falados = p.falados || {};
+      if (p.falados[chave]) return;
+      p.falados[chave] = true; falar(frase, "manobra"); if (vib) vibrar(vib);
+    }
+    if (dentro) {
+      p.dentro = dentro; p.verdeAte = 0;
+      mostrar("vermelho", "⛔ VOCÊ ESTÁ EM ÁREA PROIBIDA", (dentro.via ? dentro.nome : "Dentro d" + textoTrecho(dentro)) + " · sai em " + arredondar(Math.max(0, dentro.fim - s)));
+      falarUmaVez("dentro" + dentro.chave + dentro.ini, "Atenção: você está em área proibida para caminhão.", [400, 200, 400]);
+      return;
+    }
+    if (p.dentro && s > p.dentro.fim) {
+      p.dentro = null; p.verdeAte = agora + AVISO_PROIB.verdeSeg * 1000;
+      falar("Você saiu da área restrita.", "manobra");
+    }
+    if (prox) {
+      var d = prox.ini - s, onde = prox.via ? "passa pela " + prox.nome : "entra n" + textoTrecho(prox);
+      if (d <= AVISO_PROIB.pisca) {
+        mostrar("vermelho pisca", "⛔ ATENÇÃO: área proibida a " + arredondar(d), "A rota " + onde + " (proibida agora)");
+        falarUmaVez("perto" + prox.chave + prox.ini, "Atenção: área proibida a " + arredondar(d) + ".", [300, 150, 300, 150, 300]);
+      } else {
+        mostrar("amarelo", "⚠️ ATENÇÃO: em " + arredondar(d) + " a rota " + onde, "Proibida para caminhão agora. Siga as placas.");
+        if (d <= AVISO_PROIB.falarAntes) falarUmaVez("antes" + prox.chave + prox.ini, "Atenção: em " + arredondar(d) + ", a rota " + onde + ", proibida agora.", 200);
+      }
+      return;
+    }
+    if (p.verdeAte && agora < p.verdeAte) { mostrar("verde", "✅ Saiu da área restrita", ""); return; }
+    el.hidden = true;
+  }
+  // Antes de navegar numa rota com restrição: pergunta, com aviso bem claro
+  function navegarOuConfirmar() {
+    var r = estado.rota;
+    if (!r) return;
+    var itens = (r.problemas || []).map(function (p) {
+      return "<li>" + (p.area ? "Entra na " + escapar(CAMADAS[p.tipo].curto) : "Passa por " + km(p.metros) + " em " + escapar(p.nome)) +
+        " — <b>proibido agora</b><br><small>" + escapar(CAMADAS[p.tipo].hora) + "</small></li>";
+    });
+    // Saída ou destino dentro de área proibida agora (a rota não tem como fugir dela)
+    var ign = r.ignorar || {};
+    ["zmrc", "rodizio"].forEach(function (t) {
+      if (ign[t]) itens.push("<li>A saída ou o destino fica <b>dentro da " + escapar(CAMADAS[t].curto) + "</b>, proibida agora<br><small>" + escapar(CAMADAS[t].hora) + "</small></li>");
+    });
+    if (ign.zer && Object.keys(ign.zer).length) itens.push("<li>A saída ou o destino fica numa <b>zona residencial (ZER)</b>: pode haver placa de proibição para caminhão<br><small>" + escapar(CAMADAS.zerc.hora) + "</small></li>");
+    if (!itens.length) { iniciarNavegacao(); return; }
+    document.getElementById("cpLista").innerHTML = itens.join("");
+    document.getElementById("confirmaProibido").hidden = false;
+  }
+  document.getElementById("btnCpVoltar").addEventListener("click", function () { document.getElementById("confirmaProibido").hidden = true; });
+  document.getElementById("btnCpSeguir").addEventListener("click", function () { document.getElementById("confirmaProibido").hidden = true; iniciarNavegacao(); });
+
   /* ===== Chegada automática =====
      Chegou = até 50 m do destino E quase parado (abaixo de ~5 km/h) por 20 segundos seguidos.
      Aí mostra a contagem de 10 s; se o motorista não tocar em "Ainda não cheguei", encerra sozinho. */
@@ -3030,6 +3157,7 @@ body { font-size: 16px; }
                    de: estado.A && estado.A.nome || "", para: estado.B && estado.B.nome || "" };
     nav.foraRegistrado = false; nav.ultimoNaRota = null; nav.instrAtual = ""; nav.sAtual = 0; nav.revisarAoParar = false; trilha = [];
     nav.pertoParadoDesde = null; nav.chegadaBloqueada = false; pararContagem();
+    nav.proib = {}; document.getElementById("navProibido").hidden = true;
     centralApp({ acao: "sinal", evento: "viagem", versao: VERSAO_APP }).catch(function () {});   // conta a viagem (sem localização)
     ["telaCadastro", "telaNovidade"].forEach(function (id) { document.getElementById(id).hidden = true; });
     document.getElementById("viagemConcluida").hidden = true;
@@ -3075,7 +3203,7 @@ body { font-size: 16px; }
     limparDestaque();
     mapa.setBearing(0);
     document.body.classList.remove("navegando");
-    ["navTopo", "navBase", "navAlerta", "navFaixa", "btnBussola", "btnCentro", "velocimetro", "navOpcoes", "btnMarcar"].forEach(function (id) { document.getElementById(id).hidden = true; });
+    ["navTopo", "navBase", "navAlerta", "navFaixa", "navProibido", "btnBussola", "btnCentro", "velocimetro", "navOpcoes", "btnMarcar"].forEach(function (id) { document.getElementById(id).hidden = true; });
     if (automatico) {
       // Encerrou sozinho na chegada: perguntas só se nesta viagem ele marcou problema ou saiu da rota
       var inicio = nav.viagem ? nav.viagem.inicio : 0;
@@ -3300,7 +3428,7 @@ body { font-size: 16px; }
      - Cada celular ganha um código sorteado (não diz quem é) para contar quantos usam o app.
      - Nome e WhatsApp: só de quem preencher e aceitar. Pede UMA vez; quem pular vê de novo em 7 dias.
      - Novidades: aparece só a mais recente, uma vez, e nunca durante a navegação. */
-  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v29";
+  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v30";
   var CHAVE_CAD = "rotaCaminhaoSP.cadastro", CHAVE_PULOU = "rotaCaminhaoSP.cadastroPulado", CHAVE_VISTAS = "rotaCaminhaoSP.novidadesVistas";
   var aparelhoId = (function () {
     var id = ler("rotaCaminhaoSP.aparelho") || "";
