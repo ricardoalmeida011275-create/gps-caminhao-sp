@@ -54,18 +54,18 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --asfalto: #e9ecea; --fundo: #171b1e; --papel: #20262a; --linha: #343c41; --suave: #a3adb2;
+    --asfalto: #eef3f8; --fundo: #162230; --papel: #1d2b3a; --linha: #2c3e52; --suave: #9fb2c6;
     --proibido: #ff5a6e; --proibido-fundo: #3d1a20; --liberado: #5fd38a; --liberado-fundo: #16301f;
     --atencao: #ffb44d; --atencao-fundo: #3a2a10; --aviso: #ffcf33; --aviso-texto: #1d2226; --foco: #7db7ff;
-    --rota: #1565c0; --nav-fundo: #0b2740; --nav-texto: #ffffff;
+    --rota: #1565c0; --nav-fundo: #123a5e; --nav-texto: #ffffff;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --asfalto: #e9ecea; --fundo: #171b1e; --papel: #20262a; --linha: #343c41; --suave: #a3adb2;
+  --asfalto: #eef3f8; --fundo: #162230; --papel: #1d2b3a; --linha: #2c3e52; --suave: #9fb2c6;
   --proibido: #ff5a6e; --proibido-fundo: #3d1a20; --liberado: #5fd38a; --liberado-fundo: #16301f;
   --atencao: #ffb44d; --atencao-fundo: #3a2a10; --aviso: #ffcf33; --aviso-texto: #1d2226; --foco: #7db7ff;
-  --rota: #1565c0; --nav-fundo: #0b2740; --nav-texto: #ffffff;
+  --rota: #1565c0; --nav-fundo: #123a5e; --nav-texto: #ffffff;
   color-scheme: dark;
 }
 
@@ -244,9 +244,9 @@ body.navegando .leaflet-control-attribution { font-size: 9px; opacity: .6; paddi
 @keyframes aparecer { from { opacity: .25; transform: translateY(-3px); } }
 @media (prefers-reduced-motion: reduce) { .nav-topo, .nav-alerta, .nav-base, .troca { animation: none; } }
 
-/* Mapa de fundo escuro no modo noturno */
-:root[data-theme="dark"] .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.92) contrast(.9) saturate(.6); }
-:root[data-theme="dark"] .leaflet-container { background: #1b2226; }
+/* Mapa de fundo escuro no modo noturno: azul-acinzentado suave (sem o marrom) */
+:root[data-theme="dark"] .leaflet-tile-pane { filter: invert(1) grayscale(1) brightness(.92) contrast(.88) sepia(.35) hue-rotate(185deg) saturate(1.5); }
+:root[data-theme="dark"] .leaflet-container { background: #1a2633; }
 .btn-navegar { margin-top: 4px; background: var(--liberado); }
 .opcoes { display: flex; flex-direction: column; gap: 6px; }
 .opcao-rota {
@@ -459,7 +459,8 @@ body.navegando .leaflet-control-attribution { font-size: 9px; opacity: .6; paddi
 .leaflet-popup-content a { color: var(--foco); }
 .pop-titulo { font-weight: 600; margin: 0 0 4px; }
 .pop-status { font-family: var(--f-titulo); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
-.leaflet-control-attribution { font-size: 10px; }
+/* Crédito do mapa: obrigatório pela licença do OpenStreetMap, mas pequeno e discreto */
+.leaflet-control-attribution { font-size: 9px; opacity: .55; padding: 0 4px; }
 .marcador {
   width: 28px; height: 28px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg);
   display: grid; place-items: center; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.35);
@@ -475,9 +476,9 @@ body.navegando .leaflet-control-attribution { font-size: 9px; opacity: .6; paddi
 
 body { font-size: 16px; }
 .btn-pequeno, .btn-painel {
-  background: var(--botao-fundo); color: var(--botao-texto); border: 2px solid var(--botao-borda);
-  border-radius: 10px; padding: 7px 14px; min-height: 40px;
-  font-family: var(--f-titulo); font-size: 16px; font-weight: 700; letter-spacing: .02em;
+  background: var(--botao-fundo); color: var(--botao-texto); border: 1px solid var(--botao-borda);
+  border-radius: 999px; padding: 7px 14px; min-height: 40px;
+  font-family: var(--f-titulo); font-size: 16px; font-weight: 600; letter-spacing: .02em;
   box-shadow: 0 2px 0 var(--botao-borda); cursor: pointer;
 }
 .btn-pequeno:active, .btn-painel:active { transform: translateY(2px); box-shadow: none; }
