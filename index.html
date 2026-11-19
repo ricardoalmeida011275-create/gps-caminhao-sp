@@ -207,6 +207,11 @@ body.navegando .btn-centro { left: max(12px, env(safe-area-inset-left, 0px)); ri
 .rev-botoes button[aria-pressed="true"] { background: var(--botao-fundo, #e3eefb); border-color: var(--botao-borda, #0b5cad); color: var(--botao-texto, #0a3a70); }
 .rev-botoes button.rev-sim[aria-pressed="true"] { background: #c62828; border-color: #c62828; color: #fff; }
 .btn-pendentes { margin-bottom: 12px; border-style: solid; border-color: #e65100; background: #fff3e0; color: #8a3200; }
+.btn-tempos { display: block; width: 100%; margin-bottom: 12px; }
+.tempos-resumo { margin: 4px 0 10px; font-size: 16px; }
+table.tempos { width: 100%; border-collapse: collapse; font-size: 15px; }
+table.tempos th, table.tempos td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--linha); }
+table.tempos small { color: var(--suave); }
 /* Velocímetro (só na navegação) */
 .velocimetro {
   position: absolute; z-index: 1000; left: max(12px, env(safe-area-inset-left, 0px)); bottom: calc(96px + env(safe-area-inset-bottom, 0px));
@@ -555,6 +560,15 @@ body { font-size: 16px; }
     </div>
   </div>
 
+  <!-- Tempo previsto x real das viagens -->
+  <div class="nav-opcoes" id="telaTempos" role="dialog" aria-modal="true" aria-labelledby="tituloTempos" hidden>
+    <div class="nav-opcoes-caixa">
+      <p class="nav-opcoes-titulo" id="tituloTempos">📊 Tempo previsto x real</p>
+      <div id="temposLista"></div>
+      <button type="button" class="btn-pequeno op-fechar" id="btnFecharTempos">Fechar</button>
+    </div>
+  </div>
+
   <aside class="painel" id="painel">
     <div class="painel-topo">
       <h1 class="marca">Rota Liberada <span class="selo">Teste piloto</span><small>GPS de caminhão que respeita as restrições</small></h1>
@@ -563,6 +577,7 @@ body { font-size: 16px; }
 
     <div class="painel-corpo" id="painelCorpo">
       <button type="button" class="btn-amigo btn-pendentes" id="btnRevisarPendentes" hidden></button>
+      <button type="button" class="btn-pequeno btn-tempos" id="btnTempos">📊 Tempo previsto x real das viagens</button>
 
       <section aria-labelledby="tituloRota">
         <p class="rotulo" id="tituloRota">Rota</p>
@@ -2277,7 +2292,9 @@ body { font-size: 16px; }
       return lista.map(function (res, i) {
         var sum = resumo(res.f);
         res.distancia = sum.distance || 0;
-        res.duracao = sum.duration || 0;
+        res.duracaoServico = sum.duration || 0;
+        res.fatorTempo = fatorTempo(m);
+        res.duracao = res.duracaoServico * res.fatorTempo;   // tempo ajustado pelo horário e pelo veículo
         res.avisos = avisos.slice();
         (res.ruins || []).forEach(function (rb) {
           if (rb.tipo === "bloqueio") res.avisos.push("Atenção: não achei outro caminho. " + rb.nome + ". Confira as placas.");
@@ -2337,7 +2354,7 @@ body { font-size: 16px; }
   }
 
   function exibirResultado(res) {
-    var numeros = '<div class="res-numeros"><div><strong>' + km(res.distancia) + '</strong><span>distância</span></div><div><strong>' + tempo(res.duracao) + '</strong><span>tempo sem trânsito</span></div><div><strong>' + hhmm(res.chegada.minutos) + '</strong><span>chegada prevista</span></div></div>' +
+    var numeros = '<div class="res-numeros"><div><strong>' + km(res.distancia) + '</strong><span>distância</span></div><div><strong>' + tempo(res.duracao) + '</strong><span>tempo estimado</span></div><div><strong>' + hhmm(res.chegada.minutos) + '</strong><span>chegada prevista</span></div></div>' +
       '<p class="nota" style="margin:0">Veículo: ' + escapar(res.veiculoTexto || "") + '</p>';
     // Faixas e corredores de ônibus no caminho (só informação; a rota não muda)
     if (!res.onibus) res.onibus = onibusNaRota(res.coords, res.momento);
@@ -2844,6 +2861,7 @@ body { font-size: 16px; }
       return;
     }
     nav.chegou = true; nav.revisarAoParar = true;
+    guardarViagem();   // guarda o tempo previsto e o real desta viagem
     document.getElementById("navSeta").textContent = SETAS[10];
     document.getElementById("navDist").textContent = "Chegou";
     var aprox = estado.B && estado.B.aproximado;
@@ -2860,6 +2878,9 @@ body { font-size: 16px; }
     // A navegação usa sempre o horário de agora
     if (estado.modo !== "agora") { document.getElementById("mAgora").click(); nav.precisaRecalc = true; }
     nav.ativo = true; nav.seguindo = true; nav.idx = 0; nav.falados = {}; nav.foraDesde = null; nav.chegou = false; nav.ultimaRecalc = 0;
+    nav.viagem = { inicio: Date.now(), km: +(estado.rota.distancia / 1000).toFixed(1), previsto: Math.round(estado.rota.duracao / 60),
+                   semAjuste: Math.round((estado.rota.duracaoServico || estado.rota.duracao) / 60), fator: estado.rota.fatorTempo || 1,
+                   de: estado.A && estado.A.nome || "", para: estado.B && estado.B.nome || "" };
     nav.foraRegistrado = false; nav.ultimoNaRota = null; nav.instrAtual = ""; nav.sAtual = 0; nav.revisarAoParar = false; trilha = [];
     document.getElementById("btnMarcar").hidden = false; document.getElementById("btnRevisarPendentes").hidden = true;
     nav.sUltimoOnibus = 0; nav.onibusAtual = null;
@@ -3107,6 +3128,65 @@ body { font-size: 16px; }
     return true;
   }
   atualizarBotaoPendentes();
+
+
+  /* ================= Tempo de chegada mais realista (sem trânsito ao vivo) ================= */
+  // O serviço de rotas calcula o tempo pela velocidade de cada tipo de rua, como se a rua estivesse vazia.
+  // Aqui o app multiplica esse tempo conforme o horário de saída e o veículo. Valores fáceis de mudar:
+  //   dias: "util" (seg a sex), "sab" (sábado), "dom" (domingo e feriado) · de/ate: horas (das 17 às 21 = de: 17, ate: 21)
+  var AJUSTE_TEMPO = {
+    horarios: [
+      { nome: "pico da manhã",        dias: "util", de: 6,  ate: 10, fator: 1.35 },
+      { nome: "pico da tarde/noite",  dias: "util", de: 17, ate: 21, fator: 1.4 },
+      { nome: "dia útil, fora do pico", dias: "util", de: 10, ate: 17, fator: 1.2 },
+      { nome: "noite",                dias: "util", de: 21, ate: 24, fator: 1.1 },
+      { nome: "madrugada",            dias: "todos", de: 0, ate: 6,  fator: 1.0 },
+      { nome: "sábado",               dias: "sab",  de: 6,  ate: 24, fator: 1.15 },
+      { nome: "domingo/feriado",      dias: "dom",  de: 6,  ate: 24, fator: 1.05 }
+    ],
+    // Caminhão anda mais devagar que carro (o serviço já usa velocidade de caminhão; isto é um ajuste extra)
+    veiculo: { caminhao: 1.05, vuc: 1.03, carro: 1.0 }
+  };
+  function fatorTempo(m) {
+    var h = (m.minutos || 0) / 60, dia = m.feriado || m.dia === 0 || m.dia === 7 ? "dom" : m.dia === 6 ? "sab" : "util";
+    var f = 1;
+    for (var i = 0; i < AJUSTE_TEMPO.horarios.length; i++) {
+      var a = AJUSTE_TEMPO.horarios[i];
+      if ((a.dias === "todos" || a.dias === dia) && h >= a.de && h < a.ate) { f = a.fator; break; }
+    }
+    return f * (AJUSTE_TEMPO.veiculo[m.veiculo] || AJUSTE_TEMPO.veiculo.caminhao);
+  }
+
+  /* Tempo previsto x tempo real de cada viagem (para calibrar os ajustes acima) */
+  var CHAVE_VIAGENS = "rotaCaminhaoSP.viagens";
+  function lerViagens() { try { return JSON.parse(ler(CHAVE_VIAGENS) || "[]") || []; } catch (e) { return []; } }
+  function guardarViagem() {
+    var v = nav.viagem;
+    if (!v || v.salva) return;
+    v.salva = true;
+    var lista = lerViagens();
+    lista.push({ data: new Date(v.inicio).toISOString(), km: v.km, previsto: v.previsto, semAjuste: v.semAjuste, real: Math.round((Date.now() - v.inicio) / 60000), fator: v.fator, de: v.de, para: v.para });
+    gravar(CHAVE_VIAGENS, JSON.stringify(lista.slice(-50)));
+  }
+  function mostrarTempos() {
+    var lista = lerViagens().slice().reverse(), el = document.getElementById("temposLista");
+    if (!lista.length) el.innerHTML = '<p>Ainda não há viagens completas. Cada viagem que chega ao destino aparece aqui.</p>';
+    else {
+      var somaP = 0, somaR = 0, somaS = 0;
+      lista.forEach(function (v) { somaP += v.previsto; somaR += v.real; somaS += v.semAjuste || v.previsto; });
+      var dif = Math.round((somaR / somaP - 1) * 100);
+      el.innerHTML = '<p class="tempos-resumo">Na média, as viagens levaram <b>' + (dif >= 0 ? dif + "% a mais" : (-dif) + "% a menos") + '</b> que o previsto' +
+        (somaS ? ' (sem o ajuste, a diferença seria de ' + Math.round((somaR / somaS - 1) * 100) + '%)' : '') + '.</p>' +
+        '<table class="tempos"><thead><tr><th>Quando</th><th>Km</th><th>Previsto</th><th>Real</th></tr></thead><tbody>' +
+        lista.map(function (v) {
+          var d = Math.round((v.real / Math.max(1, v.previsto) - 1) * 100);
+          return '<tr><td>' + quando(v.data) + '</td><td>' + String(v.km).replace(".", ",") + '</td><td>' + v.previsto + ' min</td><td>' + v.real + ' min <small>(' + (d >= 0 ? "+" : "") + d + '%)</small></td></tr>';
+        }).join("") + '</tbody></table>';
+    }
+    document.getElementById("telaTempos").hidden = false;
+  }
+  document.getElementById("btnTempos").addEventListener("click", mostrarTempos);
+  document.getElementById("btnFecharTempos").addEventListener("click", function () { document.getElementById("telaTempos").hidden = true; });
 
   setInterval(vigiarRestricoes, 60000);
 
