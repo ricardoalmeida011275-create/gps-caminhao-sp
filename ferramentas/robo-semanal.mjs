@@ -93,7 +93,7 @@ function parecido(a, b) {
   const ba = bi(a), bb = bi(b); let comum = 0;
   for (const [p, n] of ba) comum += Math.min(n, bb.get(p) || 0);
   const dice = (2 * comum) / Math.max(1, a.length - 1 + b.length - 1);
-  return dice >= 0.88 ? dice : 0;
+  return dice >= 0.93 ? dice : 0;
 }
 function distancia(lat1, lon1, lat2, lon2) {
   const R = 6371000, r = Math.PI / 180, dLat = (lat2 - lat1) * r, dLon = (lon2 - lon1) * r;
@@ -131,7 +131,9 @@ async function conferirLugares(estado, aviso) {
           if (lat == null) continue;
           const d = distancia(l.lat, l.lon, lat, lon);
           if (d > 350) continue;
-          const nota = Math.max(...nomesDoObjeto(t).flatMap((n) => meus.map((m) => parecido(n, m))), 0) - d / 3500;   // mais perto vale um pouco mais
+          // compara só com o nome PRINCIPAL do objeto (apelidos curtos tipo "Mercado Municipal" confundem lugares vizinhos)
+          const principais = [normalizar(t.name), normalizar(t["name:pt"])].filter((n) => n.length >= 3);
+          const nota = Math.max(...principais.flatMap((n) => meus.map((m) => parecido(n, m))), 0) - d / 3500;   // mais perto vale um pouco mais
           if (nota >= 0.8) pares.push({ l, nota, id: e.type + "/" + e.id, nomes: nomesDoObjeto(t), nome: t.name || "" });
         }
       }

@@ -477,14 +477,6 @@
    ],
    "nome": "Expo Center Norte"
   },
-  "Mercado Municipal (Mercadão)": {
-   "osm": "node/5129855297",
-   "nomes": [
-    "mercado municipal kinjo yamato",
-    "mercado municipal"
-   ],
-   "nome": "Mercado Municipal Kinjo Yamato"
-  },
   "Shopping Metrô Boulevard Tatuapé": {
    "osm": "way/124518853",
    "nomes": [
@@ -750,13 +742,6 @@
     "terminal de cargas"
    ],
    "nome": "Terminal de Cargas"
-  },
-  "Shopping Interlagos": {
-   "osm": "way/168776040",
-   "nomes": [
-    "shopping interlar"
-   ],
-   "nome": "Shopping Interlar"
   }
  },
  "fontes": {
