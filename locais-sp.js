@@ -48,7 +48,7 @@ window.LOCAIS_SP = [
   { nome: "WTC Events Center", apelidos: ["wtc","world trade center"], categoria: "Eventos", bairro: "Itaim Bibi", cidade: "São Paulo", lat: -23.609156, lon: -46.696257 },
 
   // ===== Estádios =====
-  { nome: "Allianz Parque", apelidos: ["allianz","allianz parque","palmeiras","arena palmeiras"], categoria: "Estádios", bairro: "Barra Funda", cidade: "São Paulo", lat: -23.527391, lon: -46.678538 },
+  { nome: "Nubank Parque (antigo Allianz Parque)", apelidos: ["nubank parque","nubank arena","nubank","arena nubank","allianz","allianz parque","palmeiras","arena palmeiras","estadio do palmeiras"], categoria: "Estádios", bairro: "Barra Funda", cidade: "São Paulo", lat: -23.527391, lon: -46.678538 },
   { nome: "Estádio do Canindé", apelidos: ["caninde","portuguesa","osvaldo teixeira duarte"], categoria: "Estádios", bairro: "Pari", cidade: "São Paulo", lat: -23.520546, lon: -46.618808 },
   { nome: "Estádio do Morumbi (Morumbis)", apelidos: ["morumbis","estadio do morumbi","morumbi estadio","sao paulo fc","cicero pompeu de toledo"], categoria: "Estádios", bairro: "Morumbi", cidade: "São Paulo", lat: -23.600083, lon: -46.72011 },
   { nome: "Estádio do Pacaembu", apelidos: ["pacaembu","estadio do pacaembu","paulo machado de carvalho"], categoria: "Estádios", bairro: "Consolacao", cidade: "São Paulo", lat: -23.548011, lon: -46.66534 },
