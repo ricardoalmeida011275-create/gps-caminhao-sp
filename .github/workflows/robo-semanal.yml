@@ -1,0 +1,37 @@
+# Robô semanal do Rota Liberada: confere lugares (nomes novos) e fontes oficiais de regras.
+# Roda sozinho toda segunda às 6h (horário de Brasília). Para rodar na hora: aba Actions → Robô semanal → Run workflow.
+name: Robô semanal
+on:
+  schedule:
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
+permissions:
+  contents: write
+  issues: write
+  pages: write
+jobs:
+  conferir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Conferir lugares e regras
+        run: node ferramentas/robo-semanal.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+      - name: Guardar o que mudou
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          git config user.name "robo-rota-liberada"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then echo "Nada mudou."; exit 0; fi
+          git commit -m "Robô semanal: conferência de lugares e regras"
+          git push
+          curl -s -X POST -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/pages/builds" || true
