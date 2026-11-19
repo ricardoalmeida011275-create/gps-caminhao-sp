@@ -1980,7 +1980,7 @@ body { font-size: 16px; }
       for (var j = 0; j < n - 1; j++) {
         if (distSeg(q.depois, r.pts[j], r.pts[j + 1]) > 6) continue;
         var veioDoLado = !q.antes;
-        for (var k = j; !veioDoLado && k >= 0 && r.acum[j] - r.acum[k] < 120; k--) {
+        for (var k = j; !veioDoLado && k >= 0 && r.acum[j] - r.acum[k + 1] < 120; k--) {
           if (distSeg(q.antes, r.pts[k], r.pts[k + 1]) <= 5) veioDoLado = true;
         }
         if (veioDoLado) {
