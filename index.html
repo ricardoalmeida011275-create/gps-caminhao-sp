@@ -1041,7 +1041,7 @@ body { font-size: 16px; }
     zoomControl: true, preferCanvas: true, zoomSnap: 0.25,
     rotate: true, bearing: 0, touchRotate: false, shiftKeyRotate: false, rotateControl: false
   }).setView([-23.56, -46.64], 12);
-  if (location.hostname === "localhost") { window._mapa = mapa; window._estado = estado; window._teste = function () { return { medirRestrito: medirRestrito, trechosProibidos: trechosProibidos, conferir: conferir, dentroDe: dentroDe, areaComEntrada: areaComEntrada, areas: areas }; }; } // só para testes no computador
+  if (location.hostname === "localhost") { window._mapa = mapa; window._estado = estado; window._teste = function () { return { medirRestrito: medirRestrito, trechosProibidos: trechosProibidos, conferir: conferir, dentroDe: dentroDe, areaComEntrada: areaComEntrada, areas: areas, itemTomTom: itemTomTom, confirmarBairros: confirmarBairros }; }; } // só para testes no computador
   mapa.attributionControl.setPrefix(false); // tira o "Leaflet"; o crédito do OpenStreetMap continua (é obrigatório)
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
@@ -1449,7 +1449,8 @@ body { font-size: 16px; }
       (a.streetName ? a.streetName + (comNumero ? ", " + a.streetNumber : "") : (a.freeformAddress || "Lugar"));
     return {
       nome: nome, rua: a.streetName || "", numero: comNumero ? a.streetNumber : "",
-      detalhe: [a.municipalitySubdivision, a.municipality, a.postalCode].filter(Boolean).join(", "),
+      cidade: a.municipality || "", cep: cepDe(a.extendedPostalCode) || cepDe(a.postalCode),
+      detalhe: a.municipality || "",   // o bairro só entra depois de conferido pelo CEP (confirmarBairros)
       lat: r.position.lat, lon: r.position.lon, tipo: tipo, fonte: "TomTom"
     };
   }
@@ -1471,7 +1472,8 @@ body { font-size: 16px; }
     return {
       nome: ehEnd ? (p.street || p.name) + ", " + (p.housenumber || "") : (p.name || p.label),
       rua: p.street || (p.layer === "street" ? p.name : ""), numero: ehEnd ? (p.housenumber || "") : "",
-      detalhe: [p.neighbourhood, p.locality || p.county].filter(Boolean).join(", "),
+      cidade: p.locality || p.county || "", cep: cepDe(p.postalcode),
+      detalhe: p.locality || p.county || "",
       lat: c[1], lon: c[0], tipo: ehEnd ? "exato" : (p.layer === "street" ? "rua" : "lugar"), fonte: "OpenRouteService"
     };
   }
@@ -1493,7 +1495,8 @@ body { font-size: 16px; }
         return {
           nome: rua ? rua + (temNum ? ", " + a.house_number : "") : (x.name || String(x.display_name || "").split(",")[0]),
           rua: rua, numero: temNum ? a.house_number : "",
-          detalhe: [a.suburb || a.neighbourhood, a.city || a.town, a.postcode].filter(Boolean).join(", "),
+          cidade: a.city || a.town || "", cep: cepDe(a.postcode),
+          detalhe: a.city || a.town || "",
           lat: +x.lat, lon: +x.lon, tipo: temNum ? "exato" : (rua ? "rua" : "lugar"), fonte: "OpenStreetMap"
         };
       });
@@ -1510,6 +1513,42 @@ body { font-size: 16px; }
   }
   function consultarCep(cep) {
     return pedirGuardado("https://viacep.com.br/ws/" + cep + "/json/", 8).then(function (c) { return c && !c.erro ? c : null; });
+  }
+  function cepDe(s) { var d = String(s || "").replace(/\D/g, ""); return d.length === 8 ? d : ""; }
+
+  /* ---------- Bairro: só o oficial dos Correios (ViaCEP) ----------
+     Os serviços de mapa (TomTom, OpenStreetMap) dão um bairro pelo desenho deles, que às vezes não bate com o
+     bairro oficial (ex.: "Jardim Presidente Dutra" no lugar de "Jardim Fátima", em Guarulhos).
+     Aqui o bairro só aparece se o CEP do endereço for confirmado no ViaCEP e for da MESMA rua.
+     Sem confirmação, mostra só rua, número e cidade. Muda só o NOME mostrado: o ponto no mapa e a rota não mudam. */
+  function ruaBase(s) {
+    return semAcento(s).replace(/,.*$/, "").replace(/^(rua|r\.|avenida|av\.?|alameda|al\.|travessa|tv\.|estrada|estr\.|praca|pca\.?|largo|viela|rodovia|rod\.)\s+/, "")
+      .replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+  }
+  // folgado: para o CEP do PRÓPRIO endereço, aceita nomes escritos diferente se todas as palavras
+  // do nome mais curto (3 ou mais) estiverem no mais longo (ex.: "3º Sargento José Martins Dias" x "Terceiro-Sargento-Aeronáutica José Martins Dias")
+  function mesmaRua(a, b, folgado) {
+    var x = ruaBase(a), y = ruaBase(b);
+    if (x.length < 3 || y.length < 3) return false;
+    if (x === y || x.indexOf(y) >= 0 || y.indexOf(x) >= 0) return true;
+    if (!folgado) return false;
+    var px = x.split(" "), py = y.split(" "), curta = px.length <= py.length ? px : py, longa = curta === px ? py : px;
+    return curta.length >= 3 && curta.every(function (w) { return longa.indexOf(w) >= 0; });
+  }
+  function aplicarBairro(it, c) {
+    it.bairro = c ? (c.bairro || "") : "";
+    it.detalhe = [it.bairro, c ? c.localidade : it.cidade, c ? c.cep : ""].filter(Boolean).join(", ");
+  }
+  function confirmarBairros(itens, cepDigitado) {
+    return Promise.all((itens || []).map(function (it, i) {
+      var rua = it.rua || it.nome;
+      // CEP que o motorista digitou: vale para os resultados da mesma rua
+      if (cepDigitado && cepDigitado.logradouro && mesmaRua(rua, cepDigitado.logradouro)) { aplicarBairro(it, cepDigitado); return null; }
+      if (!it.cep || i >= 10) { aplicarBairro(it, null); return null; }
+      return consultarCep(it.cep).then(function (c) {
+        aplicarBairro(it, c && c.logradouro && mesmaRua(rua, c.logradouro, true) ? c : null);
+      }, function () { aplicarBairro(it, null); });
+    })).then(function () { return itens; });
   }
 
   /* Número da casa digitado. Ex.: "Rua Augusta 1500", "Av. Paulista, 1000", "Rua 25 de Março, 100" (pega o 100) */
@@ -1640,7 +1679,10 @@ body { font-size: 16px; }
         var numero = numeroDigitado(texto);
         p = procurarNosServicos(texto, numero, explicito).then(function (r) { r.numero = numero; return r; });
       }
-      p.then(function (r) { if (minhaVez === vez) desenhar(texto, r, explicito); })
+      p.then(function (r) {
+        // Antes de mostrar: troca o bairro dos serviços de mapa pelo oficial do CEP (ou tira o bairro)
+        return r.itens ? confirmarBairros(r.itens, r.cep).then(function () { return r; }, function () { return r; }) : r;
+      }).then(function (r) { if (minhaVez === vez) desenhar(texto, r, explicito); })
        .catch(function () { if (minhaVez === vez) desenhar(texto, { aviso: "Não consegui buscar agora. Confira a internet." }, explicito); });
     }
 
@@ -1787,11 +1829,17 @@ body { font-size: 16px; }
         .then(function (j) {
           var a = j.addresses && j.addresses[0] && j.addresses[0].address;
           if (!a || !a.streetName) throw new Error("sem rua");
-          return a.streetName + (a.streetNumber ? ", " + a.streetNumber : "") + (a.municipalitySubdivision ? " – " + a.municipalitySubdivision : "");
+          return { rua: a.streetName, numero: a.streetNumber || "", cidade: a.municipality || "", cep: cepDe(a.extendedPostalCode) || cepDe(a.postalCode) };
         }) : Promise.reject(new Error("TomTom descansando"));
     return tt.catch(function () {
       return pedirJson("https://nominatim.openstreetmap.org/reverse?" + new URLSearchParams({ format: "jsonv2", lat: lat, lon: lon, zoom: "18", "accept-language": "pt-BR" }).toString(), 8)
-        .then(function (j) { var a = j.address || {}; if (!a.road) throw new Error("sem rua"); return a.road + (a.house_number ? ", " + a.house_number : "") + (a.suburb ? " – " + a.suburb : ""); });
+        .then(function (j) { var a = j.address || {}; if (!a.road) throw new Error("sem rua"); return { rua: a.road, numero: a.house_number || "", cidade: a.city || a.town || "", cep: cepDe(a.postcode) }; });
+    }).then(function (e) {
+      // Bairro só o oficial (CEP conferido no ViaCEP e da mesma rua); senão, rua, número e cidade
+      var it = { rua: e.rua, nome: e.rua, cidade: e.cidade, cep: e.cep };
+      return confirmarBairros([it], null).then(function () {
+        return e.rua + (e.numero ? ", " + e.numero : "") + (it.detalhe ? " – " + it.detalhe.replace(/, \d{5}-?\d{3}$/, "") : "");
+      });
     });
   }
   function abrirMenuPonto(latlng) {
@@ -3615,7 +3663,7 @@ body { font-size: 16px; }
      - Cada celular ganha um código sorteado (não diz quem é) para contar quantos usam o app.
      - Nome e WhatsApp: só de quem preencher e aceitar. Pede UMA vez; quem pular vê de novo em 7 dias.
      - Novidades: aparece só a mais recente, uma vez, e nunca durante a navegação. */
-  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v32";
+  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v33";
   var CHAVE_CAD = "rotaCaminhaoSP.cadastro", CHAVE_PULOU = "rotaCaminhaoSP.cadastroPulado", CHAVE_VISTAS = "rotaCaminhaoSP.novidadesVistas";
   var aparelhoId = (function () {
     var id = ler("rotaCaminhaoSP.aparelho") || "";
