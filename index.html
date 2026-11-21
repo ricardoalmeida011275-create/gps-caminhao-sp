@@ -244,6 +244,7 @@ body.navegando .btn-centro { left: max(12px, env(safe-area-inset-left, 0px)); ri
 .cad-aceite { display: flex; gap: 10px; align-items: flex-start; margin: 12px 0 6px; font-size: 15px; }
 .cad-aceite input { width: 22px; height: 22px; flex: none; margin-top: 1px; }
 .cad-dica { font-size: 14px; color: var(--suave); margin: 8px 0 0; }
+.cad-aviso { font-size: 14px; line-height: 1.4; margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--papel); border-left: 4px solid var(--liberado); }
 .cad-erro { color: var(--proibido); font-weight: 700; margin: 8px 0 0; }
 .cad-erro:empty { display: none; }
 .btn-apagar-cad { display: block; width: 100%; margin-top: 10px; background: transparent; border: 0; color: var(--proibido); font-weight: 700; font-size: 15px; cursor: pointer; padding: 8px; }
@@ -301,6 +302,13 @@ body.navegando .leaflet-control-attribution { font-size: 9px; opacity: .6; paddi
 .cor-rota { width: 26px; height: 6px; border-radius: 3px; }
 .op-tempo { font-family: var(--f-titulo); font-weight: 700; font-size: 20px; font-variant-numeric: tabular-nums; }
 .op-km { font-size: 13.5px; color: var(--suave); }
+.tipos-rota { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tipo-rota { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 12px; min-height: 96px; }
+.tipo-nome { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 15px; line-height: 1.2; }
+.tipo-nome .cor-rota { width: 16px; flex: none; }
+.op-restr { font-size: 13px; font-weight: 700; color: var(--proibido); }
+.cp-bloco { margin: 0 0 8px; font-size: 15px; line-height: 1.4; }
+.cp-livre { background: var(--papel); border-left: 4px solid var(--liberado); padding: 8px 10px; border-radius: 6px; font-weight: 700; }
 .btn-bussola {
   position: absolute; z-index: 1000; top: 12px; right: max(12px, env(safe-area-inset-right, 0px));
   width: 58px; padding: 6px 0 5px; border: 1px solid var(--linha); border-radius: 14px; cursor: pointer;
@@ -627,15 +635,28 @@ body { font-size: 16px; }
   </div>
   <div class="viagem-concluida" id="viagemConcluida" role="status" hidden>✅ Viagem concluída</div>
 
+  <!-- Resumo depois da viagem: tempo e km dentro de áreas restritas -->
+  <div class="nav-opcoes" id="resumoRestrito" role="dialog" aria-modal="true" aria-labelledby="rrTitulo" hidden>
+    <div class="nav-opcoes-caixa">
+      <p class="nav-opcoes-titulo" id="rrTitulo">📋 Resumo: áreas restritas nesta viagem</p>
+      <ul class="res-lista" id="rrLista"></ul>
+      <p class="cp-bloco" id="rrTotal"></p>
+      <button type="button" class="btn-rota" id="btnRrOk">Ok</button>
+    </div>
+  </div>
+
   <!-- Confirmação antes de navegar numa rota que passa por restrição -->
   <div class="nav-opcoes" id="confirmaProibido" role="alertdialog" aria-modal="true" aria-labelledby="cpTitulo" hidden>
     <div class="nav-opcoes-caixa">
-      <p class="nav-opcoes-titulo" id="cpTitulo" style="color:var(--proibido)">⛔ Esta rota passa por área proibida</p>
+      <p class="nav-opcoes-titulo" id="cpTitulo" style="color:var(--proibido)">⚠️ Atenção: não existe rota que evite a área restrita</p>
       <ul class="res-lista" id="cpLista"></ul>
-      <p class="cad-texto">Não achei caminho livre agora. Se seguir, você pode levar multa. Tente outro horário ou outro ponto de saída.</p>
-      <p class="cad-dica">Se seguir, o app avisa na tela (amarelo e vermelho) antes de entrar no trecho proibido.</p>
-      <button type="button" class="btn-rota" id="btnCpVoltar">Voltar e mudar a rota</button>
-      <button type="button" class="btn-pequeno op-fechar" id="btnCpSeguir">Navegar assim mesmo</button>
+      <p class="cp-bloco" id="cpTrecho"></p>
+      <p class="cp-bloco cp-livre" id="cpLivre"></p>
+      <p class="cad-dica">📄 Se você tem Autorização Especial da Prefeitura, siga o que está nela.</p>
+      <p class="cad-dica">Se seguir, o app avisa falando e na tela uns 500 m antes, ao entrar e ao sair da área.</p>
+      <button type="button" class="btn-rota" id="btnCpHorario">Escolher outro horário</button>
+      <button type="button" class="btn-rota btn-navegar" id="btnCpSeguir">Iniciar mesmo assim</button>
+      <button type="button" class="btn-pequeno op-fechar" id="btnCpVoltar">Voltar</button>
     </div>
   </div>
 
@@ -649,6 +670,7 @@ body { font-size: 16px; }
       <label class="cad-rotulo" for="cadWhats">Seu WhatsApp (com DDD)</label>
       <input class="cad-campo" id="cadWhats" type="tel" inputmode="numeric" maxlength="20" autocomplete="tel" placeholder="Ex.: (11) 98765-4321">
       <label class="cad-aceite"><input type="checkbox" id="cadAceite"> <span>Aceito receber mensagens do Rota Liberada pelo WhatsApp e pelo app.</span></label>
+      <p class="cad-aviso">🔒 Guardamos seu nome, WhatsApp e os dias em que você usa o app, para o Ricardo acompanhar os testes e falar com você. Não guardamos sua localização.</p>
       <p class="cad-dica">💡 Salve o número do Ricardo <b>(11) 96195-0268</b> para receber as novidades no WhatsApp.</p>
       <p class="cad-dica"><a href="privacidade.html" target="_blank" rel="noopener">Como usamos seus dados</a></p>
       <p class="cad-erro" id="cadErro" role="alert"></p>
@@ -840,18 +862,11 @@ body { font-size: 16px; }
         <p class="nota" id="notaTema"></p>
       </section>
 
-      <section class="chave" aria-labelledby="tituloChave">
-        <p class="rotulo" id="tituloChave">Chave do serviço de rotas</p>
-        <p class="nota" id="estadoChave" style="margin:0">…</p>
-        <div class="linha-campos">
-          <input class="campo-texto" id="txtChave" type="text" autocomplete="off" spellcheck="false" autocapitalize="off" placeholder="Cole aqui a chave do OpenRouteService" aria-label="Chave do OpenRouteService">
-          <button class="btn-pequeno" type="button" id="btnSalvarChave">Salvar</button>
-          <button class="btn-pequeno" type="button" id="btnApagarChave">Apagar</button>
-        </div>
-        <p class="nota" style="margin:0">A chave fica guardada só neste aparelho. Ela não vai para o GitHub.</p>
-        <div id="caixaConvite" class="convite" hidden>
-          <button class="btn-rota btn-convidar" type="button" id="btnConvidar">Convidar motoristas para o teste</button>
-          <p class="nota" style="margin:0">Manda um texto pronto com um link que já configura o app. Quem receber usa a sua chave (o seu limite de 2.000 rotas por dia): mande só para quem você confia. Se o link se espalhar, gere uma chave nova no HeiGIT.</p>
+      <section class="chave" aria-labelledby="tituloConvite">
+        <p class="rotulo" id="tituloConvite">Indique para outros motoristas</p>
+        <div id="caixaConvite" class="convite">
+          <button class="btn-rota btn-convidar" type="button" id="btnConvidar">📲 Convidar motoristas</button>
+          <p class="nota" style="margin:0">Manda pelo WhatsApp (ou outro app) um texto pronto com o link do GPS e o passo a passo. Quem receber não precisa criar conta nem senha.</p>
           <textarea id="txtConvite" class="campo-texto" rows="8" hidden aria-label="Texto do convite"></textarea>
           <button class="btn-pequeno" type="button" id="btnCopiarConvite" hidden>Copiar texto</button>
         </div>
@@ -1026,7 +1041,7 @@ body { font-size: 16px; }
     zoomControl: true, preferCanvas: true, zoomSnap: 0.25,
     rotate: true, bearing: 0, touchRotate: false, shiftKeyRotate: false, rotateControl: false
   }).setView([-23.56, -46.64], 12);
-  if (location.hostname === "localhost") window._mapa = mapa; // só para testes no computador
+  if (location.hostname === "localhost") { window._mapa = mapa; window._estado = estado; window._teste = function () { return { medirRestrito: medirRestrito, trechosProibidos: trechosProibidos, conferir: conferir, dentroDe: dentroDe, areaComEntrada: areaComEntrada, areas: areas }; }; } // só para testes no computador
   mapa.attributionControl.setPrefix(false); // tira o "Leaflet"; o crédito do OpenStreetMap continua (é obrigatório)
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
@@ -1264,19 +1279,11 @@ body { font-size: 16px; }
     setTimeout(function () { mapa.invalidateSize(); }, 50);
   });
 
-  /* ================= Chave do OpenRouteService ================= */
-  function mostrarEstadoChave() {
-    document.getElementById("estadoChave").textContent = estado.chave
-      ? "Chave salva neste aparelho (termina em …" + estado.chave.slice(-4) + ")."
-      : "Não precisa de chave: o app usa a central do GPS. Só cole uma chave aqui se quiser usar a sua própria conta.";
-    document.getElementById("caixaConvite").hidden = false;
-  }
-
-  /* ---------- Convidar motoristas para o teste ---------- */
-  // O link não leva mais a chave: as rotas passam pela central (gps.topvtrine.com), que guarda a chave escondida.
+  /* ---------- Convidar motoristas (qualquer pessoa pode mandar) ---------- */
+  // O link não leva chave nenhuma: as rotas passam pela central (gps.topvtrine.com), que guarda a chave escondida.
   function linkConvite() { return location.origin + location.pathname; }
   function textoConvite() {
-    return "Fala! Estou fazendo um teste piloto do Rota Liberada, um aplicativo de GPS para caminhão em São Paulo. " +
+    return "Fala! Estou usando o Rota Liberada, um aplicativo de GPS para caminhão em São Paulo, que está em teste. " +
       "Ele traça a rota respeitando as restrições da CET (ZMRC, rodízio e avenidas proibidas por horário), de acordo com o tipo de veículo.\n\n" +
       "É uma versão de teste: ainda vai melhorar bastante, inclusive o visual. Se der certo, a ideia é lançar no mercado, então a sua opinião vale muito.\n\n" +
       "Como usar:\n" +
@@ -1285,7 +1292,7 @@ body { font-size: 16px; }
       "3. Toque em \"Cadastrar caminhão\" e coloque o tipo e as medidas do seu caminhão (altura, peso...). Depois escolha o final da placa, a saída (\"Minha localização\") e o destino, e toque em \"Traçar rota\".\n" +
       "4. Toque em \"Iniciar navegação\" ANTES de sair. Não mexa no celular dirigindo e deixe a tela ligada.\n\n" +
       "Importante: é uma ferramenta de apoio. Respeite sempre as placas e as regras da CET. Ele evita as zonas residenciais por precaução, mas ainda não conhece todas as placas de proibição.\n\n" +
-      "Depois me conta: a rota fez sentido? Mandou você por algum lugar proibido? O GPS e a voz acompanharam? Se puder, mande prints (com o caminhão parado).";
+      "Depois conta como foi: a rota fez sentido? Mandou você por algum lugar proibido? O GPS e a voz acompanharam? Mande sua opinião e prints (com o caminhão parado) para o Ricardo, que faz o app: WhatsApp (11) 96195-0268.";
   }
   document.getElementById("btnConvidar").addEventListener("click", function () {
     var texto = textoConvite();
@@ -1304,20 +1311,6 @@ body { font-size: 16px; }
       navigator.clipboard.writeText(area.value).then(function () { avisar("Copiado!"); }, function () { area.select(); avisar("Selecionei: use Ctrl+C"); });
     } else { area.select(); avisar("Selecionei: use Ctrl+C"); }
   });
-  document.getElementById("btnSalvarChave").addEventListener("click", function () {
-    var v = document.getElementById("txtChave").value.trim();
-    if (!v) { document.getElementById("estadoChave").textContent = "Cole a chave no campo antes de salvar."; return; }
-    if (v.length < 30 || /\s/.test(v)) { document.getElementById("estadoChave").textContent = "Isso não parece a chave do OpenRouteService: ela tem " + v.length + " caracteres, e a chave verdadeira é um código comprido de letras e números. Nada foi salvo."; return; }
-    estado.chave = v;
-    var ok = gravar("rotaCaminhaoSP.chave", v);
-    document.getElementById("txtChave").value = "";
-    mostrarEstadoChave();
-    if (!ok) document.getElementById("estadoChave").textContent += " Este navegador não deixou guardar: ela vale só até fechar a página.";
-  });
-  document.getElementById("btnApagarChave").addEventListener("click", function () {
-    estado.chave = ""; gravar("rotaCaminhaoSP.chave", null); mostrarEstadoChave();
-  });
-  mostrarEstadoChave();
 
   /* ================= Serviço de rotas (OpenRouteService) ================= */
   // Endereços novos do HeiGIT (o antigo api.openrouteservice.org está sendo desativado)
@@ -2099,6 +2092,84 @@ body { font-size: 16px; }
     return problemas;
   }
 
+  /* ===== Regra principal do caminhão: o mínimo possível dentro de área ou via restrita =====
+     Mede quanto da rota fica dentro de restrição, contando também as "inevitáveis" (saída ou destino dentro da área).
+     Usa a mesma conta dos avisos da navegação (cada pedaço da rota conta uma vez só). */
+  var MULTA = "Infração média: R$ 130,16 e 4 pontos na CNH (CTB, art. 187, I)";
+  function medirRestrito(coords, m, distancia, duracao) {
+    // Vias: os trechos da conferência da navegação. Áreas: ponto a ponto, sem descartar pedacinhos
+    // (destino logo depois da borda da ZMRC também conta). Cada ponto conta uma vez só.
+    var vias = trechosProibidos({ coords: coords }, m).filter(function (t) { return t.via; });
+    var areasP = ["zmrc", "rodizio"].filter(function (t) { return situacao(t, m) === "proibido"; });
+    var zerP = situacao("zerc", m) === "proibido";
+    var pts = amostrar(coords), s = 0, metros = 0, porNome = {};
+    pts.forEach(function (q) {
+      var tipo = null, nome = null, v = null;
+      for (var i = 0; i < vias.length && !v; i++) if (s >= vias[i].ini && s <= vias[i].fim) v = vias[i];
+      if (v) { tipo = v.tipo; nome = v.nome; }
+      else {
+        for (var a = 0; a < areasP.length && !tipo; a++) if (dentroDe(areasP[a], q.lon, q.lat)) tipo = areasP[a];
+        if (!tipo && zerP && zerEm(q.lon, q.lat)) tipo = "zerc";
+        if (tipo) nome = CAMADAS[tipo].curto;
+      }
+      if (tipo) {
+        metros += q.passo;
+        var o = porNome[nome] || (porNome[nome] = { tipo: tipo, nome: nome, metros: 0 });
+        o.metros += q.passo;
+      }
+      s += q.passo;
+    });
+    // ignora pedacinhos de ZER e de rodízio (desenho do mapa); ZMRC e vias contam sempre
+    Object.keys(porNome).forEach(function (k) {
+      var o = porNome[k];
+      if ((o.tipo === "zerc" && o.metros < 40) || (o.tipo === "rodizio" && o.metros < 60) || (o.tipo === "zmrc" && o.metros < 25)) { metros -= o.metros; delete porNome[k]; }
+    });
+    var vel = distancia > 0 && duracao > 0 ? distancia / duracao : 8;   // metros por segundo
+    return { metros: metros, minutos: metros / vel / 60, itens: Object.keys(porNome).map(function (k) { return porNome[k]; }) };
+  }
+  /* A área inteira menos um círculo em volta de cada ponto que fica dentro dela (saída ou destino).
+     O círculo vai do ponto até a borda mais próxima (+250 m): a rota entra pelo lado mais perto. */
+  function areaComEntrada(t, pontos, folga) {
+    folga = folga || 250;
+    var furos = pontos.filter(function (p) { return dentroDe(t, p.lon, p.lat); }).map(function (p) {
+      var pt = turf.point([p.lon, p.lat]), d = Infinity;
+      areas[t].forEach(function (pol) {
+        turf.flatten(pol).features.forEach(function (pg) {
+          turf.flatten(turf.polygonToLine(pg)).features.forEach(function (ln) { d = Math.min(d, turf.pointToLineDistance(pt, ln, { units: "meters" })); });
+        });
+      });
+      return turf.circle([p.lon, p.lat], (Math.min(d, 5000) + folga) / 1000, { steps: 24, units: "kilometers" });
+    });
+    var out = [];
+    areas[t].forEach(function (pol) {
+      var r = pol;
+      furos.forEach(function (h) { if (r) { try { r = turf.difference(r, h); } catch (e) {} } });
+      if (r) out.push(r);
+    });
+    return out;
+  }
+  /* Primeiro horário (de 15 em 15 min, até 7 dias) em que nenhuma dessas restrições vale na saída nem na chegada */
+  function proximoHorarioLivre(tipos, m, minutosViagem) {
+    if (!tipos.length) return null;
+    if (tipos.some(function (t) { return t === "zerc" && situacao(t, m) === "proibido"; })) return { nunca: true };
+    var passo = 15, add = passo - (m.minutos % passo);
+    for (; add <= 7 * 1440; add += passo) {
+      var s = somarMinutos(m, add), c = somarMinutos(m, add + minutosViagem);
+      if (tipos.every(function (t) { return situacao(t, s) !== "proibido" && situacao(t, c) !== "proibido"; })) return { momento: s, depois: add };
+    }
+    return null;
+  }
+  function textoHorarioLivre(h, m) {
+    if (!h) return "";
+    if (h.nunca) return "Não há horário liberado: zona residencial é proibida para caminhão o dia todo, todos os dias.";
+    var s = h.momento, quando;
+    if (!m.texto) quando = DIAS[s.dia].toLowerCase();          // horário simulado: diz o dia da semana
+    else if (s.dia === m.dia && h.depois < 1440) quando = "hoje";
+    else if (s.dia === (m.dia + 1) % 7 && h.depois < 2880) quando = "amanhã (" + DIAS[s.dia].toLowerCase() + ")";
+    else quando = DIAS[s.dia].toLowerCase();
+    return "Liberado a partir das " + hhmm(s.minutos) + " de " + quando + ".";
+  }
+
   /* Monta a área de desvio em volta de um trecho problemático (sem as pontas, para não fechar cruzamentos) */
   function desvioDoTrecho(tr) {
     var linha = turf.lineString(tr.pontos.length > 1 ? tr.pontos : [tr.pontos[0], tr.pontos[0]]);
@@ -2240,10 +2311,13 @@ body { font-size: 16px; }
     return ruins;
   }
 
-  function pedirRota(orig, dest, desvios, alternativas) {
+  // preferencia: "fastest" (mais rápida, puxa para as avenidas) ou "shortest" (mais curta)
+  function pedirRota(orig, dest, desvios, alternativas, preferencia) {
     var ehCarro = estado.veiculo === "carro";
     var corpo = {
       coordinates: [[orig.lon, orig.lat], [dest.lon, dest.lat]],
+      preference: preferencia === "shortest" ? "shortest" : "fastest",
+      extra_info: ["waytype"],   // tipo de via, para preferir a opção com menos rua de bairro
       instructions: true, language: "pt", units: "m", radiuses: [800, 800],
       options: ehCarro ? {} : { vehicle_type: "hgv" }
     };
@@ -2291,6 +2365,7 @@ body { font-size: 16px; }
      Só se nenhuma passar, devolve a "menos pior" marcada com os problemas (para o alerta vermelho). */
   function calcularRota(orig, dest, m, aoTentar, opcoes) {
     opcoes = opcoes || {};
+    var preferencia = opcoes.preferencia === "shortest" ? "shortest" : "fastest";
     var avisos = [], desvios = [], ignorar = {};
 
     // Áreas proibidas no horário de saída
@@ -2305,8 +2380,19 @@ body { font-size: 16px; }
         avisos.push((aDentro ? "A saída" : "O destino") + " fica dentro da " + CAMADAS[t].curto + ", que está proibida neste horário para este veículo (" + CAMADAS[t].hora + "). A rota entra nela.");
       }
     });
-    if (rodizioProibido && !ignorar.rodizio) desvios = desvios.concat(areas.rodizio);          // a ZMRC fica dentro do rodízio
-    else if (zmrcProibida && !ignorar.zmrc) desvios = desvios.concat(areas.zmrc);
+    // Saída ou destino dentro da área: continua desviando dela, mas abre uma "entrada" do lado mais perto do ponto,
+    // para o caminhão andar o mínimo possível lá dentro (regra principal)
+    // Se não houver caminho pela entrada estreita, tenta uma entrada maior e, por último, sem desviar da área.
+    var nivelEntrada = 0, temEntrada = false, FOLGAS_ENTRADA = [250, 1500];
+    function montarAreas() {
+      var l = [];
+      function entrada(t) { temEntrada = true; return nivelEntrada < FOLGAS_ENTRADA.length ? areaComEntrada(t, [orig, dest], FOLGAS_ENTRADA[nivelEntrada]) : []; }
+      if (rodizioProibido) l = l.concat(ignorar.rodizio ? entrada("rodizio") : areas.rodizio);
+      if (zmrcProibida && (!rodizioProibido || ignorar.rodizio))                                // a ZMRC fica dentro do rodízio
+        l = l.concat(ignorar.zmrc ? entrada("zmrc") : areas.zmrc);
+      return l;
+    }
+    desvios = montarAreas();
     // Saída ou destino dentro de zona residencial (ZER): a rota precisa entrar nela; avisa
     if (situacao("zerc", m) === "proibido") {
       [[orig, "A saída"], [dest, "O destino"]].forEach(function (par) {
@@ -2347,7 +2433,7 @@ body { font-size: 16px; }
       tentativa++;
       if (aoTentar) aoTentar(tentativa, maxTentativas);
       var polis = desvios.concat(desviosTrecho.map(function (d) { return d.poli; }));
-      return pedirRota(orig, dest, polis, usarAlternativas).then(function (r) {
+      return pedirRota(orig, dest, polis, usarAlternativas, preferencia).then(function (r) {
         var feats = (r && r.features) || [];
         if (!feats.length) throw new Error("O serviço de rotas não devolveu nenhuma rota.");
         if (primeiraDistancia === null) primeiraDistancia = resumo(feats[0]).distance || 0;
@@ -2375,7 +2461,9 @@ body { font-size: 16px; }
             var jaTem = desviosTrecho.concat(novos).some(function (d) { return d.zerId === p.zer.id; });
             if (!jaTem) novos.push({ tipo: "zerc", zerId: p.zer.id, poli: p.zer.f });
           });
-          if (!piorCaso || (piorCaso.problemas.length && c.problemas.length < piorCaso.problemas.length)) piorCaso = c;
+          // Sem caminho livre: guarda a que passa MENOS metros dentro da restrição
+          c.metrosRestr = c.problemas.reduce(function (s, p) { return s + (p.metros || 0); }, 0);
+          if (!piorCaso || (piorCaso.problemas.length && c.metrosRestr < piorCaso.metrosRestr)) piorCaso = c;
         });
         // Barreiras novas de manobra proibida/retorno: permite até 2 pedidos a mais
         if (!jaEstendeu && novos.some(function (d) { return d.fixo || d.tipo === "volta"; })) { jaEstendeu = true; maxTentativas += 2; }
@@ -2384,6 +2472,13 @@ body { font-size: 16px; }
           return rodar(usarAlternativas);
         }
       }, function (e) {
+        // Sem caminho pela "entrada" da área: abre uma entrada maior (e, por último, não desvia da área)
+        // Já tem rota de pedidos anteriores e não existe caminho que desvie mais: fica com a melhor que já tem
+        if (e.status === 404 && (validas.length || piorCaso)) return;
+        if (temEntrada && e.status === 404 && nivelEntrada < FOLGAS_ENTRADA.length) {
+          nivelEntrada++; desvios = montarAreas();
+          return rodar(usarAlternativas);
+        }
         // Se o serviço recusar o pedido com alternativas, tenta do jeito simples (uma rota só)
         if (usarAlternativas && e.status && e.status !== 401 && e.status !== 403 && e.status !== 429) {
           querQuantas = 1; maxTentativas = 4;
@@ -2395,7 +2490,14 @@ body { font-size: 16px; }
 
     return rodar(querAlternativas).then(function () {
       var lista = validas.length ? validas.slice() : [piorCaso];
-      lista.sort(function (x, y) { return (resumo(x.f).duration || 0) - (resumo(y.f).duration || 0); });
+      var campo = preferencia === "shortest" ? "distance" : "duration";
+      lista.sort(function (x, y) { return (resumo(x.f)[campo] || 0) - (resumo(y.f)[campo] || 0); });
+      // Mais rápida: entre as opções até 10% mais lentas, fica com a que passa menos por rua de bairro
+      if (preferencia === "fastest" && lista.length > 1) {
+        var limite = (resumo(lista[0].f).duration || 0) * 1.1, melhor = 0;
+        lista.forEach(function (c, i) { if ((resumo(c.f).duration || 0) <= limite && metrosDeBairro(c.f) < metrosDeBairro(lista[melhor].f) - 200) melhor = i; });
+        if (melhor) lista.unshift(lista.splice(melhor, 1)[0]);
+      }
       lista = lista.slice(0, 3);
       var veiculoTexto = estado.caminhao
         ? resumoCaminhao(estado.caminhao) + " · regras da CET: " + (m.veiculo === "carro" ? "carro (só rodízio)" : m.veiculo === "vuc" ? "VUC autorizado" : "caminhão")
@@ -2420,7 +2522,10 @@ body { font-size: 16px; }
             res.avisos.push("Durante a viagem começa a restrição de " + CAMADAS[t].curto + " (" + CAMADAS[t].hora + "). Chegada prevista às " + hhmm(res.chegada.minutos) + ": confira se a rota passa por ela.");
         });
         res.ignorar = ignorar; res.tentativa = tentativa; res.momento = m; res.veiculoTexto = veiculoTexto;
-        res.desviosTrecho = desviosTrecho; res.numero = i;
+        res.desviosTrecho = desviosTrecho; res.numero = i; res.preferencia = preferencia;
+        // Quanto fica dentro de área/via restrita (inclusive saída ou destino dentro dela) e quando ela libera
+        res.restrito = medirRestrito(res.coords, m, res.distancia, res.duracao);
+        res.horarioLivre = res.restrito.metros > 0 ? proximoHorarioLivre(res.restrito.itens.map(function (o) { return o.tipo; }), m, res.duracao / 60) : null;
         // Passos (manobras) com o ponto da rota onde cada um começa
         res.passos = [];
         ((res.f.properties && res.f.properties.segments) || []).forEach(function (sg) {
@@ -2428,8 +2533,17 @@ body { font-size: 16px; }
         });
         aplicarFrases(res.passos);   // mesmas frases na tela e na voz
         return res;
+      }).sort(function (x, y) {
+        // Regra principal: o menor trecho dentro de restrição vem primeiro (sort estável: o resto mantém a ordem)
+        return Math.round(x.restrito.metros / 50) - Math.round(y.restrito.metros / 50);
       });
     });
+  }
+  // Metros em "rua de bairro" (tipo de via Street, informado pela HeiGIT)
+  function metrosDeBairro(f) {
+    var w = f.properties && f.properties.extras && f.properties.extras.waytype;
+    var s = (w && w.summary) || [];
+    return s.reduce(function (t, o) { return t + (o.value === 3 ? (o.distance || 0) : 0); }, 0);
   }
 
   /* ---------- Várias rotas no mapa ---------- */
@@ -2490,17 +2604,26 @@ body { font-size: 16px; }
     // Lista de opções (quando há mais de uma rota que respeita as restrições)
     var ops = estado.opcoes || [];
     if (ops.length > 1 && !nav.ativo) {
-      numeros = '<div class="opcoes" role="group" aria-label="Escolha a rota">' + ops.map(function (o, i) {
-        return '<button type="button" class="opcao-rota" data-i="' + i + '" aria-pressed="' + (o === res ? "true" : "false") + '">' +
-          '<span class="cor-rota" style="background:' + CORES_OPCOES[i] + '"></span>' +
-          '<span class="op-tempo">' + tempo(o.duracao) + '</span><span class="op-km">' + km(o.distancia) + (i === 0 ? " · mais rápida" : "") + '</span></button>';
-      }).join("") + '</div><p class="nota" style="margin:0">Todas as opções respeitam as restrições conhecidas. Toque numa opção (ou na linha dela no mapa) para escolher.</p>' + numeros;
+      var mesmo = Math.abs(ops[0].distancia - ops[1].distancia) < Math.max(80, ops[0].distancia * 0.01);
+      numeros = '<div class="tipos-rota" role="group" aria-label="Tipo de rota">' + ops.map(function (o, i) {
+        var nome = o.preferencia === "shortest" ? "Mais curta" : "Mais rápida (avenidas)";
+        return '<button type="button" class="opcao-rota tipo-rota" data-i="' + i + '" aria-pressed="' + (o === res ? "true" : "false") + '">' +
+          '<span class="tipo-nome"><span class="cor-rota" style="background:' + CORES_OPCOES[i] + '"></span>' + nome + '</span>' +
+          '<span class="op-tempo">' + tempo(o.duracao) + '</span><span class="op-km">' + km(o.distancia) + '</span>' +
+          (o.restrito && o.restrito.metros > 0 ? '<span class="op-restr">⚠️ ' + km(o.restrito.metros) + ' em área restrita</span>' : "") + '</button>';
+      }).join("") + '</div><p class="nota" style="margin:0">' +
+        (mesmo ? "As duas opções dão praticamente o mesmo caminho. " : "A mais curta costuma entrar mais pelos bairros. ") +
+        (ops.some(function (o) { return o.restrito && o.restrito.metros > 0; }) ? "Não há caminho sem área restrita: o app escolheu o menor trecho possível dentro dela." : "As duas respeitam as restrições conhecidas.") +
+        ' Toque para escolher.</p>' + numeros;
     }
     if (estado.B && estado.B.aproximado) numeros = '<p class="nota-aprox">⚠️ Número aproximado – confira na chegada.</p>' + numeros;
 
-    if (res.problemas.length) {
-      mostrarResultado("alerta", "Atenção: esta rota passa por restrição",
-        numeros + '<ul class="res-lista">' + listaProb + listaAvisos + '</ul><p class="nota" style="margin:0">Não achei caminho melhor. Tente outro horário ou outro ponto de saída.</p>' + botaoNav + htmlPassos + rodape);
+    var rsr = res.restrito || { metros: 0 };
+    if (res.problemas.length || rsr.metros > 0) {
+      var linhaRestr = rsr.metros > 0 ? '<li><b>' + km(rsr.metros) + ' e cerca de ' + Math.max(1, Math.round(rsr.minutos)) + ' min dentro de área restrita</b> (o menor trecho possível)</li>' : "";
+      var linhaLivre = res.horarioLivre ? '<li>🕘 ' + escapar(textoHorarioLivre(res.horarioLivre, res.momento)) + '</li>' : "";
+      mostrarResultado("alerta", "Atenção: não existe rota que evite a área restrita",
+        numeros + '<ul class="res-lista">' + linhaRestr + listaProb + linhaLivre + listaAvisos + '</ul><p class="nota" style="margin:0">Tente outro horário ou outro ponto de saída.</p>' + botaoNav + htmlPassos + rodape);
     } else if (res.avisos.length) {
       mostrarResultado("info", "Rota traçada, com avisos", numeros + '<ul class="res-lista">' + listaAvisos + '</ul>' + botaoNav + htmlPassos + rodape);
     } else {
@@ -2527,15 +2650,31 @@ body { font-size: 16px; }
 
     var btn = document.getElementById("btnRota");
     btn.disabled = true; mostrarMsg("");
-    calcularRota(estado.A, estado.B, momentoAtual(), function (n, max) {
+    // Calcula as duas opções ao mesmo tempo: "Mais rápida (avenidas)" (padrão) e "Mais curta".
+    // As duas passam pela mesma conferência de restrições e lista de bloqueios.
+    var m = momentoAtual();
+    var pRapida = calcularRota(estado.A, estado.B, m, function (n, max) {
       btn.textContent = n === 1 ? "Calculando…" : "Procurando desvio (tentativa " + n + " de " + max + ")…";
       if (n > 1) mostrarMsg("Algum caminho passava por avenida proibida neste horário. Procurando outros; isso pode levar até 1 minuto.");
-    }, { alternativas: true }).then(function (lista) {
+    }, { alternativas: true, preferencia: "fastest" }).then(function (l) { return l[0]; }, function (e) { return { erro: e }; });
+    var pCurta = calcularRota(estado.A, estado.B, m, null, { alternativas: false, preferencia: "shortest" })
+      .then(function (l) { return l[0]; }, function () { return null; });
+    Promise.all([pRapida, pCurta]).then(function (r) {
+      var rapida = r[0] && !r[0].erro ? r[0] : null, curta = r[1];
+      if (!rapida && !curta) throw r[0].erro;
+      var lista = [rapida, curta].filter(Boolean);
       mostrarMsg("");
-      estado.opcoes = lista; estado.escolhida = 0;
-      prepararRota(lista[0]);
-      desenharOpcoes(lista, 0);
-      exibirResultado(lista[0]);
+      // Regra principal: só fica a opção (ou as opções) com o MENOR trecho em área restrita.
+      // Ex.: se a rápida desvia de tudo e a curta não conseguiu, a curta sai da tela.
+      var menor = Math.min.apply(null, lista.map(function (o) { return Math.round(o.restrito.metros / 50); }));
+      var descartada = lista.filter(function (o) { return Math.round(o.restrito.metros / 50) > menor; });
+      lista = lista.filter(function (o) { return Math.round(o.restrito.metros / 50) === menor; });
+      if (descartada.length) mostrarMsg("A opção \"" + (descartada[0].preferencia === "shortest" ? "Mais curta" : "Mais rápida") + "\" foi descartada: ela passaria por área restrita, e esta rota não passa (ou passa menos).");
+      var ini = 0;
+      estado.opcoes = lista; estado.escolhida = ini;
+      prepararRota(lista[ini]);
+      desenharOpcoes(lista, ini);
+      exibirResultado(lista[ini]);
     }).catch(function (e) {
       mostrarMsg("");
       mostrarResultado("alerta", "Não consegui traçar a rota", '<p style="margin:0">' + escapar(e.message) + '</p>');
@@ -2934,7 +3073,8 @@ body { font-size: 16px; }
     // Direção em que o caminhão vinha andando (últimos 30 s): a rota nova deve seguir em frente, sem retorno
     var rumoInicial = (giro.rumoMovT && Date.now() - giro.rumoMovT < 30000) ? giro.rumoMov : null;
     calcularRota(orig, estado.B, momentoAtual(), null, {
-      alternativas: false, desviosAnteriores: estado.rota ? estado.rota.desviosTrecho : [], rumoInicial: rumoInicial
+      alternativas: false, desviosAnteriores: estado.rota ? estado.rota.desviosTrecho : [], rumoInicial: rumoInicial,
+      preferencia: estado.rota ? estado.rota.preferencia : "fastest"   // mesmo tipo de rota que o motorista escolheu
     }).then(function (lista) {
       var res = lista[0];
       estado.opcoes = [res]; estado.escolhida = 0;
@@ -2986,7 +3126,7 @@ body { font-size: 16px; }
      Amarelo: tem trecho proibido à frente na rota (mostra a distância).
      Vermelho piscando: faltam 300 m ou menos. Vermelho fixo: está dentro. Verde: saiu.
      Usa as mesmas regras da conferência da rota (mesmo horário, veículo e placa). */
-  var AVISO_PROIB = { pisca: 300, falarAntes: 1000, verdeSeg: 6 };
+  var AVISO_PROIB = { pisca: 300, falarAntes: 500, verdeSeg: 6 };
   function trechosProibidos(r, m) {
     // Aqui NÃO pula as áreas "inevitáveis" (saída ou destino dentro da área): o motorista precisa ser avisado mesmo assim
     var pts = amostrar(r.coords), out = [], atual = null, s = 0;
@@ -3002,7 +3142,7 @@ body { font-size: 16px; }
           if (distSeg(q.p, v.pts[k], v.pts[k + 1]) < 22 && paralelo(q.rumo, rumo(v.pts[k], v.pts[k + 1]))) { achou = { tipo: v.tipo, nome: v.nome || CAMADAS[v.tipo].curto, via: true }; break; }
         }
       }
-      if (!achou && idx % 2 === 0) {   // áreas: confere a cada ~40 m (mais leve)
+      if (!achou) {   // áreas: confere a cada ~20 m (pega também a entrada curta, ex.: destino logo depois da borda)
         for (var a = 0; a < areasProib.length && !achou; a++) if (dentroDe(areasProib[a], q.lon, q.lat)) achou = { tipo: areasProib[a], nome: CAMADAS[areasProib[a]].curto };
         if (!achou && zerProib && zerEm(q.lon, q.lat)) achou = { tipo: "zerc", nome: CAMADAS.zerc.curto };
       }
@@ -3015,7 +3155,7 @@ body { font-size: 16px; }
     });
     if (atual) out.push(atual);
     // ignora pedacinhos (desenho do mapa): os mesmos limites da conferência da rota
-    return out.filter(function (t) { return t.fim - t.ini >= (t.via ? 120 : t.tipo === "zerc" ? 40 : 60); });
+    return out.filter(function (t) { return t.fim - t.ini >= (t.via ? 120 : t.tipo === "zerc" ? 40 : t.tipo === "zmrc" ? 25 : 60); });
   }
   function textoTrecho(t) { return "a " + t.nome; }
   function atualizarAvisoProibido(s) {
@@ -3040,8 +3180,10 @@ body { font-size: 16px; }
     }
     if (dentro) {
       p.dentro = dentro; p.verdeAte = 0;
-      mostrar("vermelho", "⛔ VOCÊ ESTÁ EM ÁREA PROIBIDA", (dentro.via ? dentro.nome : "Dentro d" + textoTrecho(dentro)) + " · sai em " + arredondar(Math.max(0, dentro.fim - s)));
-      falarUmaVez("dentro" + dentro.chave + dentro.ini, "Atenção: você está em área proibida para caminhão.", [400, 200, 400]);
+      var nomeArea = dentro.via ? dentro.nome : CAMADAS[dentro.tipo].curto;
+      mostrar("vermelho", "⛔ VOCÊ ESTÁ NA ÁREA RESTRITA", (dentro.via ? dentro.nome : "Dentro d" + textoTrecho(dentro)) + " · sai em " + arredondar(Math.max(0, dentro.fim - s)));
+      falarUmaVez("dentro" + dentro.chave + dentro.ini, "Atenção: você entrou na área restrita " + nomeArea + ".", [400, 200, 400]);
+      registrarRestrito(dentro, nomeArea, s, agora);
       return;
     }
     if (p.dentro && s > p.dentro.fim) {
@@ -3062,26 +3204,66 @@ body { font-size: 16px; }
     if (p.verdeAte && agora < p.verdeAte) { mostrar("verde", "✅ Saiu da área restrita", ""); return; }
     el.hidden = true;
   }
+  /* Diário da viagem: quanto tempo e quantos km passou dentro de área restrita (para o resumo no fim) */
+  function registrarRestrito(t, nome, s, agora) {
+    var lg = nav.restritoLog || (nav.restritoLog = []), ult = lg[lg.length - 1];
+    var mesma = ult && ult.chave === t.chave && agora - ult.fimT < 120000 && s >= ult.sFim - 50 && s - ult.sFim < 1500;
+    if (mesma) { ult.fimT = agora; ult.metros += Math.max(0, s - ult.sFim); ult.sFim = s; }
+    else lg.push({ chave: t.chave, nome: nome, iniT: agora, fimT: agora, sFim: s, metros: 0 });
+  }
+  function horaSP(t) { return new Date(t).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }); }
+  function mostrarResumoRestrito(lg, depois) {
+    var totM = 0, totS = 0;
+    document.getElementById("rrLista").innerHTML = lg.map(function (o) {
+      var seg = (o.fimT - o.iniT) / 1000;
+      totM += o.metros; totS += seg;
+      return "<li><b>" + escapar(o.nome) + "</b>: " + km(o.metros) + " e " + Math.max(1, Math.round(seg / 60)) + " min<br><small>Das " + horaSP(o.iniT) + " às " + horaSP(o.fimT) + "</small></li>";
+    }).join("");
+    document.getElementById("rrTotal").textContent = "No total: " + km(totM) + " e " + Math.max(1, Math.round(totS / 60)) + " min dentro de áreas restritas.";
+    var tela = document.getElementById("resumoRestrito");
+    tela.hidden = false;
+    document.getElementById("btnRrOk").onclick = function () { tela.hidden = true; if (depois) depois(); };
+  }
+
   // Antes de navegar numa rota com restrição: pergunta, com aviso bem claro
   function navegarOuConfirmar() {
     var r = estado.rota;
     if (!r) return;
-    var itens = (r.problemas || []).map(function (p) {
-      return "<li>" + (p.area ? "Entra na " + escapar(CAMADAS[p.tipo].curto) : "Passa por " + km(p.metros) + " em " + escapar(p.nome)) +
-        " — <b>proibido agora</b><br><small>" + escapar(CAMADAS[p.tipo].hora) + "</small></li>";
-    });
-    // Saída ou destino dentro de área proibida agora (a rota não tem como fugir dela)
+    var rs = r.restrito || { metros: 0, itens: [] };
+    if (!rs.metros && !(r.problemas || []).length) { iniciarNavegacao(); return; }
+    // Itens: medidos na rota (inclusive saída/destino dentro da área); se a medida não pegou, usa os problemas da conferência
+    var itens = rs.itens.length ? rs.itens : r.problemas.map(function (p) { return { tipo: p.tipo, nome: p.area ? CAMADAS[p.tipo].curto : p.nome, metros: p.metros }; });
     var ign = r.ignorar || {};
-    ["zmrc", "rodizio"].forEach(function (t) {
-      if (ign[t]) itens.push("<li>A saída ou o destino fica <b>dentro da " + escapar(CAMADAS[t].curto) + "</b>, proibida agora<br><small>" + escapar(CAMADAS[t].hora) + "</small></li>");
-    });
-    if (ign.zer && Object.keys(ign.zer).length) itens.push("<li>A saída ou o destino fica numa <b>zona residencial (ZER)</b>: pode haver placa de proibição para caminhão<br><small>" + escapar(CAMADAS.zerc.hora) + "</small></li>");
-    if (!itens.length) { iniciarNavegacao(); return; }
-    document.getElementById("cpLista").innerHTML = itens.join("");
+    document.getElementById("cpLista").innerHTML = itens.map(function (o) {
+      var dentro = ign[o.tipo] || (o.tipo === "zerc" && ign.zer) ? " (a saída ou o destino fica dentro dela)" : "";
+      return "<li><b>" + escapar(o.nome) + "</b>" + escapar(dentro) + " — " + km(o.metros) + " na rota" +
+        "<br><small>Vale: " + escapar(CAMADAS[o.tipo].hora) + "</small>" +
+        "<br><small>Multa: " + escapar(MULTA) + "</small></li>";
+    }).join("");
+    var metros = rs.metros || itens.reduce(function (s, o) { return s + (o.metros || 0); }, 0);
+    var minutos = rs.metros ? rs.minutos : metros / Math.max(1, r.distancia / Math.max(1, r.duracao)) / 60;
+    document.getElementById("cpTrecho").textContent = "A rota passa " + km(metros) + " e cerca de " + Math.max(1, Math.round(minutos)) + " min dentro da área restrita. Este é o menor trecho possível.";
+    var livre = document.getElementById("cpLivre"), btnH = document.getElementById("btnCpHorario");
+    var txt = textoHorarioLivre(r.horarioLivre, r.momento);
+    livre.textContent = txt ? "🕘 " + txt : "Não achei horário liberado nos próximos 7 dias.";
+    btnH.hidden = !(r.horarioLivre && r.horarioLivre.momento);
     document.getElementById("confirmaProibido").hidden = false;
   }
   document.getElementById("btnCpVoltar").addEventListener("click", function () { document.getElementById("confirmaProibido").hidden = true; });
   document.getElementById("btnCpSeguir").addEventListener("click", function () { document.getElementById("confirmaProibido").hidden = true; iniciarNavegacao(); });
+  // "Escolher outro horário": coloca o horário liberado no modo "Escolher" e traça a rota de novo
+  document.getElementById("btnCpHorario").addEventListener("click", function () {
+    document.getElementById("confirmaProibido").hidden = true;
+    var h = estado.rota && estado.rota.horarioLivre;
+    if (!h || !h.momento) return;
+    document.getElementById("mEscolher").click();
+    document.getElementById("selDia").value = String(h.momento.dia);
+    document.getElementById("selHora").value = hhmm(h.momento.minutos);
+    document.getElementById("selFeriado").checked = false;
+    atualizar();
+    document.getElementById("btnRota").click();
+    mostrarMsg("Horário de saída trocado para " + DIAS[h.momento.dia].toLowerCase() + " às " + hhmm(h.momento.minutos) + ". Confira a rota nova.");
+  });
 
   /* ===== Chegada automática =====
      Chegou = até 50 m do destino E quase parado (abaixo de ~5 km/h) por 20 segundos seguidos.
@@ -3157,7 +3339,7 @@ body { font-size: 16px; }
                    de: estado.A && estado.A.nome || "", para: estado.B && estado.B.nome || "" };
     nav.foraRegistrado = false; nav.ultimoNaRota = null; nav.instrAtual = ""; nav.sAtual = 0; nav.revisarAoParar = false; trilha = [];
     nav.pertoParadoDesde = null; nav.chegadaBloqueada = false; pararContagem();
-    nav.proib = {}; document.getElementById("navProibido").hidden = true;
+    nav.proib = {}; nav.restritoLog = []; document.getElementById("navProibido").hidden = true;
     centralApp({ acao: "sinal", evento: "viagem", versao: VERSAO_APP }).catch(function () {});   // conta a viagem (sem localização)
     ["telaCadastro", "telaNovidade"].forEach(function (id) { document.getElementById(id).hidden = true; });
     document.getElementById("viagemConcluida").hidden = true;
@@ -3204,15 +3386,20 @@ body { font-size: 16px; }
     mapa.setBearing(0);
     document.body.classList.remove("navegando");
     ["navTopo", "navBase", "navAlerta", "navFaixa", "navProibido", "btnBussola", "btnCentro", "velocimetro", "navOpcoes", "btnMarcar"].forEach(function (id) { document.getElementById(id).hidden = true; });
-    if (automatico) {
-      // Encerrou sozinho na chegada: perguntas só se nesta viagem ele marcou problema ou saiu da rota
-      var inicio = nav.viagem ? nav.viagem.inicio : 0;
-      var desta = ocorrencias.filter(function (o) { return new Date(o.data).getTime() >= inicio; });
-      if (desta.length && (pendentes().length || paraEnviar().length)) mostrarRevisao();
-      else mostrarConcluida();
+    function depoisDaViagem() {
+      if (automatico) {
+        // Encerrou sozinho na chegada: perguntas só se nesta viagem ele marcou problema ou saiu da rota
+        var inicio = nav.viagem ? nav.viagem.inicio : 0;
+        var desta = ocorrencias.filter(function (o) { return new Date(o.data).getTime() >= inicio; });
+        if (desta.length && (pendentes().length || paraEnviar().length)) mostrarRevisao();
+        else mostrarConcluida();
+      }
+      // Fim da viagem pelo botão: com o veículo parado, mostra os pontos para revisar (andando, ficam guardados no botão do painel)
+      else if (giro.velocidade < 1.5) revisarSePuder();
     }
-    // Fim da viagem pelo botão: com o veículo parado, mostra os pontos para revisar (andando, ficam guardados no botão do painel)
-    else if (giro.velocidade < 1.5) revisarSePuder();
+    // Resumo do tempo dentro de áreas restritas (só se passou por alguma)
+    var lgR = (nav.restritoLog || []).filter(function (o) { return o.metros >= 30 || o.fimT - o.iniT >= 15000; });
+    if (lgR.length) mostrarResumoRestrito(lgR, depoisDaViagem); else depoisDaViagem();
     atualizarBotaoPendentes();
     setTimeout(function () {
       mapa.invalidateSize();
@@ -3428,7 +3615,7 @@ body { font-size: 16px; }
      - Cada celular ganha um código sorteado (não diz quem é) para contar quantos usam o app.
      - Nome e WhatsApp: só de quem preencher e aceitar. Pede UMA vez; quem pular vê de novo em 7 dias.
      - Novidades: aparece só a mais recente, uma vez, e nunca durante a navegação. */
-  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v30";
+  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v32";
   var CHAVE_CAD = "rotaCaminhaoSP.cadastro", CHAVE_PULOU = "rotaCaminhaoSP.cadastroPulado", CHAVE_VISTAS = "rotaCaminhaoSP.novidadesVistas";
   var aparelhoId = (function () {
     var id = ler("rotaCaminhaoSP.aparelho") || "";
@@ -3453,7 +3640,7 @@ body { font-size: 16px; }
     return !pulou || Date.now() - pulou > 7 * 86400000;
   }
   function janelaAberta() {
-    return ["revisao", "telaCadastro", "telaNovidade", "navOpcoes", "telaTempos", "chegadaAviso"].some(function (id) { var el = document.getElementById(id); return el && !el.hidden; });
+    return ["resumoRestrito", "confirmaProibido", "revisao", "telaCadastro", "telaNovidade", "navOpcoes", "telaTempos", "chegadaAviso"].some(function (id) { var el = document.getElementById(id); return el && !el.hidden; });
   }
   var novidadePendente = null;
   // Abre UMA janela por vez, só com o app parado (fora da navegação): perguntas > cadastro > novidade
