@@ -131,7 +131,7 @@ window.LOCAIS_SP = [
   { nome: "Shopping Granja Viana", apelidos: ["granja viana","granja vianna"], categoria: "Shoppings", bairro: "Raposo Tavares", cidade: "Cotia, SP", lat: -23.592591, lon: -46.833472 },
   { nome: "Shopping Ibirapuera", apelidos: ["shopping ibirapuera"], categoria: "Shoppings", bairro: "Moema", cidade: "São Paulo", lat: -23.610459, lon: -46.666725 },
   { nome: "Shopping Iguatemi São Paulo", apelidos: ["iguatemi","iguatemi faria lima"], categoria: "Shoppings", bairro: "Pinheiros", cidade: "São Paulo", lat: -23.576729, lon: -46.687486 },
-  { nome: "Shopping Interlagos", apelidos: ["shopping interlagos","interlagos shopping"], categoria: "Shoppings", bairro: "Campo Grande", cidade: "São Paulo", lat: -23.676205, lon: -46.676655 },
+  { nome: "Shopping Interlagos", apelidos: ["shopping interlagos","interlagos shopping","creb ortopedia e fisioterapia"], categoria: "Shoppings", bairro: "Campo Grande", cidade: "São Paulo", lat: -23.676205, lon: -46.676655 },
   { nome: "Shopping Interlar Aricanduva", apelidos: ["interlar aricanduva","interlar"], categoria: "Shoppings", bairro: "Aricanduva", cidade: "São Paulo", lat: -23.562051, lon: -46.502655 },
   { nome: "Shopping Jardim Sul", apelidos: ["jardim sul"], categoria: "Shoppings", bairro: "Vila Andrade", cidade: "São Paulo", lat: -23.631143, lon: -46.735938 },
   { nome: "Shopping JK Iguatemi", apelidos: ["jk iguatemi","jk"], categoria: "Shoppings", bairro: "Itaim Bibi", cidade: "São Paulo", lat: -23.592247, lon: -46.689543 },

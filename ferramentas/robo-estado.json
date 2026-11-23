@@ -742,6 +742,13 @@
     "terminal de cargas"
    ],
    "nome": "Terminal de Cargas"
+  },
+  "Shopping Interlagos": {
+   "osm": "way/85146944",
+   "nomes": [
+    "creb ortopedia e fisioterapia"
+   ],
+   "nome": "CREB Ortopedia e Fisioterapia"
   }
  },
  "fontes": {
@@ -778,5 +785,5 @@
    "desde": "2026-11-19"
   }
  },
- "ultimaConferencia": "2026-11-19T22:57:31.051Z"
+ "ultimaConferencia": "2026-11-23T21:01:09.186Z"
 }
