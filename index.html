@@ -741,6 +741,59 @@ body.navegando .pos-inicio { display: none; }
   background: var(--asfalto); color: var(--fundo); border-radius: 14px; padding: 12px 18px; font-weight: 600; font-size: 16px; box-shadow: var(--sombra); text-align: center;
 }
 .toast[hidden] { display: none; }
+
+/* ===== Etapa 3: tela de navegação (mais limpa e mais fácil de ler no suporte) ===== */
+.nav-so { display: none; }
+body.navegando .nav-so { display: flex; }
+body.navegando .aviso { display: none; }   /* o aviso "siga as placas" aparece no início da viagem */
+body.navegando .nav-cima { top: max(10px, env(safe-area-inset-top, 0px)); }
+body.navegando .btn-bussola { top: max(10px, env(safe-area-inset-top, 0px)); width: 60px; border-radius: 16px; border: 0; box-shadow: var(--sombra); }
+body.navegando .nav-cima { right: calc(max(10px, env(safe-area-inset-right, 0px)) + 68px); }
+.nav-topo { border-radius: 20px; padding: 12px 16px 12px 12px; gap: 14px; }
+.nav-seta { width: 72px; height: 72px; font-size: 50px; border-radius: 16px; background: rgba(255,255,255,.16); }
+.nav-dist { font-size: 38px; }
+.nav-texto { font-size: 19px; margin-top: 4px; }
+/* Rodapé: tempo grande no meio, chegada e distância embaixo; Encerrar à esquerda, opções à direita */
+.nav-base {
+  left: 0; right: 0; bottom: 0; border-radius: 22px 22px 0 0;
+  padding: 10px max(12px, env(safe-area-inset-right, 0px)) max(10px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
+  display: grid; grid-template-columns: auto 1fr 1fr auto; grid-template-rows: auto auto; column-gap: 10px; row-gap: 0; align-items: center;
+  box-shadow: 0 -4px 22px rgba(0,0,0,.25);
+}
+@media (min-width: 700px) { .nav-base { left: 50%; right: auto; width: 560px; transform: translateX(-50%); } }
+.nav-base .btn-encerrar { grid-column: 1; grid-row: 1 / 3; height: 60px; min-width: 64px; border-radius: 16px; font-size: 16px; padding: 0 12px; }
+.nav-base .btn-voz { grid-column: 4; grid-row: 1 / 3; width: 60px; height: 60px; margin: 0; font-size: 24px; }
+.nav-base .nav-numero { text-align: center; }
+.nav-base .nav-numero.principal { grid-column: 2 / 4; grid-row: 1; }
+.nav-base .nav-numero.principal strong { font-size: 34px; }
+.nav-base .nav-numero.principal span { display: none; }
+.nav-base .nav-numero:not(.principal) { grid-row: 2; display: flex; align-items: baseline; justify-content: center; gap: 4px; }
+.nav-base .nav-numero:not(.principal) strong { font-size: 18px; color: var(--suave); }
+.nav-base .nav-numero:not(.principal) span { font-size: 13px; }
+body.navegando .leaflet-bottom { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+/* Botões flutuantes: redondos, grandes, fora do caminho da rota */
+.btn-marcar {
+  bottom: calc(108px + env(safe-area-inset-bottom, 0px)); min-width: 0; min-height: 0; width: 74px; height: 74px; border-radius: 50%; padding: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; border-width: 3px;
+}
+.btn-marcar[hidden] { display: none; }
+.btn-marcar span { font-size: 26px; line-height: 1; }
+.btn-marcar small { font-family: var(--f-titulo); font-size: 13px; font-weight: 700; }
+.btn-visao {
+  position: absolute; z-index: 1000; right: max(14px, env(safe-area-inset-right, 0px)); bottom: calc(194px + env(safe-area-inset-bottom, 0px));
+  width: 64px; height: 64px; border-radius: 50%; border: 0; cursor: pointer; flex-direction: column; align-items: center; justify-content: center;
+  background: var(--papel); color: var(--asfalto); box-shadow: var(--sombra);
+}
+.btn-visao span { font-size: 22px; line-height: 1; }
+.btn-visao small { font-family: var(--f-titulo); font-size: 12px; font-weight: 700; }
+.velocimetro { bottom: calc(108px + env(safe-area-inset-bottom, 0px)); width: 72px; height: 72px; border-width: 0; box-shadow: var(--sombra); }
+.velocimetro strong { font-size: 28px; }
+body.navegando .btn-centro {
+  left: 50%; right: auto; transform: translateX(-50%); bottom: calc(110px + env(safe-area-inset-bottom, 0px));
+  min-height: 56px; padding: 10px 22px; font-size: 18px; font-family: var(--f-titulo); border: 0; background: var(--rota); color: #fff;
+}
+.btn-marcar:active, .btn-visao:active, .btn-voz:active, .btn-encerrar:active { transform: scale(.95); }
+body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
 </style>
 </head>
 <body>
@@ -765,8 +818,9 @@ body.navegando .pos-inicio { display: none; }
   </div>
   <div class="mapa-caixa">
     <div id="mapa" aria-label="Mapa de São Paulo com as restrições a caminhões"></div>
-    <button class="btn-centro" type="button" id="btnCentro" hidden>Centralizar</button>
-    <button class="btn-marcar" type="button" id="btnMarcar" hidden aria-label="Marcar problema neste local">⚠️ Marcar<br>problema</button>
+    <button class="btn-centro" type="button" id="btnCentro" hidden><span aria-hidden="true">◎</span> Centralizar</button>
+    <button class="btn-marcar" type="button" id="btnMarcar" hidden aria-label="Marcar problema neste local"><span aria-hidden="true">⚠️</span><small>Problema</small></button>
+    <button class="btn-visao nav-so" type="button" id="btnVisao" aria-label="Ver a rota inteira"><span aria-hidden="true">🗺️</span><small>Rota</small></button>
     <div class="velocimetro" id="velocimetro" hidden aria-label="Velocidade atual em quilômetros por hora"><strong id="velNum">0</strong><span>km/h</span></div>
     <button class="btn-bussola" type="button" id="btnBussola" hidden aria-label="Alternar direção para cima ou norte para cima">
       <span class="agulha" id="agulhaBussola" aria-hidden="true"><b>N</b></span>
@@ -4209,7 +4263,7 @@ body.navegando .pos-inicio { display: none; }
      - Cada celular ganha um código sorteado (não diz quem é) para contar quantos usam o app.
      - Nome e WhatsApp: só de quem preencher e aceitar. Pede UMA vez; quem pular vê de novo em 7 dias.
      - Novidades: aparece só a mais recente, uma vez, e nunca durante a navegação. */
-  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v38";
+  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v39";
   var CHAVE_CAD = "rotaCaminhaoSP.cadastro", CHAVE_PULOU = "rotaCaminhaoSP.cadastroPulado", CHAVE_VISTAS = "rotaCaminhaoSP.novidadesVistas";
   var aparelhoId = (function () {
     var id = ler("rotaCaminhaoSP.aparelho") || "";
@@ -4632,6 +4686,18 @@ body.navegando .pos-inicio { display: none; }
     { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 });
   });
   window.addEventListener("resize", function () { if (document.body.classList.contains("modo-inicio")) medirBase(); });
+
+  /* ===== Etapa 3: "Rota" na navegação mostra o caminho inteiro; volta a seguir sozinho em ~20 s ou no Centralizar ===== */
+  el("btnVisao").addEventListener("click", function () {
+    if (!nav.ativo || !estado.rota) return;
+    nav.seguindo = false;
+    giro.ultimoToque = Date.now() + 12000;
+    el("btnCentro").hidden = false;
+    var linhas = estado.rota.coords.map(function (c) { return [c[1], c[0]]; });
+    if (nav.ultimaPos) linhas.push([nav.ultimaPos.lat, nav.ultimaPos.lon]);
+    var alto = (el("navTopo").offsetHeight || 90) + 30, baixo = (el("navBase").offsetHeight || 90) + 30;
+    mapa.fitBounds(L.latLngBounds(linhas), { paddingTopLeft: [30, alto], paddingBottomRight: [90, baixo] });
+  });
 
   /* ===== Etapa 2: tela de escolha da rota =====
      Com a rota pronta, o formulário A/B some e fica só o resumo "De / Para" (botão Alterar abre de novo). */
