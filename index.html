@@ -870,8 +870,25 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
 .rot-acoes button:disabled { opacity: .3; cursor: default; }
 .rot-vazio { color: var(--suave); font-size: 15px; padding: 10px 2px; }
 .rot-limpar { display: flex; justify-content: flex-end; }
-.rot-voltar { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 600; min-height: 48px; }
-.rot-voltar input { width: 24px; height: 24px; }
+.rot-fim { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.rot-fim button {
+  min-height: 52px; border-radius: 14px; border: 1px solid var(--linha); background: var(--papel); color: var(--asfalto);
+  font-family: var(--f-texto); font-size: 16px; font-weight: 600; text-align: left; padding: 0 14px; cursor: pointer;
+}
+.rot-fim button[aria-checked="true"] { border: 2px solid var(--rota); background: color-mix(in srgb, var(--rota) 12%, var(--papel)); }
+.rot-previsao { background: var(--papel); border: 2px solid var(--rota); border-radius: 16px; padding: 12px 14px; margin: 4px 0 12px; }
+.rot-prev-total { margin: 0; font-family: var(--f-titulo); font-weight: 700; font-size: 20px; line-height: 1.25; }
+.rot-prev-rodape { margin: 0; text-align: center; font-family: var(--f-titulo); font-weight: 700; font-size: 17px; }
+.rot-prev-rodape[hidden] { display: none; }
+.rot-prev-det { margin: 4px 0 8px; font-size: 14px; color: var(--suave); }
+.rot-parada-min { font-size: 14px; font-weight: 600; }
+.rot-min-ops { display: flex; gap: 6px; margin-top: 6px; }
+.rot-min-ops button { flex: 1; min-height: 44px; border-radius: 10px; border: 1px solid var(--linha); background: var(--fundo); color: var(--asfalto); font-size: 15px; font-weight: 600; cursor: pointer; }
+.rot-min-ops button[aria-pressed="true"] { border: 2px solid var(--rota); background: color-mix(in srgb, var(--rota) 12%, var(--fundo)); }
+.rot-fim-info { margin: 0 0 10px; font-size: 15px; color: var(--suave); }
+.rot-fim-info strong { color: var(--asfalto); }
+.rot-fim-info button { margin-left: 6px; }
+.tela-roteiro.escolhendo-fim #pontoParada { outline: 3px solid var(--rota); border-radius: 14px; }
 .rot-rodape {
   display: flex; flex-direction: column; gap: 8px; background: var(--papel); box-shadow: 0 -2px 10px rgba(0,0,0,.12);
   padding: 10px max(14px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px));
@@ -1308,10 +1325,24 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
     <div class="busca-favs" id="rotRapidos"></div>
     <p class="busca-rotulo" id="rotContagem">Entregas</p>
     <ol class="rot-lista" id="rotLista"></ol>
-    <label class="rot-voltar"><input type="checkbox" id="rotVoltar"> Voltar para o ponto de saída no fim</label>
+    <p class="busca-rotulo">🏁 Onde termina o dia</p>
+    <div class="rot-fim" id="rotFim" role="radiogroup" aria-label="Onde termina o dia">
+      <button type="button" role="radio" data-fim="ultima">📦 Na última entrega</button>
+      <button type="button" role="radio" data-fim="saida">↩️ Voltar para a saída</button>
+      <button type="button" role="radio" data-fim="outro">📍 Outro lugar</button>
+    </div>
+    <p class="rot-fim-info" id="rotFimInfo" hidden></p>
+    <div class="rot-previsao" id="rotPrevisao" hidden>
+      <p class="rot-prev-total" id="rotPrevTotal"></p>
+      <p class="rot-prev-det" id="rotPrevDet"></p>
+      <div class="rot-parada-min"><span>Tempo parado em cada entrega:</span>
+        <span class="rot-min-ops" id="rotMinOps"><button type="button" data-min="10">10 min</button><button type="button" data-min="20">20 min</button><button type="button" data-min="30">30 min</button><button type="button" data-min="45">45 min</button></span>
+      </div>
+    </div>
     <p class="nota" id="rotNota"></p>
   </div>
   <div class="rot-rodape">
+    <p class="rot-prev-rodape" id="rotPrevRodape" hidden></p>
     <button type="button" class="fim-btn fim-secundario" id="btnRotOrdem">🔀 Organizar a melhor ordem</button>
     <button type="button" class="fim-btn fim-principal" id="btnRotComecar">▶ Começar entregas</button>
   </div>
@@ -4423,7 +4454,7 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
      - Cada celular ganha um código sorteado (não diz quem é) para contar quantos usam o app.
      - Nome e WhatsApp: só de quem preencher e aceitar. Pede UMA vez; quem pular vê de novo em 7 dias.
      - Novidades: aparece só a mais recente, uma vez, e nunca durante a navegação. */
-  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v41";
+  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v42";
   var CHAVE_CAD = "rotaCaminhaoSP.cadastro", CHAVE_PULOU = "rotaCaminhaoSP.cadastroPulado", CHAVE_VISTAS = "rotaCaminhaoSP.novidadesVistas";
   var aparelhoId = (function () {
     var id = ler("rotaCaminhaoSP.aparelho") || "";
@@ -4960,8 +4991,77 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
      cada trecho é traçado normalmente, com todas as restrições do caminhão. */
   var CHAVE_ROT = "rotaCaminhaoSP.roteiro", MAX_PARADAS = 25, telaRoteiro = el("telaRoteiro");
   function lerRoteiro() {
-    try { var r = JSON.parse(ler(CHAVE_ROT) || "null"); if (r && Array.isArray(r.paradas)) return r; } catch (e) {}
-    return { paradas: [], voltar: false, origem: null, ativo: false, atual: -1, voltando: false };
+    try {
+      var r = JSON.parse(ler(CHAVE_ROT) || "null");
+      if (r && Array.isArray(r.paradas)) { if (!r.fim) r.fim = r.voltar ? "saida" : "ultima"; return r; }
+    } catch (e) {}
+    return { paradas: [], fim: "ultima", fimPonto: null, origem: null, ativo: false, atual: -1, voltando: false };
+  }
+  /* Onde termina o dia: na última entrega, de volta à saída ou num lugar que o motorista escolhe */
+  var escolhendoFim = false;
+  function pontoFinal(r) {
+    if (r.fim === "saida" && r.origem) return { lat: r.origem.lat, lon: r.origem.lon, nome: "Volta para a saída", tipo: "saida" };
+    if (r.fim === "outro" && r.fimPonto) return { lat: r.fimPonto.lat, lon: r.fimPonto.lon, nome: r.fimPonto.nome, aprox: r.fimPonto.aprox, tipo: "outro" };
+    return null;
+  }
+  function nomeFinal(pf) { return pf.tipo === "saida" ? "Voltar para a saída" : "Ponto final: " + nomeCurto(pf.nome); }
+  function modoEscolherFim(sim) {
+    escolhendoFim = sim;
+    telaRoteiro.classList.toggle("escolhendo-fim", sim);
+    el("txtParada").placeholder = sim ? "Ponto final: endereço ou CEP" : "Adicionar entrega: endereço ou CEP";
+    if (sim) { el("txtParada").value = ""; el("txtParada").focus(); avisoRapido("🏁 Digite ou toque no lugar onde o dia termina"); }
+  }
+  function desenharFim(r) {
+    [].forEach.call(el("rotFim").querySelectorAll("button"), function (b) {
+      b.setAttribute("aria-checked", b.getAttribute("data-fim") === r.fim ? "true" : "false");
+    });
+    var info = el("rotFimInfo");
+    if (r.fim === "outro" && r.fimPonto) {
+      info.innerHTML = "Termina em <strong></strong> <button type=\"button\" class=\"btn-pequeno\">Trocar</button>";
+      info.querySelector("strong").textContent = nomeCurto(r.fimPonto.nome);
+      info.querySelector("button").addEventListener("click", function () { modoEscolherFim(true); });
+      info.hidden = false;
+    } else if (r.fim === "outro") { info.textContent = "Digite no campo de cima o endereço onde o dia termina."; info.hidden = false; }
+    else if (r.fim === "saida") { info.textContent = "No fim, a rota leva de volta para onde você estava ao começar."; info.hidden = false; }
+    else info.hidden = true;
+  }
+  /* Previsão do dia: sem gastar pedidos de rota. Distância em linha reta × 1,35 (as ruas fazem curva)
+     e velocidade média de caminhão conforme o tamanho do trecho; soma o tempo parado em cada entrega. */
+  function minParada(r) { return [10, 20, 30, 45].indexOf(r.minParada) >= 0 ? r.minParada : 20; }
+  function trechoEstimado(a, b) {
+    var p = xy(a.lon, a.lat), q = xy(b.lon, b.lat), km = Math.hypot(p[0] - q[0], p[1] - q[1]) / 1000 * 1.35;
+    var vel = km < 5 ? 18 : km < 20 ? 25 : km < 60 ? 40 : 55;
+    return { km: km, min: km / vel * 60 + 3 };
+  }
+  function previsaoRoteiro(r) {
+    var ori = posInicio ? posInicio.getLatLng() : null, prev = ori ? { lat: ori.lat, lon: ori.lng } : (r.origem || null);
+    var pernas = {}, km = 0, rodando = 0, n = 0;
+    r.paradas.forEach(function (p, i) {
+      if (p.feita) return;
+      n++;
+      if (prev) { var t = trechoEstimado(prev, p); pernas[i] = t; km += t.km; rodando += t.min; }
+      prev = p;
+    });
+    var fimPt = r.fim === "saida" ? (r.origem || (ori ? { lat: ori.lat, lon: ori.lng } : null)) : (r.fim === "outro" ? r.fimPonto : null), ultimo = null;
+    if (fimPt && prev && n) { ultimo = trechoEstimado(prev, fimPt); km += ultimo.km; rodando += ultimo.min; }
+    var parado = n * minParada(r);
+    return { pernas: pernas, ultimo: ultimo, km: km, rodando: rodando, parado: parado, total: rodando + parado, n: n, temInicio: !!(ori || r.origem) };
+  }
+  function duracaoTxt(min) { min = Math.max(1, Math.round(min / 5) * 5); var h = Math.floor(min / 60), m = min % 60; return h ? h + "h" + (m ? String(m).padStart(2, "0") : "") : m + " min"; }
+  function kmTxt(km) { return (km < 10 ? km.toFixed(1).replace(".", ",") : Math.round(km)) + " km"; }
+  function horaFim(min) { var d = new Date(Date.now() + min * 60000); return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); }
+  function desenharPrevisao(r, pv) {
+    var caixa = el("rotPrevisao");
+    caixa.hidden = !pv.n; el("rotPrevRodape").hidden = !pv.n;
+    if (!pv.n) return;
+    el("rotPrevRodape").textContent = "⏱️ Dia todo: ~" + duracaoTxt(pv.total) + " · termina ~" + horaFim(pv.total);
+    el("rotPrevTotal").textContent = "⏱️ Previsão: cerca de " + duracaoTxt(pv.total) + " · termina por volta das " + horaFim(pv.total);
+    el("rotPrevDet").textContent = "🚚 " + duracaoTxt(pv.rodando) + " rodando (~" + kmTxt(pv.km) + ") + 📦 " + duracaoTxt(pv.parado) + " nas " + pv.n + " entrega" + (pv.n > 1 ? "s" : "") +
+      (pv.ultimo ? " · inclui o trecho final" : "") + ". Estimativa aproximada: trânsito e horários de restrição podem mudar." +
+      (pv.temInicio ? "" : " Sem a sua localização, não conta o trecho até a 1ª entrega.");
+    [].forEach.call(el("rotMinOps").querySelectorAll("button"), function (b) {
+      b.setAttribute("aria-pressed", Number(b.getAttribute("data-min")) === minParada(r) ? "true" : "false");
+    });
   }
   function gravarRoteiro(r) { gravar(CHAVE_ROT, JSON.stringify(r)); desenharRoteiro(); atualizarBannerRoteiro(); }
   function proximaParada(r) { for (var i = 0; i < r.paradas.length; i++) if (!r.paradas[i].feita) return i; return -1; }
@@ -4969,6 +5069,12 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
   function nomeCurto(n) { return (n || "").split(" – ")[0]; }
   function adicionarParada(lat, lon, nome, extra) {
     var r = lerRoteiro();
+    if (escolhendoFim) {
+      r.fim = "outro"; r.fimPonto = { lat: lat, lon: lon, nome: nome || "Ponto no mapa", aprox: !!(extra && extra.aproximado) };
+      modoEscolherFim(false); gravarRoteiro(r);
+      avisoRapido("🏁 O dia termina em " + nomeCurto(nome));
+      return;
+    }
     if (r.paradas.length >= MAX_PARADAS) { avisoRapido("Máximo de " + MAX_PARADAS + " entregas por roteiro."); return; }
     if (r.paradas.some(function (p) { return !p.feita && perto(p, { lat: lat, lon: lon }); })) { avisoRapido("Essa entrega já está na lista."); return; }
     r.paradas.push({ id: Date.now().toString(36), nome: nome || "Ponto no mapa", lat: lat, lon: lon, aprox: !!(extra && extra.aproximado), feita: false });
@@ -4980,7 +5086,9 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
     var r = lerRoteiro(), ul = el("rotLista"), n = r.paradas.length, feitas = r.paradas.filter(function (p) { return p.feita; }).length;
     var prox = proximaParada(r);
     el("rotContagem").textContent = n ? "Entregas: " + n + (feitas ? " · " + feitas + " feita" + (feitas > 1 ? "s" : "") : "") : "Entregas";
-    el("rotVoltar").checked = !!r.voltar;
+    desenharFim(r);
+    var pv = previsaoRoteiro(r);
+    desenharPrevisao(r, pv);
     ul.innerHTML = "";
     if (!n) ul.innerHTML = '<li class="rot-vazio">Digite os endereços acima, um de cada vez. Também dá para tocar nos favoritos e nos destinos recentes.</li>';
     r.paradas.forEach(function (p, i) {
@@ -4992,7 +5100,8 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
         '<button type="button" data-a="desce" aria-label="Descer"' + (i === n - 1 ? " disabled" : "") + '>↓</button>' +
         '<button type="button" data-a="tira" aria-label="Tirar da lista">✕</button></span>';
       li.querySelector("strong").textContent = partes[0];
-      li.querySelector("small").textContent = [i === prox && r.ativo ? "Próxima" : "", partes.slice(1).join(" – "), p.aprox ? "número aproximado" : ""].filter(Boolean).join(" · ");
+      var perna = pv.pernas[i];
+      li.querySelector("small").textContent = [i === prox && r.ativo ? "Próxima" : "", perna ? "~" + duracaoTxt(perna.min) + " (" + kmTxt(perna.km) + ")" : "", partes.slice(1).join(" – "), p.aprox ? "número aproximado" : ""].filter(Boolean).join(" · ");
       li.querySelector(".rot-num").addEventListener("click", function () { var x = lerRoteiro(); x.paradas[i].feita = !x.paradas[i].feita; gravarRoteiro(x); });
       li.querySelector(".rot-acoes").addEventListener("click", function (ev) {
         var b = ev.target.closest("button"); if (!b || b.disabled) return;
@@ -5008,7 +5117,8 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
       lim.innerHTML = '<button type="button" class="btn-pequeno">🗑️ Apagar o roteiro</button>';
       lim.querySelector("button").addEventListener("click", function () {
         if (!window.confirm("Apagar todas as entregas desta lista?")) return;
-        gravarRoteiro({ paradas: [], voltar: lerRoteiro().voltar, origem: null, ativo: false, atual: -1, voltando: false });
+        var velho = lerRoteiro();
+        gravarRoteiro({ paradas: [], fim: velho.fim, fimPonto: velho.fimPonto || null, origem: null, ativo: false, atual: -1, voltando: false });
       });
       ul.appendChild(lim);
     }
@@ -5035,10 +5145,11 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
     if (pend.length < 2) return;
     var ori = posInicio ? posInicio.getLatLng() : null, inicio = ori ? { lat: ori.lat, lon: ori.lng } : (r.origem || null);
     function d(a, b) { var p = xy(a.lon, a.lat), q = xy(b.lon, b.lat); return Math.hypot(p[0] - q[0], p[1] - q[1]); }
+    var fimPt = r.fim === "saida" ? inicio : (r.fim === "outro" ? r.fimPonto : null);
     function custo(l) {
       var c = 0, prev = inicio;
       l.forEach(function (p) { if (prev) c += d(prev, p); prev = p; });
-      if (r.voltar && inicio) c += d(prev, inicio);
+      if (fimPt && prev) c += d(prev, fimPt);
       return c;
     }
     var antes = custo(pend), resto = pend.slice(), ordem = [], atual = inicio || resto.shift();
@@ -5065,8 +5176,9 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
     var r = lerRoteiro(), i = proximaParada(r), p;
     if (!r.origem && posInicio) { var o = posInicio.getLatLng(); r.origem = { lat: o.lat, lon: o.lng }; }
     if (i < 0) {
-      if (!(r.voltar && r.origem)) { avisoRapido("Todas as entregas foram feitas."); return; }
-      r.voltando = true; p = { lat: r.origem.lat, lon: r.origem.lon, nome: "Volta para a saída" };
+      p = pontoFinal(r);
+      if (!p) { avisoRapido("Todas as entregas foram feitas."); return; }
+      r.voltando = true;
     } else { p = r.paradas[i]; r.voltando = false; }
     r.ativo = true; r.atual = i;
     gravar(CHAVE_ROT, JSON.stringify(r)); atualizarBannerRoteiro();
@@ -5078,11 +5190,11 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
   }
   function atualizarBannerRoteiro() {
     var r = lerRoteiro(), i = proximaParada(r), b = el("iniRoteiro");
-    var mostra = r.ativo && (i >= 0 || (r.voltar && r.origem));
+    var pf = pontoFinal(r), mostra = r.ativo && (i >= 0 || !!pf);
     b.hidden = !mostra;
     if (mostra) {
-      el("iniRotNum").textContent = i >= 0 ? (i + 1) + "/" + r.paradas.length : "↩️";
-      el("iniRotNome").textContent = i >= 0 ? nomeCurto(r.paradas[i].nome) : "Voltar para a saída";
+      el("iniRotNum").textContent = i >= 0 ? (i + 1) + "/" + r.paradas.length : (pf.tipo === "saida" ? "↩️" : "🏁");
+      el("iniRotNome").textContent = i >= 0 ? nomeCurto(r.paradas[i].nome) : nomeFinal(pf);
     }
     if (document.body.classList.contains("modo-inicio")) medirBase();
   }
@@ -5100,9 +5212,11 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
     if (i >= 0) {
       bp.textContent = "📦 " + (chegou ? "Próxima: " : "Continuar: ") + nomeCurto(r.paradas[i].nome) + " (" + (i + 1) + "/" + r.paradas.length + ")";
       bp.hidden = false; el("btnFimInicio").textContent = "Parar por aqui"; el("btnFimInicio").className = "fim-btn fim-secundario";
-      el("fimNota").textContent += " · " + feitas + " de " + r.paradas.length + " entregas feitas";
-    } else if (r.voltar && r.origem) {
-      bp.textContent = "↩️ Voltar para a saída"; bp.hidden = false; el("btnFimInicio").textContent = "Parar por aqui"; el("btnFimInicio").className = "fim-btn fim-secundario";
+      var pvf = previsaoRoteiro(r);
+      el("fimNota").textContent += " · " + feitas + " de " + r.paradas.length + " entregas feitas · falta cerca de " + duracaoTxt(pvf.total) + " (termina por volta das " + horaFim(pvf.total) + ")";
+    } else if (pontoFinal(r)) {
+      var pf = pontoFinal(r);
+      bp.textContent = (pf.tipo === "saida" ? "↩️ " : "🏁 ") + nomeFinal(pf); bp.hidden = false; el("btnFimInicio").textContent = "Parar por aqui"; el("btnFimInicio").className = "fim-btn fim-secundario";
       el("fimNota").textContent += " · 🎉 Todas as entregas feitas!";
     } else {
       r.ativo = false; gravarRoteiro(r);
@@ -5116,14 +5230,23 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
     telaRoteiro.hidden = false;
     if (!lerRoteiro().paradas.length) el("txtParada").focus();
   }
-  function fecharRoteiro() { telaRoteiro.hidden = true; el("sugParada").hidden = true; fecharBusca(); }
+  function fecharRoteiro() { modoEscolherFim(false); telaRoteiro.hidden = true; el("sugParada").hidden = true; fecharBusca(); }
   new MutationObserver(function () { telaRoteiro.classList.toggle("com-sugestoes", !el("sugParada").hidden); })
     .observe(el("sugParada"), { attributes: true, attributeFilter: ["hidden"] });
   el("btnAbrirRoteiro").addEventListener("click", abrirRoteiro);
   el("btnVoltarRoteiro").addEventListener("click", fecharRoteiro);
   el("btnRotOrdem").addEventListener("click", organizarOrdem);
   el("btnRotComecar").addEventListener("click", irParaProxima);
-  el("rotVoltar").addEventListener("change", function () { var r = lerRoteiro(); r.voltar = this.checked; gravarRoteiro(r); });
+  el("rotMinOps").addEventListener("click", function (ev) {
+    var b = ev.target.closest("button"); if (!b) return;
+    var r = lerRoteiro(); r.minParada = Number(b.getAttribute("data-min")); gravarRoteiro(r);
+  });
+  el("rotFim").addEventListener("click", function (ev) {
+    var b = ev.target.closest("button"); if (!b) return;
+    var r = lerRoteiro(), tipo = b.getAttribute("data-fim");
+    r.fim = tipo; gravarRoteiro(r);
+    modoEscolherFim(tipo === "outro" && !r.fimPonto);   // já tem lugar guardado: usa ele (o botão Trocar escolhe outro)
+  });
   el("btnRotProxima").addEventListener("click", irParaProxima);
   el("btnRotVer").addEventListener("click", abrirRoteiro);
   el("btnFimProxima").addEventListener("click", irParaProxima);
