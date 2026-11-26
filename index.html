@@ -146,6 +146,13 @@ body.navegando .leaflet-bottom { bottom: calc(92px + env(safe-area-inset-bottom,
 .nav-proibido.vermelho { background: #c8102e; color: #fff; border-color: #fff; }
 .nav-proibido.pisca { animation: piscaProibido 1s steps(2, start) infinite; }
 .nav-proibido.verde { background: #1f7a3d; color: #fff; border-color: #fff; }
+/* Avisos compactos: um por vez, faixa fina embaixo da seta (não tampa a rota). Toque fecha. */
+.nav-cima .nav-alerta, .nav-cima .nav-faixa, .nav-cima .nav-proibido {
+  padding: 5px 10px; font-size: 14px; line-height: 1.25; border-radius: 10px; border-width: 2px; cursor: pointer;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.nav-cima .nav-alerta[hidden], .nav-cima .nav-faixa[hidden], .nav-cima .nav-proibido[hidden] { display: none; }
+.nav-cima .nav-proibido small { display: inline; font-size: 13px; margin: 0 0 0 6px; }
 @keyframes piscaProibido { 0% { background: #c8102e; color: #fff; } 50% { background: #ffd400; color: #1d2226; } }
 @media (prefers-reduced-motion: reduce) { .nav-proibido.pisca { animation: none; } }
 @media (prefers-reduced-motion: reduce) { .nav-faixa { animation: none; } }
@@ -564,6 +571,7 @@ body { font-size: 16px; }
     <div class="nav-proibido" id="navProibido" hidden role="alert"></div>
     <div class="nav-alerta" id="navAlerta" hidden role="alert"></div>
     <div class="nav-faixa" id="navFaixa" hidden></div>
+    <div class="nav-proibido vermelho" id="navSaida" hidden role="alert">⛔ Você está dentro de uma área restrita para caminhão.<small>Esta rota vai te levar para fora da zona.</small></div>
   </div>
   <div class="mapa-caixa">
     <div id="mapa" aria-label="Mapa de São Paulo com as restrições a caminhões"></div>
@@ -655,7 +663,7 @@ body { font-size: 16px; }
       <p class="cad-dica">📄 Se você tem Autorização Especial da Prefeitura, siga o que está nela.</p>
       <p class="cad-dica">Se seguir, o app avisa falando e na tela uns 500 m antes, ao entrar e ao sair da área.</p>
       <button type="button" class="btn-rota" id="btnCpHorario">Escolher outro horário</button>
-      <button type="button" class="btn-rota btn-navegar" id="btnCpSeguir">Iniciar mesmo assim</button>
+      <button type="button" class="btn-rota btn-navegar" id="btnCpSeguir">Navegar mesmo assim (estou ciente)</button>
       <button type="button" class="btn-pequeno op-fechar" id="btnCpVoltar">Voltar</button>
     </div>
   </div>
@@ -1358,7 +1366,7 @@ body { font-size: 16px; }
     }, function () {
       clearTimeout(relogio);
       var err = new Error(estourou ? "O serviço de rotas demorou demais para responder. Tente de novo em alguns minutos, ou escolha pontos mais próximos." : explicarErro(0));
-      err.status = 0; throw err;
+      err.status = 0; err.tempo = estourou; throw err;
     });
   }
 
@@ -1917,12 +1925,41 @@ body { font-size: 16px; }
   function rumo(a, b) { return Math.atan2(b[1] - a[1], b[0] - a[0]); }
   function paralelo(r1, r2) { var d = Math.abs(r1 - r2) % Math.PI; d = Math.min(d, Math.PI - d); return d < 0.5; } // ~30°
 
+  /* Nome da via para os avisos: o nome real, curto e sem erros de digitação do mapa da CET.
+     Ex.: "AVENIDA SALIM FARAT MALUF - SENTIDO NORTE-SUL - EM TODA EXTENSÃO" → "Avenida Salim Farah Maluf" */
+  var NOMES_CERTOS = [[/salim\s+farat/gi, "Salim Farah"], [/santos\s*=\s*dumont/gi, "Santos-Dumont"], [/pierr?[iu]c+ini/gi, "Pieruccini"]];
+  var MINUSCULAS = { de: 1, da: 1, do: 1, das: 1, dos: 1, e: 1 };
+  function nomeVia(n) {
+    var t = String(n || "");
+    NOMES_CERTOS.forEach(function (c) { t = t.replace(c[0], c[1]); });
+    t = t.replace(/\([^)]*\)/g, " ");
+    t = t.split(/\s+[-–]\s+/).filter(function (p) { return !/^\s*(sentido|pista|pistas|lado|em toda|desde|entre|até|da|do)\s/i.test(p); }).join(" – ");
+    t = t.replace(/\s+(entre|desde)\s.*$/i, "").replace(/\s*\/\s*/g, " / ").replace(/\s+/g, " ").replace(/[\s\/–-]+$/, "").trim();
+    t = t.split(" ").map(function (w, i) {
+      var b = w.toLowerCase();
+      if (i > 0 && MINUSCULAS[b] && w === w.toUpperCase()) return b;
+      if (w.length < 2 || w !== w.toUpperCase() || !/[A-ZÀ-Ý]/.test(w)) return w;
+      return b.replace(/(^|-)(\S)/g, function (x, s, c) { return s + c.toUpperCase(); });
+    }).join(" ");
+    if (t === "Rótula") t = "Rótula do Centro";
+    return t || String(n || "");
+  }
+  // Lista dos lugares proibidos de uma rota, com o nome real da via (sem repetir)
+  function nomesProblemas(lista) {
+    var vistos = [];
+    (lista || []).forEach(function (p) {
+      var n = p.area || !p.nome ? CAMADAS[p.tipo].curto : nomeVia(p.nome);
+      if (vistos.indexOf(n) < 0) vistos.push(n);
+    });
+    return vistos.join(", ");
+  }
+
   /* Vias restritas preparadas para comparação rápida */
   var vias = dados.filter(function (f) { return LINHAS.indexOf(f.properties.tipo) >= 0 && f.geometry.type === "LineString"; }).map(function (f) {
     var pts = f.geometry.coordinates.map(function (c) { return xy(c[0], c[1]); });
     var minx = Infinity, miny = Infinity, maxx = -Infinity, maxy = -Infinity;
     pts.forEach(function (p) { minx = Math.min(minx, p[0]); miny = Math.min(miny, p[1]); maxx = Math.max(maxx, p[0]); maxy = Math.max(maxy, p[1]); });
-    return { tipo: f.properties.tipo, nome: f.properties.nome, pts: pts, caixa: [minx - 40, miny - 40, maxx + 40, maxy + 40] };
+    return { tipo: f.properties.tipo, nome: nomeVia(f.properties.nome), nomeCet: f.properties.nome, coords: f.geometry.coordinates, pts: pts, caixa: [minx - 40, miny - 40, maxx + 40, maxy + 40] };
   });
 
   /* Áreas (sem os pedacinhos soltos), encolhidas 30 m para não bloquear as vias do contorno */
@@ -2360,7 +2397,7 @@ body { font-size: 16px; }
   }
 
   // preferencia: "fastest" (mais rápida, puxa para as avenidas) ou "shortest" (mais curta)
-  function pedirRota(orig, dest, desvios, alternativas, preferencia) {
+  function pedirRota(orig, dest, desvios, alternativas, preferencia, limiteSeg) {
     var ehCarro = estado.veiculo === "carro";
     var corpo = {
       coordinates: [[orig.lon, orig.lat], [dest.lon, dest.lat]],
@@ -2383,7 +2420,7 @@ body { font-size: 16px; }
     // Perfil do serviço de rotas: carro ou caminhão
     return chamar(ORS + "/v2/directions/" + (ehCarro ? "driving-car" : "driving-hgv") + "/geojson", {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo)
-    }, 90);
+    }, limiteSeg || 90);
   }
 
   var camadaRota = null;
@@ -2411,10 +2448,72 @@ body { font-size: 16px; }
      Devolve uma LISTA de rotas (até 3), da mais rápida para a mais lenta.
      Toda rota da lista foi conferida contra as restrições; as que quebram alguma são descartadas.
      Só se nenhuma passar, devolve a "menos pior" marcada com os problemas (para o alerta vermelho). */
+  /* ===== Motorista já DENTRO da área restrita =====
+     Em vez de travar procurando a rota normal, primeiro leva o caminhão para FORA pelo caminho mais curto:
+     - área (rodízio, ZMRC): até um ponto logo depois da borda mais próxima;
+     - via proibida (ex.: Marginal no horário proibido): a via inteira vira desvio, menos um pedaço em volta
+       do caminhão, então a rota sai dela na primeira saída possível.
+     Quando ele sai da zona, a navegação recalcula sozinha a rota até o destino, com todas as restrições. */
+  function ondeRestrito(lon, lat, m, rumoGraus) {
+    var p = xy(lon, lat), rr = (rumoGraus === null || rumoGraus === undefined) ? null : (90 - rumoGraus) * Math.PI / 180;
+    for (var j = 0; j < vias.length; j++) {
+      var v = vias[j], c = v.caixa;
+      if (p[0] < c[0] || p[0] > c[2] || p[1] < c[1] || p[1] > c[3]) continue;
+      if (situacao(v.tipo, m) !== "proibido") continue;
+      for (var k = 0; k < v.pts.length - 1; k++) {
+        if (distSeg(p, v.pts[k], v.pts[k + 1]) < 15 && (rr === null || paralelo(rr, rumo(v.pts[k], v.pts[k + 1])))) return { via: v, tipo: v.tipo, nome: v.nome };
+      }
+    }
+    var t = ["rodizio", "zmrc"].filter(function (t) { return situacao(t, m) === "proibido" && dentroDe(t, lon, lat); })[0];
+    return t ? { area: t, tipo: t, nome: CAMADAS[t].curto } : null;
+  }
+  function pertoDaVia(v, lon, lat, metros) {
+    var p = xy(lon, lat);
+    for (var k = 0; k < v.pts.length - 1; k++) if (distSeg(p, v.pts[k], v.pts[k + 1]) < metros) return true;
+    return false;
+  }
+  function precisaSair(orig, dest, m, rumoGraus) {
+    var o = ondeRestrito(orig.lon, orig.lat, m, rumoGraus);
+    if (!o) return null;
+    // destino na mesma área ou na mesma via: não tem como sair; vale a regra de sempre (menor trecho + aviso + "estou ciente")
+    if (o.area && dentroDe(o.area, dest.lon, dest.lat)) return null;
+    if (o.via && pertoDaVia(o.via, dest.lon, dest.lat, 60)) return null;
+    return o;
+  }
+  function pontoForaDaArea(t, orig) {
+    var pt = turf.point([orig.lon, orig.lat]), melhor = null;
+    areas[t].forEach(function (pol) {
+      turf.flatten(pol).features.forEach(function (pg) {
+        turf.flatten(turf.polygonToLine(pg)).features.forEach(function (ln) {
+          var n = turf.nearestPointOnLine(ln, pt, { units: "meters" });
+          if (!melhor || n.properties.dist < melhor.properties.dist) melhor = n;
+        });
+      });
+    });
+    if (!melhor) return null;
+    var c = turf.destination(melhor, 0.12, turf.bearing(pt, melhor), { units: "kilometers" }).geometry.coordinates;
+    return { lon: c[0], lat: c[1], nome: "Fora da " + CAMADAS[t].curto };
+  }
+  function viaSemOComeco(v, orig, raio) {
+    var faixa = turf.buffer(turf.lineString(v.coords), 18, { units: "meters" });
+    try { return turf.difference(faixa, turf.circle([orig.lon, orig.lat], raio / 1000, { steps: 24, units: "kilometers" })); } catch (e) { return null; }
+  }
+  var TEXTO_SAIDA = "Você está dentro de uma área restrita para caminhão. Esta rota vai te levar para fora da zona.";
+
   function calcularRota(orig, dest, m, aoTentar, opcoes) {
     opcoes = opcoes || {};
     var preferencia = opcoes.preferencia === "shortest" ? "shortest" : "fastest";
     var avisos = [], desvios = [], ignorar = {};
+    // Nunca fica "carregando" para sempre: depois do prazo, fica com a melhor rota que já tem (ou explica o erro)
+    var PRAZO_SEG = opcoes.prazoSeg || 25, prazo = Date.now() + PRAZO_SEG * 1000;
+    function temTempo() { return Date.now() < prazo - 1500; }
+    var saida = opcoes.semSaida ? null : precisaSair(orig, dest, m, opcoes.rumoInicial);
+    var alvoSaida = null, RAIOS_SAIDA = [600, 2000, 5000, 0], nivelSaida = 0;
+    if (saida) {
+      preferencia = "shortest";
+      if (saida.area) alvoSaida = pontoForaDaArea(saida.area, orig);
+      if (saida.area && !alvoSaida) saida = null;
+    }
 
     // Áreas proibidas no horário de saída
     var rodizioProibido = situacao("rodizio", m) === "proibido";
@@ -2468,6 +2567,18 @@ body { font-size: 16px; }
     var querQuantas = querAlternativas ? 3 : 1;
 
     var tentativa = 0, maxTentativas = querAlternativas ? 3 : 4, primeiraDistancia = null, validas = [], piorCaso = null;
+    // Já dentro da zona: um pedido só, direto para fora
+    function desviosSaida() {
+      if (saida.area) return [];
+      var raio = RAIOS_SAIDA[nivelSaida], l = montarAreas();
+      if (raio) { var pv = viaSemOComeco(saida.via, orig, raio); if (pv) l = l.concat(pv); }
+      return l;
+    }
+    if (saida) {
+      avisos.unshift("Você está dentro de uma área restrita para caminhão (" + saida.nome + "). Esta rota vai te levar para fora da zona. Depois que sair, o app recalcula sozinho a rota até o destino, respeitando todas as restrições.");
+      querAlternativas = false; querQuantas = 1; maxTentativas = 1;
+      desvios = desviosSaida(); desviosTrecho = desviosTrecho.filter(function (d) { return d.fixo; });
+    }
     function resumo(f) { return (f.properties && f.properties.summary) || {}; }
     function repetida(c) {
       var s = resumo(c.f);
@@ -2481,13 +2592,16 @@ body { font-size: 16px; }
       tentativa++;
       if (aoTentar) aoTentar(tentativa, maxTentativas);
       var polis = desvios.concat(desviosTrecho.map(function (d) { return d.poli; }));
-      return pedirRota(orig, dest, polis, usarAlternativas, preferencia).then(function (r) {
+      var limite = Math.max(4, Math.round((prazo - Date.now()) / 1000));
+      return pedirRota(orig, alvoSaida || dest, polis, usarAlternativas, preferencia, limite).then(function (r) {
         var feats = (r && r.features) || [];
         if (!feats.length) throw new Error("O serviço de rotas não devolveu nenhuma rota.");
         if (primeiraDistancia === null) primeiraDistancia = resumo(feats[0]).distance || 0;
         var novos = [];
         feats.forEach(function (f) {
           var c = { f: f, coords: f.geometry.coordinates };
+          // Rota para sair da zona: ela passa dentro da restrição de propósito (é o caminho para fora)
+          if (saida) { c.problemas = []; c.ruins = []; validas.push(c); return; }
           c.problemas = conferir(c.coords, m, ignorar);
           // Manobras proibidas da lista, retornos e (no recálculo) mandar voltar: aprende a barreira e pede de novo
           c.ruins = manobrasRuins(c.coords, rumoInicial);
@@ -2515,15 +2629,21 @@ body { font-size: 16px; }
         });
         // Barreiras novas de manobra proibida/retorno: permite até 2 pedidos a mais
         if (!jaEstendeu && novos.some(function (d) { return d.fixo || d.tipo === "volta"; })) { jaEstendeu = true; maxTentativas += 2; }
-        if (validas.length < querQuantas && novos.length && tentativa < maxTentativas) {
+        if (validas.length < querQuantas && novos.length && tentativa < maxTentativas && temTempo()) {
           desviosTrecho = desviosTrecho.concat(novos);
           return rodar(usarAlternativas);
         }
       }, function (e) {
+        // Já tem rota de pedidos anteriores (e não deu para melhorar, ou acabou o tempo): fica com a melhor que já tem
+        if ((e.status === 404 || e.tempo) && (validas.length || piorCaso)) return;
+        if (!temTempo()) throw e;
+        // Saindo de via proibida sem saída perto: deixa um pedaço maior livre (e, por último, sem bloquear a via)
+        if (saida && saida.via && e.status === 404 && nivelSaida < RAIOS_SAIDA.length - 1) {
+          nivelSaida++; desvios = desviosSaida();
+          return rodar(false);
+        }
         // Sem caminho pela "entrada" da área: abre uma entrada maior (e, por último, não desvia da área)
-        // Já tem rota de pedidos anteriores e não existe caminho que desvie mais: fica com a melhor que já tem
-        if (e.status === 404 && (validas.length || piorCaso)) return;
-        if (temEntrada && e.status === 404 && nivelEntrada < FOLGAS_ENTRADA.length) {
+        if (!saida && temEntrada && e.status === 404 && nivelEntrada < FOLGAS_ENTRADA.length) {
           nivelEntrada++; desvios = montarAreas();
           return rodar(usarAlternativas);
         }
@@ -2536,7 +2656,15 @@ body { font-size: 16px; }
       });
     }
 
-    return rodar(querAlternativas).then(function () {
+    return rodar(querAlternativas).catch(function (e) {
+      if (e.tempo) {
+        var t = new Error("A rota não saiu em " + PRAZO_SEG + " segundos: o serviço de rotas está demorando para responder agora" +
+          (saida ? "." : " ou não achou caminho livre das restrições.") + " Toque em \"Traçar rota\" para tentar de novo e siga as placas.");
+        t.status = 0; t.tempo = true; throw t;
+      }
+      throw e;
+    }).then(function () {
+      if (!validas.length && !piorCaso) throw new Error("O serviço de rotas não achou caminho. Confira a saída e o destino e tente de novo.");
       var lista = validas.length ? validas.slice() : [piorCaso];
       var campo = preferencia === "shortest" ? "distance" : "duration";
       lista.sort(function (x, y) { return (resumo(x.f)[campo] || 0) - (resumo(y.f)[campo] || 0); });
@@ -2570,6 +2698,7 @@ body { font-size: 16px; }
             res.avisos.push("Durante a viagem começa a restrição de " + CAMADAS[t].curto + " (" + CAMADAS[t].hora + "). Chegada prevista às " + hhmm(res.chegada.minutos) + ": confira se a rota passa por ela.");
         });
         res.ignorar = ignorar; res.tentativa = tentativa; res.momento = m; res.veiculoTexto = veiculoTexto;
+        res.saida = saida;   // rota para sair da zona restrita (a navegação recalcula até o destino quando ele sair)
         res.desviosTrecho = desviosTrecho; res.numero = i; res.preferencia = preferencia;
         // Quanto fica dentro de área/via restrita (inclusive saída ou destino dentro dela) e quando ela libera
         res.restrito = medirRestrito(res.coords, m, res.distancia, res.duracao);
@@ -2701,13 +2830,21 @@ body { font-size: 16px; }
     // Calcula as duas opções ao mesmo tempo: "Mais rápida (avenidas)" (padrão) e "Mais curta".
     // As duas passam pela mesma conferência de restrições e lista de bloqueios.
     var m = momentoAtual();
+    // Já dentro da área restrita: uma rota só, a mais curta para sair (não adianta pedir duas)
+    var sair = precisaSair(estado.A, estado.B, m);
+    if (sair) mostrarMsg("Você está dentro de uma área restrita (" + sair.nome + "). Traçando primeiro a saída mais curta…");
+    // Passou de 10 s: explica o que está acontecendo (o app desiste sozinho em 25 s, nunca fica travado)
+    var aviso10 = setTimeout(function () {
+      mostrarMsg("A rota está demorando: o serviço de rotas está lento agora ou está procurando caminho sem restrição. Aguarde mais alguns segundos.");
+    }, 10000);
     var pRapida = calcularRota(estado.A, estado.B, m, function (n, max) {
       btn.textContent = n === 1 ? "Calculando…" : "Procurando desvio (tentativa " + n + " de " + max + ")…";
-      if (n > 1) mostrarMsg("Algum caminho passava por avenida proibida neste horário. Procurando outros; isso pode levar até 1 minuto.");
+      if (n > 1) mostrarMsg("Algum caminho passava por avenida proibida neste horário. Procurando outros; isso leva alguns segundos.");
     }, { alternativas: true, preferencia: "fastest" }).then(function (l) { return l[0]; }, function (e) { return { erro: e }; });
-    var pCurta = calcularRota(estado.A, estado.B, m, null, { alternativas: false, preferencia: "shortest" })
+    var pCurta = sair ? Promise.resolve(null) : calcularRota(estado.A, estado.B, m, null, { alternativas: false, preferencia: "shortest" })
       .then(function (l) { return l[0]; }, function () { return null; });
     Promise.all([pRapida, pCurta]).then(function (r) {
+      clearTimeout(aviso10);
       var rapida = r[0] && !r[0].erro ? r[0] : null, curta = r[1];
       if (!rapida && !curta) throw r[0].erro;
       var lista = [rapida, curta].filter(Boolean);
@@ -2724,6 +2861,7 @@ body { font-size: 16px; }
       desenharOpcoes(lista, ini);
       exibirResultado(lista[ini]);
     }).catch(function (e) {
+      clearTimeout(aviso10);
       mostrarMsg("");
       mostrarResultado("alerta", "Não consegui traçar a rota", '<p style="margin:0">' + escapar(e.message) + '</p>');
     }).then(function () {
@@ -2781,12 +2919,55 @@ body { font-size: 16px; }
     if (nav.ativo && document.visibilityState === "visible") pedirTelaLigada();
   });
 
+  /* ===== Avisos da navegação: no máximo UM na tela =====
+     Cada fonte (alerta geral, área proibida, faixa de ônibus, saída da zona) diz o que quer mostrar;
+     aparece só o mais importante (vermelho antes de amarelo). Cada aviso some sozinho depois de alguns
+     segundos e fecha com um toque; o mesmo aviso não volta enquanto continua igual (mesma via, mesmo trecho).
+     O aviso de "sair da zona restrita" é fixo. */
+  var AVISO_EL = { saida: "navSaida", alerta: "navAlerta", proib: "navProibido", onibus: "navFaixa" };
+  var avisos = { fontes: {}, desde: {}, fechados: {}, sumiu: {} };
+  function zerarAvisos() { avisos = { fontes: {}, desde: {}, fechados: {}, sumiu: {} }; escolherAviso(); }
+  // a: { nivel (4 saída, 3 vermelho, 2 amarelo, 1 informação, 0 verde), chave, segundos, fixo } ou null
+  function definirAviso(fonte, a) {
+    var agora = Date.now(), ant = avisos.fontes[fonte];
+    if (ant && (!a || ant.chave !== a.chave)) avisos.sumiu[fonte + "|" + ant.chave] = agora;
+    if (a) {
+      var k = fonte + "|" + a.chave;
+      // o mesmo aviso só volta se ficou 2 minutos sem aparecer (ex.: outra entrada na mesma via mais à frente)
+      if (avisos.sumiu[k] && agora - avisos.sumiu[k] > 120000) { delete avisos.desde[k]; delete avisos.fechados[k]; }
+      delete avisos.sumiu[k];
+    }
+    avisos.fontes[fonte] = a;
+    escolherAviso();
+  }
+  function escolherAviso() {
+    var agora = Date.now(), melhor = null, fonteMelhor = null;
+    Object.keys(avisos.fontes).forEach(function (f) {
+      var a = avisos.fontes[f], k;
+      if (!a) return;
+      k = f + "|" + a.chave;
+      if (avisos.fechados[k]) return;
+      if (!a.fixo && avisos.desde[k] && agora - avisos.desde[k] > (a.segundos || 8) * 1000) return;
+      if (!melhor || a.nivel > melhor.nivel) { melhor = a; fonteMelhor = f; }
+    });
+    if (melhor && !melhor.fixo) { var km0 = fonteMelhor + "|" + melhor.chave; if (!avisos.desde[km0]) avisos.desde[km0] = agora; }
+    Object.keys(AVISO_EL).forEach(function (f) { document.getElementById(AVISO_EL[f]).hidden = !nav.ativo || f !== fonteMelhor; });
+  }
+  Object.keys(AVISO_EL).forEach(function (f) {
+    document.getElementById(AVISO_EL[f]).addEventListener("click", function () {
+      var a = avisos.fontes[f];
+      if (!a || a.fixo) return;
+      avisos.fechados[f + "|" + a.chave] = true; escolherAviso();
+    });
+  });
+  setInterval(function () { if (nav.ativo) escolherAviso(); }, 1000);
+
   function mostrarAlertaNav(texto, tipo) {
     var el = document.getElementById("navAlerta");
-    if (!texto) { el.hidden = true; return; }
+    if (!texto) { definirAviso("alerta", null); return; }
     el.textContent = texto;
     el.className = "nav-alerta " + (tipo || "");
-    el.hidden = false;
+    definirAviso("alerta", { nivel: tipo === "alerta" ? 3 : 1, chave: texto, segundos: tipo === "alerta" ? 10 : 8 });
   }
 
   /* Onde estou na rota: distância percorrida (s) e distância até a linha (d) */
@@ -3065,7 +3246,7 @@ body { font-size: 16px; }
     }
     var manobra = atualizarInstrucao(pos.s);
     nav.sAtual = pos.s;
-    atualizarAvisoProibido(pos.s);
+    if (estado.rota.saida) vigiarSaida(lon, lat); else { definirAviso("saida", null); atualizarAvisoProibido(pos.s); }
     nav.instrAtual = (manobra.k >= 0 && estado.rota.passos[manobra.k]) ? estado.rota.passos[manobra.k].instruction : "";
     atualizarBase(pos.s);
     // Faixa de ônibus funcionando ou corredor onde o caminhão está agora: aviso na tela (e falado uma vez)
@@ -3087,13 +3268,14 @@ body { font-size: 16px; }
     var el = document.getElementById("navFaixa");
     if (!o) {
       // só esconde depois de 150 m sem faixa (nos cruzamentos a faixa some por alguns metros)
-      if (nav.onibusAtual && s - (nav.sUltimoOnibus || 0) > 150) { el.hidden = true; nav.onibusAtual = null; }
+      if (nav.onibusAtual && s - (nav.sUltimoOnibus || 0) > 150) { definirAviso("onibus", null); nav.onibusAtual = null; }
       return;
     }
     nav.sUltimoOnibus = s;
     var texto = avisoOnibus(o);
     if (nav.onibusAtual === texto) return;           // mesma mensagem: não repete
-    el.textContent = "🚌 " + texto; el.hidden = false; nav.onibusAtual = texto;
+    el.textContent = "🚌 " + texto; nav.onibusAtual = texto;
+    definirAviso("onibus", { nivel: 1, chave: texto, segundos: 8 });
     // fala quando a mensagem muda, sem cortar uma instrução de manobra que esteja sendo falada
     if (!(window.speechSynthesis && speechSynthesis.speaking)) falar(texto);
   }
@@ -3121,7 +3303,7 @@ body { font-size: 16px; }
     // Direção em que o caminhão vinha andando (últimos 30 s): a rota nova deve seguir em frente, sem retorno
     var rumoInicial = (giro.rumoMovT && Date.now() - giro.rumoMovT < 30000) ? giro.rumoMov : null;
     calcularRota(orig, estado.B, momentoAtual(), null, {
-      alternativas: false, desviosAnteriores: estado.rota ? estado.rota.desviosTrecho : [], rumoInicial: rumoInicial,
+      alternativas: false, desviosAnteriores: estado.rota ? estado.rota.desviosTrecho : [], rumoInicial: rumoInicial, prazoSeg: 15,
       preferencia: estado.rota ? estado.rota.preferencia : "fastest"   // mesmo tipo de rota que o motorista escolheu
     }).then(function (lista) {
       var res = lista[0];
@@ -3131,15 +3313,39 @@ body { font-size: 16px; }
       exibirResultado(res);
       nav.idx = 0; nav.falados = {}; nav.precisaRecalc = false;
       limparDestaque();
-      if (res.problemas.length) {
-        mostrarAlertaNav("Atenção: não achei caminho livre. A rota passa por " + res.problemas.map(function (p) { return CAMADAS[p.tipo].curto; }).join(", ") + ", proibida agora.", "alerta");
-        falar("Atenção: não achei caminho livre de restrições.", "manobra");
-      } else mostrarAlertaNav("");
+      if (res.problemas.length && !res.saida) {
+        // Nome real da via (não "avenida do grupo 4"), e só uma vez: não repete a cada recálculo na mesma via
+        var nomesP = nomesProblemas(res.problemas);
+        if (nav.problemaFalado !== nomesP) {
+          nav.problemaFalado = nomesP;
+          mostrarAlertaNav("Atenção: não achei caminho livre. A rota passa por " + nomesP + ", proibida agora.", "alerta");
+          falar("Atenção: não achei caminho livre. A rota passa por " + nomesP + ".", "manobra");
+        }
+      } else { nav.problemaFalado = ""; mostrarAlertaNav(""); }
     }).catch(function (e) {
       mostrarAlertaNav(e.message + " Siga as placas.", "alerta");
     }).then(function () {
       nav.recalculando = false; nav.ultimaRecalc = Date.now(); nav.foraDesde = null;
     });
+  }
+
+  /* Rota de saída da zona restrita: aviso fixo enquanto está dentro; saiu (3 s fora), recalcula até o destino sozinho */
+  function vigiarSaida(lon, lat) {
+    var o = estado.rota.saida;
+    var dentro = o.area ? dentroDe(o.area, lon, lat) : pertoDaVia(o.via, lon, lat, 25);
+    if (dentro) {
+      nav.foraZonaDesde = null;
+      definirAviso("saida", { nivel: 4, chave: "saida", fixo: true });
+      if (!nav.saidaFalada) { nav.saidaFalada = true; falar(TEXTO_SAIDA, "manobra"); vibrar([400, 200, 400]); }
+      return;
+    }
+    definirAviso("saida", null);
+    if (!nav.foraZonaDesde) nav.foraZonaDesde = Date.now();
+    // tenta de novo a cada 15 s se o serviço de rotas falhar (sem pedir sem parar)
+    if (Date.now() - nav.foraZonaDesde > 3000 && !nav.recalculando && Date.now() - (nav.saidaPediu || 0) > 15000) {
+      nav.saidaPediu = Date.now(); nav.ultimaRecalc = 0;
+      recalcular("Você saiu da área restrita. Calculando a rota até o destino, respeitando as restrições…", lon, lat);
+    }
   }
 
   /* A cada minuto: alguma restrição começou no caminho que falta? */
@@ -3148,8 +3354,8 @@ body { font-size: 16px; }
     var r = estado.rota, resto = r.coords.slice(Math.max(0, nav.idx));
     if (resto.length < 2) return;
     var problemas = conferir(resto, momentoAtual(), r.ignorar);
-    if (problemas.length && !r.problemas.length) {
-      var nomes = problemas.map(function (p) { return CAMADAS[p.tipo].curto; }).join(", ");
+    if (problemas.length && !r.problemas.length && !r.saida) {
+      var nomes = nomesProblemas(problemas);
       nav.ultimaRecalc = 0;
       recalcular("Começou a restrição de " + nomes + " no seu caminho. Recalculando…", nav.ultimaPos.lon, nav.ultimaPos.lat);
     }
@@ -3216,21 +3422,23 @@ body { font-size: 16px; }
       if (s >= t.ini - 10 && s <= t.fim + 10) dentro = t;
       else if (t.ini > s && (!prox || t.ini < prox.ini)) prox = t;
     });
-    function mostrar(classe, titulo, detalhe) {
+    // chave: o que é o aviso (tipo + via), sem a distância, para o mesmo aviso não aparecer de novo a cada metro
+    function mostrar(classe, titulo, detalhe, chave) {
       el.className = "nav-proibido " + classe;
       el.innerHTML = escapar(titulo) + (detalhe ? "<small>" + escapar(detalhe) + "</small>" : "");
-      el.hidden = false;
+      definirAviso("proib", { nivel: /vermelho/.test(classe) ? 3 : /amarelo/.test(classe) ? 2 : 0, chave: classe + "|" + chave, segundos: 10 });
     }
+    // Fala uma vez só por via/área: não repete enquanto o motorista continua nela, nem quando a rota é recalculada
     function falarUmaVez(chave, frase, vib) {
       p.falados = p.falados || {};
-      if (p.falados[chave]) return;
-      p.falados[chave] = true; falar(frase, "manobra"); if (vib) vibrar(vib);
+      if (p.falados[chave] && agora - p.falados[chave] < 180000) { p.falados[chave] = agora; return; }
+      p.falados[chave] = agora; falar(frase, "manobra"); if (vib) vibrar(vib);
     }
     if (dentro) {
       p.dentro = dentro; p.verdeAte = 0;
       var nomeArea = dentro.via ? dentro.nome : CAMADAS[dentro.tipo].curto;
-      mostrar("vermelho", "⛔ VOCÊ ESTÁ NA ÁREA RESTRITA", (dentro.via ? dentro.nome : "Dentro d" + textoTrecho(dentro)) + " · sai em " + arredondar(Math.max(0, dentro.fim - s)));
-      falarUmaVez("dentro" + dentro.chave + dentro.ini, "Atenção: você entrou na área restrita " + nomeArea + ".", [400, 200, 400]);
+      mostrar("vermelho", "⛔ VOCÊ ESTÁ NA ÁREA RESTRITA", (dentro.via ? dentro.nome : "Dentro d" + textoTrecho(dentro)) + " · sai em " + arredondar(Math.max(0, dentro.fim - s)), dentro.chave);
+      falarUmaVez("dentro" + dentro.chave, "Atenção: você entrou na área restrita " + nomeArea + ".", [400, 200, 400]);
       registrarRestrito(dentro, nomeArea, s, agora);
       return;
     }
@@ -3241,16 +3449,16 @@ body { font-size: 16px; }
     if (prox) {
       var d = prox.ini - s, onde = prox.via ? "passa pela " + prox.nome : "entra n" + textoTrecho(prox);
       if (d <= AVISO_PROIB.pisca) {
-        mostrar("vermelho pisca", "⛔ ATENÇÃO: área proibida a " + arredondar(d), "A rota " + onde + " (proibida agora)");
-        falarUmaVez("perto" + prox.chave + prox.ini, "Atenção: área proibida a " + arredondar(d) + ".", [300, 150, 300, 150, 300]);
+        mostrar("vermelho pisca", "⛔ ATENÇÃO: área proibida a " + arredondar(d), "A rota " + onde + " (proibida agora)", prox.chave);
+        falarUmaVez("perto" + prox.chave, "Atenção: área proibida a " + arredondar(d) + ".", [300, 150, 300, 150, 300]);
       } else {
-        mostrar("amarelo", "⚠️ ATENÇÃO: em " + arredondar(d) + " a rota " + onde, "Proibida para caminhão agora. Siga as placas.");
-        if (d <= AVISO_PROIB.falarAntes) falarUmaVez("antes" + prox.chave + prox.ini, "Atenção: em " + arredondar(d) + ", a rota " + onde + ", proibida agora.", 200);
+        mostrar("amarelo", "⚠️ ATENÇÃO: em " + arredondar(d) + " a rota " + onde, "Proibida para caminhão agora. Siga as placas.", prox.chave);
+        if (d <= AVISO_PROIB.falarAntes) falarUmaVez("antes" + prox.chave, "Atenção: em " + arredondar(d) + ", a rota " + onde + ", proibida agora.", 200);
       }
       return;
     }
-    if (p.verdeAte && agora < p.verdeAte) { mostrar("verde", "✅ Saiu da área restrita", ""); return; }
-    el.hidden = true;
+    if (p.verdeAte && agora < p.verdeAte) { mostrar("verde", "✅ Saiu da área restrita", "", "saiu"); return; }
+    definirAviso("proib", null);
   }
   /* Diário da viagem: quanto tempo e quantos km passou dentro de área restrita (para o resumo no fim) */
   function registrarRestrito(t, nome, s, agora) {
@@ -3278,7 +3486,8 @@ body { font-size: 16px; }
     var r = estado.rota;
     if (!r) return;
     var rs = r.restrito || { metros: 0, itens: [] };
-    if (!rs.metros && !(r.problemas || []).length) { iniciarNavegacao(); return; }
+    // Rota para sair da zona: é o caminho legal para fora, navega direto (o aviso fixo fica na tela)
+    if (r.saida || (!rs.metros && !(r.problemas || []).length)) { iniciarNavegacao(); return; }
     // Itens: medidos na rota (inclusive saída/destino dentro da área); se a medida não pegou, usa os problemas da conferência
     var itens = rs.itens.length ? rs.itens : r.problemas.map(function (p) { return { tipo: p.tipo, nome: p.area ? CAMADAS[p.tipo].curto : p.nome, metros: p.metros }; });
     var ign = r.ignorar || {};
@@ -3387,7 +3596,7 @@ body { font-size: 16px; }
                    de: estado.A && estado.A.nome || "", para: estado.B && estado.B.nome || "" };
     nav.foraRegistrado = false; nav.ultimoNaRota = null; nav.instrAtual = ""; nav.sAtual = 0; nav.revisarAoParar = false; trilha = [];
     nav.pertoParadoDesde = null; nav.chegadaBloqueada = false; pararContagem();
-    nav.proib = {}; nav.restritoLog = []; document.getElementById("navProibido").hidden = true;
+    nav.proib = {}; nav.restritoLog = []; nav.problemaFalado = ""; nav.saidaFalada = false; nav.foraZonaDesde = null; zerarAvisos();
     centralApp({ acao: "sinal", evento: "viagem", versao: VERSAO_APP }).catch(function () {});   // conta a viagem (sem localização)
     ["telaCadastro", "telaNovidade"].forEach(function (id) { document.getElementById(id).hidden = true; });
     document.getElementById("viagemConcluida").hidden = true;
@@ -3433,7 +3642,7 @@ body { font-size: 16px; }
     limparDestaque();
     mapa.setBearing(0);
     document.body.classList.remove("navegando");
-    ["navTopo", "navBase", "navAlerta", "navFaixa", "navProibido", "btnBussola", "btnCentro", "velocimetro", "navOpcoes", "btnMarcar"].forEach(function (id) { document.getElementById(id).hidden = true; });
+    ["navTopo", "navBase", "navAlerta", "navFaixa", "navProibido", "navSaida", "btnBussola", "btnCentro", "velocimetro", "navOpcoes", "btnMarcar"].forEach(function (id) { document.getElementById(id).hidden = true; });
     function depoisDaViagem() {
       if (automatico) {
         // Encerrou sozinho na chegada: perguntas só se nesta viagem ele marcou problema ou saiu da rota
@@ -3663,7 +3872,7 @@ body { font-size: 16px; }
      - Cada celular ganha um código sorteado (não diz quem é) para contar quantos usam o app.
      - Nome e WhatsApp: só de quem preencher e aceitar. Pede UMA vez; quem pular vê de novo em 7 dias.
      - Novidades: aparece só a mais recente, uma vez, e nunca durante a navegação. */
-  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v33";
+  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v34";
   var CHAVE_CAD = "rotaCaminhaoSP.cadastro", CHAVE_PULOU = "rotaCaminhaoSP.cadastroPulado", CHAVE_VISTAS = "rotaCaminhaoSP.novidadesVistas";
   var aparelhoId = (function () {
     var id = ler("rotaCaminhaoSP.aparelho") || "";
