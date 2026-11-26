@@ -737,7 +737,7 @@ body.navegando .pos-inicio { display: none; }
 .busca-vazio { margin: 0 0 16px; font-size: 14px; color: var(--suave); }
 .busca-dica { margin-top: 6px; }
 .toast {
-  position: fixed; z-index: 3600; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); max-width: calc(100% - 32px);
+  position: fixed; z-index: 3600; left: 50%; top: calc(80px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); max-width: calc(100% - 32px);
   background: var(--asfalto); color: var(--fundo); border-radius: 14px; padding: 12px 18px; font-weight: 600; font-size: 16px; box-shadow: var(--sombra); text-align: center;
 }
 .toast[hidden] { display: none; }
@@ -836,6 +836,76 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
 .menu-grupo.sem-rotulo .menu-conteudo .rotulo { display: none; }
 .menu-conteudo section.chave, .menu-conteudo section.pendente { border: 0; padding: 0; background: transparent; }
 .menu-conteudo .amigo-info { border: 0; padding: 0; }
+
+/* ===== Etapa 5: várias entregas ===== */
+.btn-entregas {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 64px; margin: 0 0 18px; padding: 10px 14px; cursor: pointer; text-align: left;
+  border: 2px solid var(--botao-borda); background: var(--botao-fundo); color: var(--botao-texto); border-radius: 16px;
+  font-family: var(--f-titulo); font-weight: 700; font-size: 20px;
+}
+.btn-entregas > span:first-child { font-size: 28px; }
+.btn-entregas small { display: block; font-family: var(--f-texto); font-weight: 500; font-size: 13px; opacity: .85; }
+.tela-roteiro { z-index: 3150; }
+.rot-cabeca { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.rot-titulo { margin: 2px 0 0; font-family: var(--f-titulo); font-weight: 700; font-size: 22px; line-height: 1.2; }
+.tela-roteiro .busca-topo .ponto { flex: none; }
+.tela-roteiro.com-sugestoes .rot-rodape { display: none; }
+.rot-lista { list-style: none; margin: 0 0 14px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.rot-item { display: flex; align-items: center; gap: 10px; background: var(--papel); border: 1px solid var(--linha); border-radius: 14px; padding: 8px; }
+.rot-item.proxima { border: 2px solid var(--rota); }
+.rot-num {
+  flex: none; width: 44px; height: 44px; border-radius: 50%; border: 0; cursor: pointer;
+  background: var(--asfalto); color: var(--fundo); font-family: var(--f-titulo); font-weight: 700; font-size: 19px;
+}
+.rot-item.feita .rot-num { background: var(--liberado); color: #fff; }
+.rot-item.feita .rot-txt { opacity: .55; text-decoration: line-through; }
+.rot-txt { flex: 1; min-width: 0; }
+.rot-txt strong { display: block; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rot-txt small { display: block; font-size: 13px; color: var(--suave); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rot-acoes { flex: none; display: flex; gap: 4px; }
+.rot-acoes button {
+  width: 40px; height: 44px; border-radius: 10px; border: 1px solid var(--linha); background: var(--fundo); color: var(--asfalto);
+  font-size: 18px; cursor: pointer;
+}
+.rot-acoes button:disabled { opacity: .3; cursor: default; }
+.rot-vazio { color: var(--suave); font-size: 15px; padding: 10px 2px; }
+.rot-limpar { display: flex; justify-content: flex-end; }
+.rot-voltar { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 600; min-height: 48px; }
+.rot-voltar input { width: 24px; height: 24px; }
+.rot-rodape {
+  display: flex; flex-direction: column; gap: 8px; background: var(--papel); box-shadow: 0 -2px 10px rgba(0,0,0,.12);
+  padding: 10px max(14px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px));
+}
+.rot-rodape .fim-btn:disabled { opacity: .5; cursor: default; }
+@media (min-width: 700px) { .rot-rodape { align-items: center; } .rot-rodape .fim-btn { max-width: 620px; } }
+/* Aviso de novidade: número vermelho no ☰, no item Novidades e botão redondo 📢 na tela inicial */
+.btn-menu { position: relative; }
+.selo-num {
+  position: absolute; top: -3px; right: -3px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px;
+  background: #d50000; color: #fff; border: 2px solid #fff; font-family: var(--f-texto); font-weight: 700; font-size: 12px; line-height: 18px; text-align: center;
+}
+.selo-num[hidden] { display: none; }
+.menu-item .selo-num { position: static; margin-left: auto; border: 0; height: 24px; line-height: 24px; font-size: 13px; }
+.btn-novidade {
+  position: absolute; z-index: 1050; right: max(12px, env(safe-area-inset-right, 0px));
+  bottom: calc(var(--alt-base, 150px) + 80px + env(safe-area-inset-bottom, 0px));
+  width: 56px; height: 56px; border-radius: 50%; border: 0; cursor: pointer; align-items: center; justify-content: center;
+  background: var(--aviso); color: var(--aviso-texto); box-shadow: var(--sombra); font-size: 26px; line-height: 1;
+  animation: chamaNovidade 1.6s ease-in-out 3;
+}
+@keyframes chamaNovidade { 50% { transform: scale(1.12); } }
+@media (prefers-reduced-motion: reduce) { .btn-novidade { animation: none; } }
+.ini-roteiro { display: flex; gap: 8px; }
+.ini-roteiro[hidden] { display: none; }
+.ini-rot-ir {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; min-height: 58px; padding: 6px 14px 6px 8px; border: 0; border-radius: 16px; cursor: pointer;
+  background: var(--rota); color: #fff; text-align: left; font-size: 20px;
+}
+.ini-rot-num { flex: none; min-width: 44px; height: 44px; padding: 0 6px; border-radius: 12px; background: rgba(255,255,255,.2); display: grid; place-items: center; font-family: var(--f-titulo); font-weight: 700; font-size: 17px; }
+.ini-rot-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.ini-rot-txt small { font-size: 12px; opacity: .85; }
+.ini-rot-txt strong { font-family: var(--f-titulo); font-size: 19px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ini-rot-ver { flex: none; width: 58px; border-radius: 16px; border: 1px solid var(--linha); background: var(--papel); font-size: 24px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -871,12 +941,17 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
 
     <!-- ===== Tela inicial: mapa limpo, "Para onde?" e atalhos ===== -->
     <div class="ini-topo ini-so">
-      <button class="btn-menu" type="button" id="btnMenu" aria-label="Abrir o menu" aria-haspopup="dialog" aria-controls="menuFundo"><span aria-hidden="true">☰</span></button>
+      <button class="btn-menu" type="button" id="btnMenu" aria-label="Abrir o menu" aria-haspopup="dialog" aria-controls="menuFundo"><span aria-hidden="true">☰</span><span class="selo-num" id="seloMenu" hidden>1</span></button>
       <div class="ini-marca"><strong><span aria-hidden="true">🚚</span> Rota Liberada</strong><span class="selo-piloto">Teste piloto</span></div>
     </div>
+    <button class="btn-novidade ini-so" type="button" id="btnNovidadeIni" hidden aria-label="Tem novidade do Rota Liberada: toque para ver"><span aria-hidden="true">📢</span><span class="selo-num" aria-hidden="true">1</span></button>
     <button class="btn-minhapos ini-so" type="button" id="btnMinhaPos" aria-label="Mostrar minha posição no mapa"><span aria-hidden="true">◎</span></button>
     <div class="ini-base ini-so" id="iniBase">
       <div id="iniPendentes"></div>
+      <div class="ini-roteiro" id="iniRoteiro" hidden>
+        <button type="button" class="ini-rot-ir" id="btnRotProxima"><span class="ini-rot-num" id="iniRotNum">1/3</span><span class="ini-rot-txt"><small>Próxima entrega</small><strong id="iniRotNome"></strong></span><span aria-hidden="true">➜</span></button>
+        <button type="button" class="ini-rot-ver" id="btnRotVer" aria-label="Ver o roteiro de entregas">📦</button>
+      </div>
       <button class="barra-destino" type="button" id="btnParaOnde"><span class="lupa" aria-hidden="true">🔍</span>Para onde?</button>
       <div class="atalhos" id="iniAtalhos"></div>
     </div>
@@ -1207,6 +1282,7 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
     </div>
   </div>
   <div class="busca-corpo" id="buscaCorpo">
+    <button type="button" class="btn-entregas" id="btnAbrirRoteiro"><span aria-hidden="true">📦</span><span>Várias entregas<small>Monte o roteiro com todas as paradas do dia</small></span></button>
     <p class="busca-rotulo">Favoritos</p>
     <div class="busca-favs" id="buscaFavs"></div>
     <p class="busca-rotulo">Buscas recentes</p>
@@ -1214,6 +1290,33 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
     <p class="nota busca-dica">Dica: no mapa, segure o dedo num ponto e escolha "Ir para cá" (bom para condomínio, galpão, doca).</p>
   </div>
 </div>
+<!-- ===== Etapa 5: roteirizador de várias entregas ===== -->
+<div class="tela-busca tela-roteiro" id="telaRoteiro" role="dialog" aria-modal="true" aria-labelledby="rotTitulo" hidden>
+  <div class="busca-topo">
+    <button class="btn-voltar" type="button" id="btnVoltarRoteiro" aria-label="Voltar">←</button>
+    <div class="rot-cabeca">
+      <p class="rot-titulo" id="rotTitulo">📦 Várias entregas</p>
+      <div class="ponto" id="pontoParada">
+        <div class="ponto-cabeca">
+          <input class="campo-texto campo-busca" id="txtParada" type="search" enterkeyhint="search" placeholder="Adicionar entrega: endereço ou CEP" autocomplete="off" aria-label="Adicionar entrega: rua e número, ou CEP e número">
+        </div>
+        <ul class="sugestoes" id="sugParada" hidden></ul>
+      </div>
+    </div>
+  </div>
+  <div class="busca-corpo" id="roteiroCorpo">
+    <div class="busca-favs" id="rotRapidos"></div>
+    <p class="busca-rotulo" id="rotContagem">Entregas</p>
+    <ol class="rot-lista" id="rotLista"></ol>
+    <label class="rot-voltar"><input type="checkbox" id="rotVoltar"> Voltar para o ponto de saída no fim</label>
+    <p class="nota" id="rotNota"></p>
+  </div>
+  <div class="rot-rodape">
+    <button type="button" class="fim-btn fim-secundario" id="btnRotOrdem">🔀 Organizar a melhor ordem</button>
+    <button type="button" class="fim-btn fim-principal" id="btnRotComecar">▶ Começar entregas</button>
+  </div>
+</div>
+
 <div class="toast" id="toast" role="status" hidden></div>
 
 <!-- ===== Fim de viagem ===== -->
@@ -1230,6 +1333,7 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
     <p class="fim-nota" id="fimNota"></p>
     <button type="button" class="fim-btn fim-secundario" id="btnFimFav">☆ Salvar este destino nos favoritos</button>
     <button type="button" class="fim-btn fim-secundario" id="btnFimVolta">↩️ Voltar para a saída</button>
+    <button type="button" class="fim-btn fim-principal fim-proxima" id="btnFimProxima" hidden></button>
     <button type="button" class="fim-btn fim-principal" id="btnFimInicio">Pronto</button>
   </div>
 </div>
@@ -2025,6 +2129,7 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
     }
     function irPara(lat, lon, nome, extra) {
       if (letra === "Busca") { lista.hidden = true; escolheuNaBusca(lat, lon, nome, extra); return; }   // tela de busca: vira o destino (B)
+      if (letra === "Parada") { lista.hidden = true; campo.value = ""; adicionarParada(lat, lon, nome, extra); return; }   // roteiro de entregas
       definirPonto(letra, lat, lon, nome, extra);
       lista.hidden = true;
       mapa.setView([lat, lon], Math.max(mapa.getZoom(), 16));
@@ -2139,7 +2244,7 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
     });
     document.addEventListener("click", function (ev) { if (!document.getElementById("ponto" + letra).contains(ev.target)) lista.hidden = true; });
   }
-  configurarBusca("A"); configurarBusca("B"); configurarBusca("Busca");
+  configurarBusca("A"); configurarBusca("B"); configurarBusca("Busca"); configurarBusca("Parada");
 
   /* ---------- Pontos A e B ---------- */
   var marcadores = { A: null, B: null };
@@ -4318,7 +4423,7 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
      - Cada celular ganha um código sorteado (não diz quem é) para contar quantos usam o app.
      - Nome e WhatsApp: só de quem preencher e aceitar. Pede UMA vez; quem pular vê de novo em 7 dias.
      - Novidades: aparece só a mais recente, uma vez, e nunca durante a navegação. */
-  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v40";
+  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v41";
   var CHAVE_CAD = "rotaCaminhaoSP.cadastro", CHAVE_PULOU = "rotaCaminhaoSP.cadastroPulado", CHAVE_VISTAS = "rotaCaminhaoSP.novidadesVistas";
   var aparelhoId = (function () {
     var id = ler("rotaCaminhaoSP.aparelho") || "";
@@ -4441,6 +4546,7 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
     gravar(CHAVE_VISTAS, JSON.stringify(vistas.slice(-30)));
     novidadesNaTela = [];
     document.getElementById("telaNovidade").hidden = true;
+    atualizarSeloNovidade();
     setTimeout(proximaJanela, 300);
   });
   document.getElementById("btnNovidades").addEventListener("click", function () {
@@ -4459,11 +4565,32 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
   // Sinal de "abri o app": conta o uso e traz a novidade mais recente
   centralApp({ acao: "sinal", evento: "abriu", versao: VERSAO_APP }).then(function (j) {
     novidadePendente = j.novidade || null;
+    atualizarSeloNovidade();
     var c = cadastroLocal();
     if (c && !c.enviado) enviarCadastro(c).catch(function () {});   // cadastro feito sem internet: envia agora
     proximaJanela();
   }).catch(function () {});
   setTimeout(proximaJanela, 900);   // sem internet: o cadastro aparece assim mesmo
+
+  /* Aviso de novidade não lida: número no ☰ e no item Novidades, e botão 📢 na tela inicial.
+     Some quando o motorista abre a novidade e toca em "Entendi". */
+  function atualizarSeloNovidade() {
+    var vistas = lerJsonLocal(CHAVE_VISTAS, []), tem = !!(novidadePendente && vistas.indexOf(novidadePendente.id) < 0);
+    document.getElementById("seloMenu").hidden = !tem;
+    document.getElementById("btnNovidadeIni").hidden = !tem;
+    var bn = document.getElementById("btnNovidades"), s = document.getElementById("seloNovMenu");
+    if (!s) { s = document.createElement("span"); s.id = "seloNovMenu"; s.className = "selo-num"; s.textContent = "1"; s.setAttribute("aria-label", "1 novidade"); bn.appendChild(s); }
+    s.hidden = !tem;
+  }
+  document.getElementById("btnNovidadeIni").addEventListener("click", function () { document.getElementById("btnNovidades").click(); });
+  // Confere de novo a cada 20 minutos com o app aberto (fora da navegação)
+  setInterval(function () {
+    if (nav.ativo || document.hidden) return;
+    centralApp({ acao: "novidades" }).then(function (j) {
+      var l = j.lista || [];
+      if (l[0]) { novidadePendente = l[0]; atualizarSeloNovidade(); }
+    }).catch(function () {});
+  }, 20 * 60 * 1000);
 
 
   /* ================= Tempo de chegada mais realista (sem trânsito ao vivo) ================= */
@@ -4801,6 +4928,8 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
       el("btnFimFav").textContent = "☆ Salvar este destino nos favoritos";
       pontoVolta = estado.A ? { lat: estado.A.lat, lon: estado.A.lon, nome: estado.A.nome === "Minha localização" ? "Onde a viagem começou" : estado.A.nome } : null;
       el("btnFimVolta").hidden = !pontoVolta || !chegou;
+      el("btnFimInicio").textContent = "Pronto"; el("btnFimInicio").className = "fim-btn fim-principal";
+      prepararFimRoteiro(chegou);   // roteiro de entregas: mostra a próxima
       fim.hidden = false;
       el("btnFimInicio").focus();
     }
@@ -4825,6 +4954,186 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
       tracarAteDestino();
     });
   })();
+
+  /* ===== Etapa 5: roteirizador de várias entregas =====
+     Guarda a lista no aparelho. A ordem é organizada pela distância no mapa (sem gastar pedidos de rota);
+     cada trecho é traçado normalmente, com todas as restrições do caminhão. */
+  var CHAVE_ROT = "rotaCaminhaoSP.roteiro", MAX_PARADAS = 25, telaRoteiro = el("telaRoteiro");
+  function lerRoteiro() {
+    try { var r = JSON.parse(ler(CHAVE_ROT) || "null"); if (r && Array.isArray(r.paradas)) return r; } catch (e) {}
+    return { paradas: [], voltar: false, origem: null, ativo: false, atual: -1, voltando: false };
+  }
+  function gravarRoteiro(r) { gravar(CHAVE_ROT, JSON.stringify(r)); desenharRoteiro(); atualizarBannerRoteiro(); }
+  function proximaParada(r) { for (var i = 0; i < r.paradas.length; i++) if (!r.paradas[i].feita) return i; return -1; }
+  function perto(a, b) { return a && b && Math.abs(a.lat - b.lat) < 0.0004 && Math.abs(a.lon - b.lon) < 0.0004; }
+  function nomeCurto(n) { return (n || "").split(" – ")[0]; }
+  function adicionarParada(lat, lon, nome, extra) {
+    var r = lerRoteiro();
+    if (r.paradas.length >= MAX_PARADAS) { avisoRapido("Máximo de " + MAX_PARADAS + " entregas por roteiro."); return; }
+    if (r.paradas.some(function (p) { return !p.feita && perto(p, { lat: lat, lon: lon }); })) { avisoRapido("Essa entrega já está na lista."); return; }
+    r.paradas.push({ id: Date.now().toString(36), nome: nome || "Ponto no mapa", lat: lat, lon: lon, aprox: !!(extra && extra.aproximado), feita: false });
+    gravarRoteiro(r);
+    avisoRapido("➕ " + nomeCurto(nome) + " adicionada (" + r.paradas.length + ")");
+    el("txtParada").focus();
+  }
+  function desenharRoteiro() {
+    var r = lerRoteiro(), ul = el("rotLista"), n = r.paradas.length, feitas = r.paradas.filter(function (p) { return p.feita; }).length;
+    var prox = proximaParada(r);
+    el("rotContagem").textContent = n ? "Entregas: " + n + (feitas ? " · " + feitas + " feita" + (feitas > 1 ? "s" : "") : "") : "Entregas";
+    el("rotVoltar").checked = !!r.voltar;
+    ul.innerHTML = "";
+    if (!n) ul.innerHTML = '<li class="rot-vazio">Digite os endereços acima, um de cada vez. Também dá para tocar nos favoritos e nos destinos recentes.</li>';
+    r.paradas.forEach(function (p, i) {
+      var li = document.createElement("li"), partes = p.nome.split(" – ");
+      li.className = "rot-item" + (p.feita ? " feita" : "") + (i === prox && r.ativo ? " proxima" : "");
+      li.innerHTML = '<button type="button" class="rot-num" aria-label="' + (p.feita ? "Desmarcar entrega feita" : "Marcar como entregue") + '">' + (p.feita ? "✓" : (i + 1)) + '</button>' +
+        '<span class="rot-txt"><strong></strong><small></small></span>' +
+        '<span class="rot-acoes"><button type="button" data-a="sobe" aria-label="Subir"' + (i === 0 ? " disabled" : "") + '>↑</button>' +
+        '<button type="button" data-a="desce" aria-label="Descer"' + (i === n - 1 ? " disabled" : "") + '>↓</button>' +
+        '<button type="button" data-a="tira" aria-label="Tirar da lista">✕</button></span>';
+      li.querySelector("strong").textContent = partes[0];
+      li.querySelector("small").textContent = [i === prox && r.ativo ? "Próxima" : "", partes.slice(1).join(" – "), p.aprox ? "número aproximado" : ""].filter(Boolean).join(" · ");
+      li.querySelector(".rot-num").addEventListener("click", function () { var x = lerRoteiro(); x.paradas[i].feita = !x.paradas[i].feita; gravarRoteiro(x); });
+      li.querySelector(".rot-acoes").addEventListener("click", function (ev) {
+        var b = ev.target.closest("button"); if (!b || b.disabled) return;
+        var x = lerRoteiro(), a = b.getAttribute("data-a"), item = x.paradas.splice(i, 1)[0];
+        if (a === "sobe") x.paradas.splice(i - 1, 0, item);
+        else if (a === "desce") x.paradas.splice(i + 1, 0, item);
+        gravarRoteiro(x);
+      });
+      ul.appendChild(li);
+    });
+    if (n) {
+      var lim = document.createElement("li"); lim.className = "rot-limpar";
+      lim.innerHTML = '<button type="button" class="btn-pequeno">🗑️ Apagar o roteiro</button>';
+      lim.querySelector("button").addEventListener("click", function () {
+        if (!window.confirm("Apagar todas as entregas desta lista?")) return;
+        gravarRoteiro({ paradas: [], voltar: lerRoteiro().voltar, origem: null, ativo: false, atual: -1, voltando: false });
+      });
+      ul.appendChild(lim);
+    }
+    var pend = n - feitas;
+    el("btnRotOrdem").disabled = pend < 2;
+    el("btnRotComecar").disabled = !pend;
+    el("btnRotComecar").textContent = !n ? "Adicione as entregas" : !pend ? "Todas as entregas feitas ✓" : (r.ativo && feitas ? "▶ Continuar: próxima entrega" : "▶ Começar entregas");
+    el("rotNota").textContent = n > 1 ? "A melhor ordem é organizada pela distância no mapa, a partir de onde você está. Cada trecho é traçado respeitando as restrições do caminhão no horário." : "";
+    // Atalhos: favoritos e recentes que ainda não estão na lista
+    var cx = el("rotRapidos"); cx.innerHTML = "";
+    var vistos = [];
+    lerFavoritos().concat(lerRecentes()).forEach(function (f) {
+      if (vistos.length >= 6 || r.paradas.some(function (p) { return !p.feita && perto(p, f); }) || vistos.some(function (v) { return perto(v, f); })) return;
+      vistos.push(f);
+      var b = document.createElement("button"); b.type = "button"; b.className = "atalho";
+      b.innerHTML = '<span aria-hidden="true">+</span><span></span>'; b.lastChild.textContent = nomeCurto(f.nome);
+      b.addEventListener("click", function () { adicionarParada(f.lat, f.lon, f.nome, { aproximado: f.aprox }); });
+      cx.appendChild(b);
+    });
+  }
+  // Melhor ordem: vizinho mais próximo + troca de trechos (2-opt), pela distância em linha reta
+  function organizarOrdem() {
+    var r = lerRoteiro(), feitas = r.paradas.filter(function (p) { return p.feita; }), pend = r.paradas.filter(function (p) { return !p.feita; });
+    if (pend.length < 2) return;
+    var ori = posInicio ? posInicio.getLatLng() : null, inicio = ori ? { lat: ori.lat, lon: ori.lng } : (r.origem || null);
+    function d(a, b) { var p = xy(a.lon, a.lat), q = xy(b.lon, b.lat); return Math.hypot(p[0] - q[0], p[1] - q[1]); }
+    function custo(l) {
+      var c = 0, prev = inicio;
+      l.forEach(function (p) { if (prev) c += d(prev, p); prev = p; });
+      if (r.voltar && inicio) c += d(prev, inicio);
+      return c;
+    }
+    var antes = custo(pend), resto = pend.slice(), ordem = [], atual = inicio || resto.shift();
+    if (!inicio) ordem.push(atual);
+    while (resto.length) {
+      var mi = 0; for (var k = 1; k < resto.length; k++) if (d(atual, resto[k]) < d(atual, resto[mi])) mi = k;
+      atual = resto.splice(mi, 1)[0]; ordem.push(atual);
+    }
+    var melhorou = true, voltas = 0;
+    while (melhorou && voltas++ < 60) {
+      melhorou = false;
+      for (var i = 0; i < ordem.length - 1; i++) for (var j = i + 1; j < ordem.length; j++) {
+        var nova = ordem.slice(0, i).concat(ordem.slice(i, j + 1).reverse(), ordem.slice(j + 1));
+        if (custo(nova) < custo(ordem) - 1) { ordem = nova; melhorou = true; }
+      }
+    }
+    if (custo(ordem) > antes) ordem = pend;   // nunca piora a ordem que já estava
+    r.paradas = feitas.concat(ordem);
+    gravarRoteiro(r);
+    var ganho = (antes - custo(ordem)) / 1000;
+    avisoRapido(ganho >= 0.5 ? "🔀 Ordem organizada: cerca de " + ganho.toFixed(1).replace(".", ",") + " km a menos (em linha reta)" : "🔀 A ordem já estava boa.");
+  }
+  function irParaProxima() {
+    var r = lerRoteiro(), i = proximaParada(r), p;
+    if (!r.origem && posInicio) { var o = posInicio.getLatLng(); r.origem = { lat: o.lat, lon: o.lng }; }
+    if (i < 0) {
+      if (!(r.voltar && r.origem)) { avisoRapido("Todas as entregas foram feitas."); return; }
+      r.voltando = true; p = { lat: r.origem.lat, lon: r.origem.lon, nome: "Volta para a saída" };
+    } else { p = r.paradas[i]; r.voltando = false; }
+    r.ativo = true; r.atual = i;
+    gravar(CHAVE_ROT, JSON.stringify(r)); atualizarBannerRoteiro();
+    telaRoteiro.hidden = true; telaBusca.hidden = true; el("fimViagem").hidden = true;
+    estado.A = null; el("txtA").value = "";   // cada trecho sai de onde o motorista está
+    definirPonto("B", p.lat, p.lon, p.nome, { aproximado: p.aprox });
+    mapa.setView([p.lat, p.lon], Math.max(mapa.getZoom(), 15));
+    tracarAteDestino();
+  }
+  function atualizarBannerRoteiro() {
+    var r = lerRoteiro(), i = proximaParada(r), b = el("iniRoteiro");
+    var mostra = r.ativo && (i >= 0 || (r.voltar && r.origem));
+    b.hidden = !mostra;
+    if (mostra) {
+      el("iniRotNum").textContent = i >= 0 ? (i + 1) + "/" + r.paradas.length : "↩️";
+      el("iniRotNome").textContent = i >= 0 ? nomeCurto(r.paradas[i].nome) : "Voltar para a saída";
+    }
+    if (document.body.classList.contains("modo-inicio")) medirBase();
+  }
+  // Chamado pela tela de fim de viagem
+  function prepararFimRoteiro(chegou) {
+    var r = lerRoteiro(), bp = el("btnFimProxima");
+    bp.hidden = true;
+    if (!r.ativo) return;
+    var cur = r.atual >= 0 ? r.paradas[r.atual] : null;
+    if (chegou && r.voltando) { r.ativo = false; r.voltando = false; gravarRoteiro(r); el("fimNota").textContent += " · 🎉 Roteiro concluído!"; return; }
+    if (chegou && cur && perto(cur, estado.B)) cur.feita = true;
+    gravarRoteiro(r);
+    el("btnFimVolta").hidden = true;
+    var i = proximaParada(r), feitas = r.paradas.filter(function (p) { return p.feita; }).length;
+    if (i >= 0) {
+      bp.textContent = "📦 " + (chegou ? "Próxima: " : "Continuar: ") + nomeCurto(r.paradas[i].nome) + " (" + (i + 1) + "/" + r.paradas.length + ")";
+      bp.hidden = false; el("btnFimInicio").textContent = "Parar por aqui"; el("btnFimInicio").className = "fim-btn fim-secundario";
+      el("fimNota").textContent += " · " + feitas + " de " + r.paradas.length + " entregas feitas";
+    } else if (r.voltar && r.origem) {
+      bp.textContent = "↩️ Voltar para a saída"; bp.hidden = false; el("btnFimInicio").textContent = "Parar por aqui"; el("btnFimInicio").className = "fim-btn fim-secundario";
+      el("fimNota").textContent += " · 🎉 Todas as entregas feitas!";
+    } else {
+      r.ativo = false; gravarRoteiro(r);
+      el("fimNota").textContent += " · 🎉 Todas as " + r.paradas.length + " entregas feitas!";
+    }
+  }
+  function abrirRoteiro() {
+    if (nav.ativo) return;
+    telaBusca.hidden = true; menuFundo.hidden = true;
+    desenharRoteiro();
+    telaRoteiro.hidden = false;
+    if (!lerRoteiro().paradas.length) el("txtParada").focus();
+  }
+  function fecharRoteiro() { telaRoteiro.hidden = true; el("sugParada").hidden = true; fecharBusca(); }
+  new MutationObserver(function () { telaRoteiro.classList.toggle("com-sugestoes", !el("sugParada").hidden); })
+    .observe(el("sugParada"), { attributes: true, attributeFilter: ["hidden"] });
+  el("btnAbrirRoteiro").addEventListener("click", abrirRoteiro);
+  el("btnVoltarRoteiro").addEventListener("click", fecharRoteiro);
+  el("btnRotOrdem").addEventListener("click", organizarOrdem);
+  el("btnRotComecar").addEventListener("click", irParaProxima);
+  el("rotVoltar").addEventListener("change", function () { var r = lerRoteiro(); r.voltar = this.checked; gravarRoteiro(r); });
+  el("btnRotProxima").addEventListener("click", irParaProxima);
+  el("btnRotVer").addEventListener("click", abrirRoteiro);
+  el("btnFimProxima").addEventListener("click", irParaProxima);
+  (function () {   // item no menu ☰
+    var b = document.createElement("button"); b.type = "button"; b.className = "menu-item";
+    b.innerHTML = '<span class="mi-icone" aria-hidden="true">📦</span><span class="mi-texto">Várias entregas<small>Roteiro com todas as paradas do dia</small></span>';
+    b.addEventListener("click", abrirRoteiro);
+    el("menuCorpo").insertBefore(b, el("secVeiculo"));
+  })();
+  atualizarBannerRoteiro();
 
   /* ===== Etapa 2: tela de escolha da rota =====
      Com a rota pronta, o formulário A/B some e fica só o resumo "De / Para" (botão Alterar abre de novo). */
