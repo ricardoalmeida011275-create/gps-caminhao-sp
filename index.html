@@ -563,6 +563,140 @@ body { font-size: 16px; }
 
 /* Títulos de cada parte do painel: mais fortes, com a faixa amarela de placa */
 .rotulo { color: var(--asfalto); font-size: 15px; font-weight: 700; border-left: 4px solid var(--aviso); padding-left: 8px; }
+
+/* ===== Etapa 1: tela inicial limpa, menu ☰ e tela de busca ===== */
+:root { --sombra: 0 6px 22px rgba(0,0,0,.22); --vidro: rgba(255,255,255,.96); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --sombra: 0 6px 22px rgba(0,0,0,.55); --vidro: rgba(29,43,58,.97); } }
+:root[data-theme="dark"] { --sombra: 0 6px 22px rgba(0,0,0,.55); --vidro: rgba(29,43,58,.97); }
+.ini-so { display: none; }
+body.modo-inicio .ini-so { display: flex; }
+body.modo-inicio .painel, body.modo-busca .painel,
+body.modo-inicio .aviso, body.modo-busca .aviso,
+body.modo-inicio .leaflet-control-zoom, body.modo-busca .leaflet-control-zoom { display: none; }
+body.navegando .ini-so { display: none !important; }
+body.modo-inicio .leaflet-bottom.leaflet-right { bottom: calc(var(--alt-base, 150px) + env(safe-area-inset-bottom, 0px)); }
+.ini-topo {
+  position: absolute; z-index: 1050; top: max(12px, env(safe-area-inset-top, 0px)); left: max(12px, env(safe-area-inset-left, 0px));
+  align-items: center; gap: 10px; pointer-events: none;
+}
+.ini-topo > * { pointer-events: auto; }
+.btn-menu {
+  width: 56px; height: 56px; border-radius: 50%; border: 0; cursor: pointer; display: grid; place-items: center;
+  background: var(--vidro); color: var(--asfalto); box-shadow: var(--sombra); font-size: 26px; line-height: 1;
+}
+.btn-menu:active, .btn-minhapos:active, .barra-destino:active, .atalho:active { transform: scale(.97); }
+.selo-piloto {
+  font-family: var(--f-titulo); font-weight: 700; font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+  background: var(--aviso); color: var(--aviso-texto); border-radius: 999px; padding: 3px 9px; opacity: .9; box-shadow: 0 2px 6px rgba(0,0,0,.15);
+}
+.btn-minhapos {
+  position: absolute; z-index: 1050; right: max(12px, env(safe-area-inset-right, 0px));
+  bottom: calc(var(--alt-base, 150px) + 12px + env(safe-area-inset-bottom, 0px));
+  width: 56px; height: 56px; border-radius: 50%; border: 0; cursor: pointer; align-items: center; justify-content: center;
+  background: var(--vidro); color: var(--rota); box-shadow: var(--sombra); font-size: 30px; line-height: 1;
+}
+.ini-base {
+  position: absolute; z-index: 1050; left: 0; right: 0; bottom: 0; flex-direction: column; gap: 10px;
+  padding: 14px max(14px, env(safe-area-inset-right, 0px)) max(14px, env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px));
+  background: var(--vidro); border-radius: 22px 22px 0 0; box-shadow: 0 -4px 22px rgba(0,0,0,.18);
+}
+@media (min-width: 700px) { .ini-base { left: 50%; right: auto; width: 560px; transform: translateX(-50%); } }
+.ini-base .btn-pendentes { margin: 0; width: 100%; }
+#iniPendentes:empty { display: none; }
+.barra-destino {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 64px; border: 0; border-radius: 16px; cursor: pointer;
+  padding: 0 18px; background: var(--fundo); color: var(--asfalto); text-align: left;
+  font-family: var(--f-titulo); font-weight: 700; font-size: 24px; letter-spacing: .01em;
+  box-shadow: inset 0 0 0 1px var(--linha);
+}
+.barra-destino .lupa { font-size: 22px; }
+.atalhos { display: flex; gap: 8px; }
+.atalhos:empty { display: none; }
+.atalho {
+  flex: 1 1 0; min-width: 0; min-height: 54px; display: flex; align-items: center; justify-content: center; gap: 6px;
+  border: 1px solid var(--linha); background: var(--papel); color: var(--asfalto); border-radius: 14px; cursor: pointer; padding: 6px 10px;
+  font-family: var(--f-titulo); font-weight: 700; font-size: 18px;
+}
+.atalho span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.pos-inicio { width: 22px; height: 22px; border-radius: 50%; background: #1a73e8; border: 3px solid #fff; box-shadow: 0 0 0 6px rgba(26,115,232,.22), 0 2px 6px rgba(0,0,0,.35); }
+body.navegando .pos-inicio { display: none; }
+/* Botão ✕ do painel da rota (volta para a tela inicial) */
+.btn-inicio {
+  flex: none; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--linha); background: var(--fundo); color: var(--asfalto);
+  font-size: 20px; line-height: 1; cursor: pointer;
+}
+.painel-topo .marca { margin-right: auto; }
+/* Menu ☰ */
+.menu-fundo { position: fixed; inset: 0; z-index: 3200; background: rgba(0,0,0,.45); display: flex; }
+.menu-fundo[hidden] { display: none; }
+.menu {
+  width: min(420px, 92vw); height: 100%; background: var(--fundo); color: var(--asfalto); display: flex; flex-direction: column;
+  box-shadow: 6px 0 24px rgba(0,0,0,.3); animation: entrarMenu .22s ease-out;
+}
+@keyframes entrarMenu { from { transform: translateX(-30px); opacity: .4; } }
+@media (prefers-reduced-motion: reduce) { .menu { animation: none; } }
+.menu-topo {
+  display: flex; align-items: flex-start; gap: 10px; background: var(--papel); border-bottom: 1px solid var(--linha);
+  padding: max(14px, env(safe-area-inset-top, 0px)) 14px 12px max(16px, env(safe-area-inset-left, 0px));
+}
+.menu-titulo { margin: 0 auto 0 0; font-family: var(--f-titulo); font-weight: 700; font-size: 22px; line-height: 1.1; }
+.menu-titulo small { display: block; font-family: var(--f-texto); font-weight: 500; font-size: 13px; color: var(--suave); margin-top: 2px; }
+.btn-fechar-menu { flex: none; width: 48px; height: 48px; border-radius: 50%; border: 1px solid var(--linha); background: var(--fundo); color: var(--asfalto); font-size: 22px; cursor: pointer; }
+.menu-atalhos { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px 4px; }
+.menu-item {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; text-align: left; cursor: pointer;
+  border: 1px solid var(--linha); background: var(--papel); color: var(--asfalto); border-radius: 14px; padding: 8px 14px;
+  font-family: var(--f-titulo); font-weight: 700; font-size: 19px;
+}
+.menu-item span { font-size: 22px; width: 28px; text-align: center; }
+.menu-corpo {
+  flex: 1; overflow-y: auto; min-height: 0; display: flex; flex-direction: column; gap: 18px;
+  padding: 12px max(16px, env(safe-area-inset-right, 0px)) max(20px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+.menu-corpo .btn-pendentes, .menu-corpo .painel-extras, .menu-corpo .btn-tempos { margin-bottom: 0; }
+.menu-aviso { margin: 0; font-size: 13px; color: var(--suave); border-left: 4px solid var(--aviso); padding: 4px 0 4px 10px; }
+.destaque-sec { animation: piscaSec 1.2s ease-out; border-radius: 10px; }
+@keyframes piscaSec { 0% { box-shadow: 0 0 0 4px var(--aviso); } 100% { box-shadow: 0 0 0 0 transparent; } }
+/* Tela de busca */
+.tela-busca { position: fixed; inset: 0; z-index: 3100; background: var(--fundo); color: var(--asfalto); display: flex; flex-direction: column; }
+.tela-busca[hidden] { display: none; }
+.busca-topo {
+  display: flex; align-items: flex-start; gap: 8px; background: var(--papel); box-shadow: 0 2px 10px rgba(0,0,0,.12);
+  padding: max(10px, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) 10px max(8px, env(safe-area-inset-left, 0px));
+}
+.btn-voltar {
+  flex: none; width: 52px; height: 56px; border: 0; background: transparent; color: var(--asfalto); font-size: 30px; line-height: 1; cursor: pointer; border-radius: 12px;
+}
+.busca-topo .ponto { flex: 1; min-width: 0; position: static; }
+.campo-busca { width: 100%; min-height: 56px; font-size: 19px; border-radius: 14px; border: 2px solid var(--rota); background: var(--fundo); padding: 10px 14px; }
+.campo-busca.com-mic { padding-right: 54px; }
+.tela-busca .btn-mic { width: 46px; height: 46px; right: 5px; }
+.tela-busca .sugestoes { position: static; margin-top: 8px; max-height: calc(100vh - 110px); box-shadow: none; border-radius: 14px; }
+.tela-busca .sugestoes button { min-height: 52px; font-size: 16px; padding: 10px 12px; }
+.tela-busca .sugestoes small { font-size: 13px; }
+.busca-corpo { flex: 1; overflow-y: auto; min-height: 0; padding: 14px max(16px, env(safe-area-inset-right, 0px)) max(20px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.tela-busca.com-sugestoes .busca-corpo { display: none; }
+.busca-topo, .busca-corpo { width: 100%; }
+@media (min-width: 700px) { .busca-corpo > *, .busca-topo > .ponto { max-width: 620px; } }
+.busca-rotulo { margin: 4px 0 8px; font-family: var(--f-titulo); font-weight: 700; font-size: 14px; letter-spacing: .08em; text-transform: uppercase; color: var(--suave); }
+.busca-favs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.busca-favs .atalho { flex: 0 1 auto; max-width: 100%; }
+.busca-recentes { list-style: none; margin: 0 0 14px; padding: 0; background: var(--papel); border: 1px solid var(--linha); border-radius: 14px; overflow: hidden; }
+.busca-recentes li + li { border-top: 1px solid var(--linha); }
+.busca-recentes button {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 60px; padding: 8px 14px; border: 0; background: transparent;
+  color: var(--asfalto); text-align: left; cursor: pointer; font-size: 16px;
+}
+.busca-recentes button > span:first-child { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--fundo); font-size: 17px; }
+.busca-recentes strong { display: block; font-weight: 600; }
+.busca-recentes small { display: block; color: var(--suave); font-size: 13px; }
+.busca-vazio { margin: 0 0 16px; font-size: 14px; color: var(--suave); }
+.busca-dica { margin-top: 6px; }
+.toast {
+  position: fixed; z-index: 3600; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); max-width: calc(100% - 32px);
+  background: var(--asfalto); color: var(--fundo); border-radius: 14px; padding: 12px 18px; font-weight: 600; font-size: 16px; box-shadow: var(--sombra); text-align: center;
+}
+.toast[hidden] { display: none; }
 </style>
 </head>
 <body>
@@ -594,6 +728,18 @@ body { font-size: 16px; }
       <span class="agulha" id="agulhaBussola" aria-hidden="true"><b>N</b></span>
       <small id="txtBussola">Direção</small>
     </button>
+
+    <!-- ===== Tela inicial: mapa limpo, "Para onde?" e atalhos ===== -->
+    <div class="ini-topo ini-so">
+      <button class="btn-menu" type="button" id="btnMenu" aria-label="Abrir o menu" aria-haspopup="dialog" aria-controls="menuFundo"><span aria-hidden="true">☰</span></button>
+      <span class="selo-piloto">Teste piloto</span>
+    </div>
+    <button class="btn-minhapos ini-so" type="button" id="btnMinhaPos" aria-label="Mostrar minha posição no mapa"><span aria-hidden="true">◎</span></button>
+    <div class="ini-base ini-so" id="iniBase">
+      <div id="iniPendentes"></div>
+      <button class="barra-destino" type="button" id="btnParaOnde"><span class="lupa" aria-hidden="true">🔍</span>Para onde?</button>
+      <div class="atalhos" id="iniAtalhos"></div>
+    </div>
   </div>
   <div class="nav-base" id="navBase" hidden>
     <div class="nav-numero principal"><strong id="navTempo">–</strong><span>restante</span></div>
@@ -720,6 +866,7 @@ body { font-size: 16px; }
 
   <aside class="painel" id="painel">
     <div class="painel-topo">
+      <button class="btn-inicio" id="btnInicio" type="button" aria-label="Voltar para a tela inicial">✕</button>
       <h1 class="marca">Rota Liberada <span class="selo">Teste piloto</span><small>GPS de caminhão que respeita as restrições</small></h1>
       <button class="btn-painel" id="btnPainel" type="button" aria-expanded="true" aria-controls="painelCorpo">Esconder</button>
     </div>
@@ -844,7 +991,7 @@ body { font-size: 16px; }
       </section>
 
       <section>
-        <p class="rotulo">No mapa</p>
+        <p class="rotulo">🗺️ Mapa das restrições (o que aparece no mapa)</p>
         <ul class="lista" id="lista"></ul>
       </section>
 
@@ -895,6 +1042,44 @@ body { font-size: 16px; }
     </div>
   </aside>
 </div>
+
+<!-- ===== Menu ☰ (as funções que saíram da tela inicial) ===== -->
+<div class="menu-fundo" id="menuFundo" role="dialog" aria-modal="true" aria-labelledby="menuTitulo" hidden>
+  <nav class="menu" id="menu">
+    <div class="menu-topo">
+      <p class="menu-titulo" id="menuTitulo">Rota Liberada <span class="selo">Teste piloto</span><small>GPS de caminhão que respeita as restrições</small></p>
+      <button class="btn-fechar-menu" type="button" id="btnFecharMenu" aria-label="Fechar o menu">✕</button>
+    </div>
+    <div class="menu-atalhos">
+      <button type="button" class="menu-item" data-ir="secVeiculo"><span aria-hidden="true">🚚</span>Tipo de caminhão / trocar veículo</button>
+      <button type="button" class="menu-item" data-ir="secCamadas"><span aria-hidden="true">🗺️</span>Mapa das restrições</button>
+      <button type="button" class="menu-item" id="btnMarcarMenu"><span aria-hidden="true">⚠️</span>Marcar problema onde estou</button>
+      <button type="button" class="menu-item" data-ir="secConfig"><span aria-hidden="true">⚙️</span>Configurações</button>
+    </div>
+    <div class="menu-corpo" id="menuCorpo"></div>
+  </nav>
+</div>
+
+<!-- ===== Tela de busca (abre ao tocar em "Para onde?") ===== -->
+<div class="tela-busca" id="telaBusca" role="dialog" aria-modal="true" aria-label="Para onde?" hidden>
+  <div class="busca-topo">
+    <button class="btn-voltar" type="button" id="btnVoltarBusca" aria-label="Voltar para o mapa">←</button>
+    <div class="ponto" id="pontoBusca">
+      <div class="ponto-cabeca">
+        <input class="campo-texto campo-busca" id="txtBusca" type="search" enterkeyhint="search" placeholder="Endereço ou CEP" autocomplete="off" aria-label="Endereço de destino: rua e número, ou CEP e número">
+      </div>
+      <ul class="sugestoes" id="sugBusca" hidden></ul>
+    </div>
+  </div>
+  <div class="busca-corpo" id="buscaCorpo">
+    <p class="busca-rotulo">Favoritos</p>
+    <div class="busca-favs" id="buscaFavs"></div>
+    <p class="busca-rotulo">Buscas recentes</p>
+    <ul class="busca-recentes" id="buscaRecentes"></ul>
+    <p class="nota busca-dica">Dica: no mapa, segure o dedo num ponto e escolha "Ir para cá" (bom para condomínio, galpão, doca).</p>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <!-- Plugin que permite girar o mapa (modo "direção para cima") -->
@@ -1686,6 +1871,7 @@ body { font-size: 16px; }
       li.appendChild(b); lista.appendChild(li);
     }
     function irPara(lat, lon, nome, extra) {
+      if (letra === "Busca") { lista.hidden = true; escolheuNaBusca(lat, lon, nome, extra); return; }   // tela de busca: vira o destino (B)
       definirPonto(letra, lat, lon, nome, extra);
       lista.hidden = true;
       mapa.setView([lat, lon], Math.max(mapa.getZoom(), 16));
@@ -1800,7 +1986,7 @@ body { font-size: 16px; }
     });
     document.addEventListener("click", function (ev) { if (!document.getElementById("ponto" + letra).contains(ev.target)) lista.hidden = true; });
   }
-  configurarBusca("A"); configurarBusca("B");
+  configurarBusca("A"); configurarBusca("B"); configurarBusca("Busca");
 
   /* ---------- Pontos A e B ---------- */
   var marcadores = { A: null, B: null };
@@ -1811,6 +1997,7 @@ body { font-size: 16px; }
     estado[letra] = { lat: lat, lon: lon, nome: nome || (lat.toFixed(5) + ", " + lon.toFixed(5)), aproximado: !!(extra && extra.aproximado) };
     document.getElementById("txt" + letra).value = estado[letra].nome;
     atualizarMarcadores();
+    if (letra === "B") guardarRecente(estado.B);
   }
   function atualizarMarcadores() {
     ["A", "B"].forEach(function (l) {
@@ -1858,6 +2045,7 @@ body { font-size: 16px; }
   function desenharFavoritos() {
     var l = lerFavoritos(), ul = document.getElementById("listaFavoritos");
     document.getElementById("qtdFavoritos").textContent = l.length ? "(" + l.length + ")" : "";
+    desenharAtalhos();
     ul.innerHTML = "";
     if (!l.length) { ul.innerHTML = '<li><p class="fav-vazio">Nenhum favorito ainda. Escolha um destino e toque em "☆ Salvar destino nos favoritos", ou segure o dedo no mapa.</p></li>'; return; }
     l.forEach(function (f) {
@@ -1904,6 +2092,7 @@ body { font-size: 16px; }
 
   /* Com o destino escolhido, já traça a rota (se não houver saída, usa a localização do aparelho) */
   function tracarAteDestino() {
+    definirModo("rota");
     if (painel.classList.contains("fechado")) btnPainel.click();
     if (estado.A) { document.getElementById("btnRota").click(); return; }
     if (!navigator.geolocation) { mostrarMsg("Destino escolhido. Agora escolha a saída (A) e toque em Traçar rota."); return; }
@@ -3959,7 +4148,7 @@ body { font-size: 16px; }
      - Cada celular ganha um código sorteado (não diz quem é) para contar quantos usam o app.
      - Nome e WhatsApp: só de quem preencher e aceitar. Pede UMA vez; quem pular vê de novo em 7 dias.
      - Novidades: aparece só a mais recente, uma vez, e nunca durante a navegação. */
-  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v36";
+  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v37";
   var CHAVE_CAD = "rotaCaminhaoSP.cadastro", CHAVE_PULOU = "rotaCaminhaoSP.cadastroPulado", CHAVE_VISTAS = "rotaCaminhaoSP.novidadesVistas";
   var aparelhoId = (function () {
     var id = ler("rotaCaminhaoSP.aparelho") || "";
@@ -4191,6 +4380,200 @@ body { font-size: 16px; }
     if (estado.opcoes && estado.opcoes.length > 1 && !nav.ativo) desenharOpcoes(estado.opcoes, estado.escolhida || 0, false);
   });
   mostrarNotaTema();
+
+  /* ================= Etapa 1: tela inicial, menu ☰ e tela de busca =================
+     Só muda a organização da tela. A busca, os favoritos e o cálculo da rota continuam os mesmos. */
+  function el(id) { return document.getElementById(id); }
+  var telaBusca = el("telaBusca"), menuFundo = el("menuFundo");
+  function definirModo(m) {
+    var b = document.body, antes = b.classList.contains("modo-rota") ? "rota" : b.classList.contains("modo-busca") ? "busca" : b.classList.contains("modo-inicio") ? "inicio" : "";
+    b.classList.remove("modo-inicio", "modo-busca", "modo-rota");
+    b.classList.add("modo-" + m);
+    telaBusca.hidden = m !== "busca";
+    el("instalarApp") && (el("instalarApp").style.visibility = m === "busca" ? "hidden" : "");
+    if (m === "rota" && painel.classList.contains("fechado")) btnPainel.click();
+    if (m === "inicio") medirBase();
+    if (antes !== m) setTimeout(function () { mapa.invalidateSize(); }, 60);
+  }
+  function medirBase() {
+    var h = el("iniBase").offsetHeight;
+    if (h) document.documentElement.style.setProperty("--alt-base", h + "px");
+  }
+  function avisoRapido(t) {
+    var x = el("toast"); x.textContent = t; x.hidden = false;
+    clearTimeout(avisoRapido.r); avisoRapido.r = setTimeout(function () { x.hidden = true; }, 3500);
+  }
+  function iconeFav(nome) {
+    var n = semAcento(nome || "");
+    if (/\bcasa\b|\blar\b/.test(n)) return "🏠";
+    if (/trabalho|empresa|firma|galpao|deposito|cd\b|base/.test(n)) return "🏢";
+    return "⭐";
+  }
+  function irParaFavorito(f) {
+    if (nav.ativo) return;
+    if (estado.A && estado.A.nome === "Minha localização") estado.A = null;   // sai de onde está agora
+    definirPonto("B", f.lat, f.lon, f.nome, { aproximado: f.aprox });
+    mapa.setView([f.lat, f.lon], Math.max(mapa.getZoom(), 15));
+    tracarAteDestino();
+  }
+  function botaoAtalho(f) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "atalho";
+    b.innerHTML = '<span aria-hidden="true">' + iconeFav(f.nome) + '</span><span></span>';
+    b.lastChild.textContent = f.nome;
+    b.setAttribute("aria-label", "Ir para " + f.nome);
+    b.addEventListener("click", function () { telaBusca.hidden = true; irParaFavorito(f); });
+    return b;
+  }
+  // Até 3 favoritos como botões na tela inicial (Casa e Trabalho primeiro)
+  function desenharAtalhos() {
+    var caixa = el("iniAtalhos"); if (!caixa) return;
+    var l = lerFavoritos().slice(), peso = function (f) { var i = iconeFav(f.nome); return i === "🏠" ? 0 : i === "🏢" ? 1 : 2; };
+    l = l.map(function (f, i) { return { f: f, i: i }; }).sort(function (a, b) { return peso(a.f) - peso(b.f) || a.i - b.i; }).map(function (x) { return x.f; });
+    caixa.innerHTML = "";
+    l.slice(0, 3).forEach(function (f) { caixa.appendChild(botaoAtalho(f)); });
+    if (document.body.classList.contains("modo-inicio")) medirBase();
+  }
+  /* Buscas recentes (só neste aparelho) */
+  var CHAVE_REC = "rotaCaminhaoSP.recentes";
+  function lerRecentes() { try { var l = JSON.parse(ler(CHAVE_REC) || "[]"); return Array.isArray(l) ? l : []; } catch (e) { return []; } }
+  function guardarRecente(p) {
+    if (!p || !p.nome || p.nome === "Minha localização") return;
+    var l = lerRecentes().filter(function (r) { return r.nome !== p.nome && (Math.abs(r.lat - p.lat) > 0.0002 || Math.abs(r.lon - p.lon) > 0.0002); });
+    l.unshift({ nome: p.nome, lat: p.lat, lon: p.lon, aprox: !!p.aproximado });
+    gravar(CHAVE_REC, JSON.stringify(l.slice(0, 10)));
+  }
+  function desenharBusca() {
+    var favs = lerFavoritos(), cf = el("buscaFavs"), ul = el("buscaRecentes"), rec = lerRecentes();
+    cf.innerHTML = "";
+    if (!favs.length) cf.innerHTML = '<p class="busca-vazio">Nenhum favorito ainda. Depois de escolher o destino, toque em "☆ Salvar destino nos favoritos" (ex.: Casa, Trabalho).</p>';
+    favs.slice(0, 12).forEach(function (f) { cf.appendChild(botaoAtalho(f)); });
+    ul.innerHTML = "";
+    ul.hidden = !rec.length;
+    if (!rec.length) { var p = document.createElement("p"); p.className = "busca-vazio"; p.textContent = "Os destinos que você escolher aparecem aqui."; ul.parentNode.insertBefore(p, ul); p.setAttribute("data-vazio", "1"); }
+    rec.forEach(function (r) {
+      var li = document.createElement("li"), b = document.createElement("button"), partes = r.nome.split(" – ");
+      b.type = "button";
+      b.innerHTML = '<span aria-hidden="true">🕘</span><span><strong></strong><small></small></span>';
+      b.querySelector("strong").textContent = partes[0];
+      b.querySelector("small").textContent = partes.slice(1).join(" – ") + (r.aprox && r.nome.indexOf("aproximado") < 0 ? " · número aproximado" : "");
+      b.addEventListener("click", function () { escolheuNaBusca(r.lat, r.lon, r.nome, { aproximado: r.aprox }); });
+      li.appendChild(b); ul.appendChild(li);
+    });
+  }
+  function abrirBusca() {
+    if (nav.ativo) return;
+    [].forEach.call(document.querySelectorAll("#buscaCorpo [data-vazio]"), function (p) { p.remove(); });
+    desenharBusca();
+    var c = el("txtBusca"); c.value = ""; el("sugBusca").hidden = true;
+    definirModo("busca");
+    c.focus();   // abre o teclado
+  }
+  function fecharBusca() { el("sugBusca").hidden = true; definirModo(estado.rota && !el("resultado").hidden ? "rota" : "inicio"); }
+  function escolheuNaBusca(lat, lon, nome, extra) {
+    el("txtBusca").blur();
+    if (estado.A && estado.A.nome === "Minha localização") estado.A = null;   // pega a posição de agora
+    definirPonto("B", lat, lon, nome, extra);
+    mapa.setView([lat, lon], Math.max(mapa.getZoom(), 15));
+    tracarAteDestino();
+    if (extra && extra.aproximado) avisoRapido("Número aproximado: confira na chegada.");
+  }
+  // Mostra as sugestões no lugar dos favoritos/recentes enquanto digita
+  new MutationObserver(function () { telaBusca.classList.toggle("com-sugestoes", !el("sugBusca").hidden); })
+    .observe(el("sugBusca"), { attributes: true, attributeFilter: ["hidden"] });
+  el("btnParaOnde").addEventListener("click", abrirBusca);
+  el("btnVoltarBusca").addEventListener("click", fecharBusca);
+  el("txtBusca").addEventListener("keydown", function (ev) { if (ev.key === "Escape" && el("sugBusca").hidden) fecharBusca(); });
+  el("btnRota").addEventListener("click", function () { definirModo("rota"); });
+  // ✕ do painel: volta para a tela inicial limpa (tira a rota do mapa)
+  el("btnInicio").addEventListener("click", function () {
+    limparOpcoes();
+    if (camadaRota) { mapa.removeLayer(camadaRota); camadaRota = null; }
+    estado.opcoes = null; estado.B = null; el("txtB").value = "";
+    if (estado.A && estado.A.nome === "Minha localização") { estado.A = null; el("txtA").value = ""; }
+    atualizarMarcadores();
+    el("resultado").hidden = true; mostrarMsg("");
+    definirModo("inicio");
+    if (posInicio) mapa.setView(posInicio.getLatLng(), Math.max(mapa.getZoom(), 15));
+  });
+
+  /* Posição do motorista na tela inicial */
+  var posInicio = null, centrouUmaVez = false;
+  function mostrarPosicao(p) {
+    var ll = [p.coords.latitude, p.coords.longitude];
+    if (!posInicio) posInicio = L.marker(ll, { icon: L.divIcon({ className: "", html: '<div class="pos-inicio"></div>', iconSize: [22, 22], iconAnchor: [11, 11] }), keyboard: false, interactive: false }).addTo(mapa);
+    else posInicio.setLatLng(ll);
+    if (!centrouUmaVez && document.body.classList.contains("modo-inicio") && !nav.ativo) { centrouUmaVez = true; mapa.setView(ll, 15); }
+  }
+  if (navigator.geolocation) {
+    navigator.geolocation.watchPosition(mostrarPosicao, function () {}, { enableHighAccuracy: false, maximumAge: 15000, timeout: 30000 });
+  }
+  el("btnMinhaPos").addEventListener("click", function () {
+    if (!navigator.geolocation) { avisoRapido("Este aparelho não informa a localização."); return; }
+    if (posInicio) mapa.setView(posInicio.getLatLng(), Math.max(mapa.getZoom(), 16));
+    navigator.geolocation.getCurrentPosition(function (p) { centrouUmaVez = true; mostrarPosicao(p); mapa.setView([p.coords.latitude, p.coords.longitude], Math.max(mapa.getZoom(), 16)); },
+      function (e) { avisoRapido(e.code === 1 ? "Localização bloqueada: libere nas permissões do navegador." : "Não consegui pegar a localização agora."); },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 });
+  });
+
+  /* Menu ☰: recebe tudo que saiu da tela inicial (nada foi apagado, só mudou de lugar) */
+  (function montarMenu() {
+    var corpo = el("menuCorpo"), pc = el("painelCorpo");
+    function secaoDe(id) { var x = el(id); return x && x.closest("section"); }
+    function por(no, idSec) { if (no) { if (idSec) no.id = no.id || idSec; corpo.appendChild(no); } return no; }
+    var sVeic = secaoDe("tituloVeiculo"); sVeic.id = "secVeiculo";
+    var sQuando = secaoDe("mAgora"), sPlaca = secaoDe("selPlaca"), sCamadas = secaoDe("lista"); sCamadas.id = "secCamadas";
+    var sTema = secaoDe("selTema"), sConvite = secaoDe("btnConvidar");
+    var sZer = pc.querySelector("section.pendente"), sFontes = pc.querySelector(".fontes").closest("section");
+    var cfg = document.createElement("div"); cfg.id = "secConfig"; cfg.style.display = "flex"; cfg.style.flexDirection = "column"; cfg.style.gap = "12px";
+    por(sVeic); por(sQuando); por(sPlaca); por(sCamadas);
+    cfg.appendChild(pc.querySelector(".painel-extras"));
+    cfg.appendChild(el("btnTempos"));
+    cfg.appendChild(el("btnAmigo").parentNode);   // Amigo Caminhoneiro (em breve)
+    cfg.appendChild(sTema);
+    por(cfg);
+    por(sConvite); por(sZer); por(sFontes);
+    var av = document.createElement("p"); av.className = "menu-aviso";
+    av.textContent = "Ferramenta de apoio. Respeite sempre a sinalização e as regras oficiais da CET: as restrições podem mudar.";
+    corpo.appendChild(av);
+    // "Revisar pontos da última viagem" fica na tela inicial, acima do "Para onde?"
+    el("iniPendentes").appendChild(el("btnRevisarPendentes"));
+  })();
+  function abrirMenu(alvo) {
+    if (nav.ativo) return;
+    menuFundo.hidden = false;
+    el("btnFecharMenu").focus();
+    if (alvo) irNoMenu(alvo);
+  }
+  function fecharMenu() { menuFundo.hidden = true; if (document.body.classList.contains("modo-inicio")) el("btnMenu").focus(); }
+  function irNoMenu(id) {
+    var s = el(id); if (!s) return;
+    s.scrollIntoView({ behavior: "smooth", block: "start" });
+    s.classList.remove("destaque-sec"); void s.offsetWidth; s.classList.add("destaque-sec");
+    if (id === "secVeiculo" && el("formVeiculo").hidden) el("btnEditarVeiculo").click();
+  }
+  el("btnMenu").addEventListener("click", function () { abrirMenu(); });
+  el("btnFecharMenu").addEventListener("click", fecharMenu);
+  menuFundo.addEventListener("click", function (ev) { if (ev.target === menuFundo) fecharMenu(); });
+  document.addEventListener("keydown", function (ev) { if (ev.key === "Escape" && !menuFundo.hidden) fecharMenu(); });
+  [].forEach.call(document.querySelectorAll(".menu-item[data-ir]"), function (b) {
+    b.addEventListener("click", function () { irNoMenu(b.getAttribute("data-ir")); });
+  });
+  // Marcar problema fora da navegação: grava o local de agora para revisar depois
+  el("btnMarcarMenu").addEventListener("click", function () {
+    if (!navigator.geolocation) { avisoRapido("Este aparelho não informa a localização."); return; }
+    avisoRapido("Pegando sua localização…");
+    navigator.geolocation.getCurrentPosition(function (p) {
+      registrarOcorrencia("marcado", p.coords.longitude, p.coords.latitude, "", null);
+      fecharMenu(); vibrar(120);
+      avisoRapido("✅ Problema marcado. Toque em \"Revisar\" na tela inicial para enviar.");
+    }, function (e) { avisoRapido(e.code === 1 ? "Localização bloqueada: libere nas permissões do navegador." : "Não consegui pegar a localização agora."); },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 });
+  });
+  window.addEventListener("resize", function () { if (document.body.classList.contains("modo-inicio")) medirBase(); });
+  definirModo("inicio");
+  desenharAtalhos();
+
   // Só para testes (abrir o app com ?teste=1 no endereço): deixa conferir as rotas pelo console
   if (/[?&]teste=1/.test(location.search)) window._teste = { fraseMotorista: fraseMotorista, calcularRota: calcularRota, manobrasRuins: manobrasRuins, momentoAtual: momentoAtual, bloqueios: BLOQ };
 })();
