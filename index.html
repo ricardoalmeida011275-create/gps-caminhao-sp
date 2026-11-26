@@ -794,6 +794,48 @@ body.navegando .btn-centro {
 }
 .btn-marcar:active, .btn-visao:active, .btn-voz:active, .btn-encerrar:active { transform: scale(.95); }
 body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
+
+/* ===== Etapa 4: fim de viagem ===== */
+.fim-fundo { position: fixed; inset: 0; z-index: 2900; background: rgba(0,0,0,.5); display: flex; align-items: flex-end; justify-content: center; }
+.fim-fundo[hidden] { display: none; }
+.fim-caixa {
+  width: 100%; max-width: 480px; background: var(--papel); color: var(--asfalto); border-radius: 24px 24px 0 0; text-align: center;
+  padding: 22px max(18px, env(safe-area-inset-right, 0px)) max(18px, env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-left, 0px));
+  box-shadow: 0 -8px 30px rgba(0,0,0,.35); animation: subir .3s ease-out; display: flex; flex-direction: column; gap: 10px;
+}
+@media (min-width: 700px) { .fim-fundo { align-items: center; } .fim-caixa { border-radius: 24px; } }
+.fim-icone { margin: 0; font-size: 44px; line-height: 1; }
+.fim-titulo { margin: 0; font-family: var(--f-titulo); font-weight: 700; font-size: 30px; line-height: 1.1; }
+.fim-destino { margin: -4px 0 0; color: var(--suave); font-size: 16px; }
+.fim-destino:empty { display: none; }
+.fim-numeros { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 6px 0 0; }
+.fim-numeros div { background: var(--fundo); border-radius: 14px; padding: 10px 4px; }
+.fim-numeros strong { display: block; font-family: var(--f-titulo); font-weight: 700; font-size: 24px; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.fim-numeros span { font-size: 13px; color: var(--suave); }
+.fim-nota { margin: 0; font-size: 15px; color: var(--suave); }
+.fim-btn { width: 100%; min-height: 56px; border-radius: 16px; cursor: pointer; font-family: var(--f-titulo); font-weight: 700; font-size: 19px; }
+.fim-secundario { border: 1px solid var(--linha); background: var(--fundo); color: var(--asfalto); }
+.fim-principal { border: 0; background: var(--rota); color: #fff; font-size: 21px; min-height: 60px; margin-top: 4px; }
+.fim-btn:active { transform: scale(.98); }
+/* ===== Etapa 4: menu ☰ em grupos ===== */
+.menu-corpo { gap: 8px; }
+.menu-secao { margin: 10px 2px 2px; font-family: var(--f-titulo); font-weight: 700; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--suave); }
+.menu-secao:first-child { margin-top: 0; }
+.menu-item { text-align: left; }
+.menu-item .mi-icone { flex: none; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--fundo); font-size: 21px; }
+.menu-item .mi-texto { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; text-align: left; }
+.menu-item { justify-content: flex-start; }
+.menu-item .mi-texto small { font-family: var(--f-texto); font-weight: 500; font-size: 13px; color: var(--suave); letter-spacing: 0; }
+.menu-grupo { border-radius: 14px; }
+.menu-grupo > summary { list-style: none; }
+.menu-grupo > summary::-webkit-details-marker { display: none; }
+.menu-grupo > summary::after { content: "›"; font-size: 26px; line-height: 1; color: var(--suave); transition: transform .15s; }
+.menu-grupo[open] > summary { border-radius: 14px 14px 0 0; border-bottom-color: transparent; }
+.menu-grupo[open] > summary::after { transform: rotate(90deg); }
+.menu-conteudo { border: 1px solid var(--linha); border-top: 0; border-radius: 0 0 14px 14px; background: var(--papel); padding: 4px 14px 14px; display: flex; flex-direction: column; gap: 14px; }
+.menu-grupo.sem-rotulo .menu-conteudo .rotulo { display: none; }
+.menu-conteudo section.chave, .menu-conteudo section.pendente { border: 0; padding: 0; background: transparent; }
+.menu-conteudo .amigo-info { border: 0; padding: 0; }
 </style>
 </head>
 <body>
@@ -1149,12 +1191,6 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
       <p class="menu-titulo" id="menuTitulo">Rota Liberada <span class="selo">Teste piloto</span><small>GPS de caminhão que respeita as restrições</small></p>
       <button class="btn-fechar-menu" type="button" id="btnFecharMenu" aria-label="Fechar o menu">✕</button>
     </div>
-    <div class="menu-atalhos">
-      <button type="button" class="menu-item" data-ir="secVeiculo"><span aria-hidden="true">🚚</span>Tipo de caminhão / trocar veículo</button>
-      <button type="button" class="menu-item" data-ir="secCamadas"><span aria-hidden="true">🗺️</span>Mapa das restrições</button>
-      <button type="button" class="menu-item" id="btnMarcarMenu"><span aria-hidden="true">⚠️</span>Marcar problema onde estou</button>
-      <button type="button" class="menu-item" data-ir="secConfig"><span aria-hidden="true">⚙️</span>Configurações</button>
-    </div>
     <div class="menu-corpo" id="menuCorpo"></div>
   </nav>
 </div>
@@ -1179,6 +1215,24 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
   </div>
 </div>
 <div class="toast" id="toast" role="status" hidden></div>
+
+<!-- ===== Fim de viagem ===== -->
+<div class="fim-fundo" id="fimViagem" role="dialog" aria-modal="true" aria-labelledby="fimTitulo" hidden>
+  <div class="fim-caixa">
+    <p class="fim-icone" id="fimIcone" aria-hidden="true">✅</p>
+    <p class="fim-titulo" id="fimTitulo">Você chegou!</p>
+    <p class="fim-destino" id="fimDestino"></p>
+    <div class="fim-numeros">
+      <div><strong id="fimTempo">–</strong><span>de viagem</span></div>
+      <div><strong id="fimKm">–</strong><span>rota</span></div>
+      <div><strong id="fimHora">–</strong><span id="fimHoraRot">chegada</span></div>
+    </div>
+    <p class="fim-nota" id="fimNota"></p>
+    <button type="button" class="fim-btn fim-secundario" id="btnFimFav">☆ Salvar este destino nos favoritos</button>
+    <button type="button" class="fim-btn fim-secundario" id="btnFimVolta">↩️ Voltar para a saída</button>
+    <button type="button" class="fim-btn fim-principal" id="btnFimInicio">Pronto</button>
+  </div>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <!-- Plugin que permite girar o mapa (modo "direção para cima") -->
@@ -3970,6 +4024,7 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
     falar("Tudo bem. A navegação continua.", "manobra");
   });
   function mostrarConcluida() {
+    return;   // Etapa 4: a tela "Fim de viagem" substitui este aviso rápido
     var el = document.getElementById("viagemConcluida");
     el.hidden = false;
     clearTimeout(mostrarConcluida.t);
@@ -4263,7 +4318,7 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
      - Cada celular ganha um código sorteado (não diz quem é) para contar quantos usam o app.
      - Nome e WhatsApp: só de quem preencher e aceitar. Pede UMA vez; quem pular vê de novo em 7 dias.
      - Novidades: aparece só a mais recente, uma vez, e nunca durante a navegação. */
-  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v39";
+  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v40";
   var CHAVE_CAD = "rotaCaminhaoSP.cadastro", CHAVE_PULOU = "rotaCaminhaoSP.cadastroPulado", CHAVE_VISTAS = "rotaCaminhaoSP.novidadesVistas";
   var aparelhoId = (function () {
     var id = ler("rotaCaminhaoSP.aparelho") || "";
@@ -4605,7 +4660,7 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
     limparOpcoes();
     if (camadaRota) { mapa.removeLayer(camadaRota); camadaRota = null; }
     estado.opcoes = null; estado.B = null; el("txtB").value = "";
-    if (estado.A && estado.A.nome === "Minha localização") { estado.A = null; el("txtA").value = ""; }
+    estado.A = null; el("txtA").value = "";   // a próxima viagem sai de onde o motorista estiver
     atualizarMarcadores();
     el("resultado").hidden = true; mostrarMsg("");
     definirModo("inicio");
@@ -4632,25 +4687,51 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
   });
 
   /* Menu ☰: recebe tudo que saiu da tela inicial (nada foi apagado, só mudou de lugar) */
+  /* Etapa 4: o menu virou uma lista de grupos que abrem e fecham (um aberto por vez). */
   (function montarMenu() {
     var corpo = el("menuCorpo"), pc = el("painelCorpo");
     function secaoDe(id) { var x = el(id); return x && x.closest("section"); }
-    function por(no, idSec) { if (no) { if (idSec) no.id = no.id || idSec; corpo.appendChild(no); } return no; }
-    var sVeic = secaoDe("tituloVeiculo"); sVeic.id = "secVeiculo";
-    var sQuando = secaoDe("mAgora"), sPlaca = secaoDe("selPlaca"), sCamadas = secaoDe("lista"); sCamadas.id = "secCamadas";
+    function titulo(n) { return '<span class="mi-icone" aria-hidden="true">' + n[0] + '</span><span class="mi-texto">' + n[1] + (n[2] ? '<small>' + n[2] + '</small>' : "") + '</span>'; }
+    function rotuloTitulo(n) { var t = document.createElement("p"); t.className = "menu-subtitulo"; t.textContent = n; return t; }
+    function grupo(id, n, nos, varias) {
+      var d = document.createElement("details"); d.className = "menu-grupo" + (varias ? "" : " sem-rotulo"); d.id = id;
+      var s = document.createElement("summary"); s.className = "menu-item"; s.innerHTML = titulo(n);
+      var c = document.createElement("div"); c.className = "menu-conteudo";
+      nos.forEach(function (x) { if (x) c.appendChild(x); });
+      d.appendChild(s); d.appendChild(c); corpo.appendChild(d);
+      d.addEventListener("toggle", function () {   // abre um, fecha os outros
+        if (!d.open) return;
+        [].forEach.call(corpo.querySelectorAll("details.menu-grupo[open]"), function (o) { if (o !== d) o.open = false; });
+        setTimeout(function () { s.scrollIntoView({ behavior: "smooth", block: "start" }); }, 30);
+      });
+      return d;
+    }
+    function acao(btn, n) { btn.className = "menu-item"; btn.innerHTML = titulo(n); corpo.appendChild(btn); return btn; }
+    function rotulo(txt) { var p = document.createElement("p"); p.className = "menu-secao"; p.textContent = txt; corpo.appendChild(p); }
+
+    var sVeic = secaoDe("tituloVeiculo"), sQuando = secaoDe("mAgora"), sPlaca = secaoDe("selPlaca"), sCamadas = secaoDe("lista");
     var sTema = secaoDe("selTema"), sConvite = secaoDe("btnConvidar");
     var sZer = pc.querySelector("section.pendente"), sFontes = pc.querySelector(".fontes").closest("section");
-    var cfg = document.createElement("div"); cfg.id = "secConfig"; cfg.style.display = "flex"; cfg.style.flexDirection = "column"; cfg.style.gap = "12px";
-    por(sVeic); por(sQuando); por(sPlaca); por(sCamadas);
-    cfg.appendChild(pc.querySelector(".painel-extras"));
-    cfg.appendChild(el("btnTempos"));
-    cfg.appendChild(el("btnAmigo").parentNode);   // Amigo Caminhoneiro (em breve)
-    cfg.appendChild(sTema);
-    por(cfg);
-    por(sConvite); por(sZer); por(sFontes);
+    var amigo = el("btnAmigo").parentNode; el("btnAmigo").hidden = true; el("amigoInfo").hidden = false;
+    var extras = pc.querySelector(".painel-extras");
+    var marcar = document.createElement("button"); marcar.type = "button"; marcar.id = "btnMarcarMenu";
     var av = document.createElement("p"); av.className = "menu-aviso";
     av.textContent = "Ferramenta de apoio. Respeite sempre a sinalização e as regras oficiais da CET: as restrições podem mudar.";
-    corpo.appendChild(av);
+
+    rotulo("Caminhão e viagem");
+    grupo("secVeiculo", ["🚚", "Meu caminhão", "Tipo, medidas e carga"], [sVeic]);
+    grupo("secHorario", ["🕘", "Horário e rodízio", "Saída agora ou outro horário · final da placa"], [sQuando, sPlaca], true);
+    grupo("secCamadas", ["🗺️", "Mapa das restrições", "O que aparece no mapa"], [sCamadas, sZer]);
+    acao(marcar, ["⚠️", "Marcar problema onde estou", "Grava o local para revisar depois"]);
+    acao(el("btnTempos"), ["📊", "Minhas viagens", "Tempo previsto x real"]);
+    rotulo("App");
+    acao(el("btnNovidades"), ["📢", "Novidades"]);
+    acao(el("btnMeuCadastro"), ["👤", "Meu cadastro"]);
+    grupo("secConfig", ["🌙", "Aparência", "Modo claro ou escuro"], [sTema]);
+    grupo("secConvite", ["📲", "Convidar motoristas"], [sConvite]);
+    grupo("secAmigo", ["🤝", "Amigo Caminhoneiro", "Em breve"], [amigo]);
+    grupo("secSobre", ["ℹ️", "Sobre, fontes e privacidade"], [sFontes, av]);
+    if (extras && !extras.children.length) extras.remove();
     // "Revisar pontos da última viagem" fica na tela inicial, acima do "Para onde?"
     el("iniPendentes").appendChild(el("btnRevisarPendentes"));
   })();
@@ -4663,17 +4744,15 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
   function fecharMenu() { menuFundo.hidden = true; if (document.body.classList.contains("modo-inicio")) el("btnMenu").focus(); }
   function irNoMenu(id) {
     var s = el(id); if (!s) return;
-    s.scrollIntoView({ behavior: "smooth", block: "start" });
-    s.classList.remove("destaque-sec"); void s.offsetWidth; s.classList.add("destaque-sec");
+    if (s.tagName === "DETAILS") s.open = true;
     if (id === "secVeiculo" && el("formVeiculo").hidden) el("btnEditarVeiculo").click();
   }
   el("btnMenu").addEventListener("click", function () { abrirMenu(); });
   el("btnFecharMenu").addEventListener("click", fecharMenu);
   menuFundo.addEventListener("click", function (ev) { if (ev.target === menuFundo) fecharMenu(); });
   document.addEventListener("keydown", function (ev) { if (ev.key === "Escape" && !menuFundo.hidden) fecharMenu(); });
-  [].forEach.call(document.querySelectorAll(".menu-item[data-ir]"), function (b) {
-    b.addEventListener("click", function () { irNoMenu(b.getAttribute("data-ir")); });
-  });
+  // Botões do menu que abrem outra janela: fecham o menu antes
+  ["btnTempos", "btnNovidades", "btnMeuCadastro"].forEach(function (id) { el(id).addEventListener("click", fecharMenu); });
   // Marcar problema fora da navegação: grava o local de agora para revisar depois
   el("btnMarcarMenu").addEventListener("click", function () {
     if (!navigator.geolocation) { avisoRapido("Este aparelho não informa a localização."); return; }
@@ -4698,6 +4777,54 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
     var alto = (el("navTopo").offsetHeight || 90) + 30, baixo = (el("navBase").offsetHeight || 90) + 30;
     mapa.fitBounds(L.latLngBounds(linhas), { paddingTopLeft: [30, alto], paddingBottomRight: [90, baixo] });
   });
+
+  /* ===== Etapa 4: tela de fim de viagem (aparece sempre que a navegação termina) ===== */
+  (function () {
+    var fim = el("fimViagem"), estavaNavegando = false, pontoVolta = null;
+    function hora(d) { return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); }
+    function jaFavorito(p) { return lerFavoritos().some(function (f) { return Math.abs(f.lat - p.lat) < 0.0003 && Math.abs(f.lon - p.lon) < 0.0003; }); }
+    function mostrarFim() {
+      var v = nav.viagem; if (!v) return;
+      var chegou = !!nav.chegou, min = Math.max(1, Math.round((Date.now() - v.inicio) / 60000));
+      el("fimIcone").textContent = chegou ? "✅" : "🏁";
+      el("fimTitulo").textContent = chegou ? "Você chegou!" : "Viagem encerrada";
+      el("fimDestino").textContent = estado.B ? estado.B.nome.split(" – ")[0] : (v.para || "");
+      el("fimTempo").textContent = tempo(min * 60);
+      el("fimKm").textContent = km(v.km * 1000);
+      el("fimHora").textContent = hora(new Date());
+      el("fimHoraRot").textContent = chegou ? "chegada" : "encerrou";
+      var dif = min - v.previsto;
+      el("fimNota").textContent = chegou
+        ? "Previsto: " + tempo(v.previsto * 60) + (Math.abs(dif) <= 2 ? " · no tempo certo 👍" : dif > 0 ? " · " + dif + " min a mais" : " · " + (-dif) + " min a menos")
+        : "A viagem foi encerrada antes do destino.";
+      el("btnFimFav").hidden = !estado.B || jaFavorito(estado.B);
+      el("btnFimFav").textContent = "☆ Salvar este destino nos favoritos";
+      pontoVolta = estado.A ? { lat: estado.A.lat, lon: estado.A.lon, nome: estado.A.nome === "Minha localização" ? "Onde a viagem começou" : estado.A.nome } : null;
+      el("btnFimVolta").hidden = !pontoVolta || !chegou;
+      fim.hidden = false;
+      el("btnFimInicio").focus();
+    }
+    function fechar() { fim.hidden = true; }
+    new MutationObserver(function () {
+      var agora = document.body.classList.contains("navegando");
+      if (estavaNavegando && !agora) setTimeout(mostrarFim, 300);
+      if (agora) fechar();
+      estavaNavegando = agora;
+    }).observe(document.body, { attributes: true, attributeFilter: ["class"] });
+    el("btnFimInicio").addEventListener("click", function () { fechar(); el("btnInicio").click(); });
+    el("btnFimFav").addEventListener("click", function () {
+      var antes = lerFavoritos().length;
+      salvarFavorito(estado.B);
+      if (lerFavoritos().length > antes) { this.textContent = "⭐ Salvo nos favoritos"; avisoRapido("Salvo nos favoritos."); }
+    });
+    el("btnFimVolta").addEventListener("click", function () {
+      if (!pontoVolta) return;
+      var p = pontoVolta; fechar();
+      estado.A = null; el("txtA").value = "";   // sai de onde está agora
+      definirPonto("B", p.lat, p.lon, p.nome);
+      tracarAteDestino();
+    });
+  })();
 
   /* ===== Etapa 2: tela de escolha da rota =====
      Com a rota pronta, o formulário A/B some e fica só o resumo "De / Para" (botão Alterar abre de novo). */
