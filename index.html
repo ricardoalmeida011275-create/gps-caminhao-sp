@@ -413,6 +413,18 @@ body.navegando .leaflet-control-attribution { font-size: 9px; opacity: .6; paddi
 .pino.a { background: var(--liberado); }
 .pino.b { background: var(--asfalto); color: var(--fundo); }
 .ponto-cabeca .campo-texto { flex: 1; width: 100%; }
+/* Microfone dentro do campo, do lado direito */
+.ponto-cabeca { position: relative; }
+.ponto-cabeca .campo-texto.com-mic { padding-right: 50px; }
+.btn-mic {
+  position: absolute; right: 3px; top: 50%; transform: translateY(-50%);
+  width: 44px; height: 40px; border: 0; border-radius: 8px; background: var(--botao-fundo, #e3eefb);
+  font-size: 22px; line-height: 1; cursor: pointer; display: grid; place-items: center;
+}
+.btn-mic[hidden] { display: none; }
+.btn-mic.ouvindo { background: #c8102e; animation: micPisca 1s ease-in-out infinite; }
+@keyframes micPisca { 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { .btn-mic.ouvindo { animation: none; } }
 .acoes-ponto { display: flex; gap: 6px; flex-wrap: wrap; padding-left: 32px; }
 .btn-pequeno {
   border: 1px solid var(--linha); background: var(--papel); border-radius: 999px; padding: 5px 12px;
@@ -1733,6 +1745,40 @@ body { font-size: 16px; }
         return r.itens ? confirmarBairros(r.itens, r.cep).then(function () { return r; }, function () { return r; }) : r;
       }).then(function (r) { if (minhaVez === vez) desenhar(texto, r, explicito); })
        .catch(function () { if (minhaVez === vez) desenhar(texto, { aviso: "Não consegui buscar agora. Confira a internet." }, explicito); });
+    }
+
+    /* Busca por voz (recurso gratuito do próprio navegador). Se o celular não tiver, o botão nem aparece. */
+    var Reconhecer = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (Reconhecer) {
+      var mic = document.createElement("button"), ouvindo = null;
+      mic.type = "button"; mic.className = "btn-mic"; mic.textContent = "🎤"; mic.setAttribute("aria-label", "Falar o endereço");
+      campo.parentNode.appendChild(mic); campo.classList.add("com-mic");
+      mic.addEventListener("click", function () {
+        if (ouvindo) { try { ouvindo.abort(); } catch (e) {} return; }
+        var rec;
+        try { rec = new Reconhecer(); } catch (e) { mic.hidden = true; campo.classList.remove("com-mic"); return; }
+        var entendeu = false, falha = "", antes = campo.placeholder;
+        rec.lang = "pt-BR"; rec.interimResults = false; rec.maxAlternatives = 1;
+        ouvindo = rec; mic.classList.add("ouvindo"); mic.setAttribute("aria-label", "Parar de ouvir");
+        campo.value = ""; campo.placeholder = "Pode falar o endereço..."; mostrarMsg("🎤 Pode falar o endereço...");
+        rec.onresult = function (ev) {
+          var t = (ev.results[0] && ev.results[0][0] && ev.results[0][0].transcript || "").trim();
+          if (!t) return;
+          entendeu = true; campo.value = t; mostrarMsg("");
+          estado[letra] = null; atualizarMarcadores(); clearTimeout(espera); vez++;
+          mostrarRapidos(t); pesquisar(t, true);
+        };
+        rec.onerror = function (ev) {
+          if (ev.error === "service-not-allowed" || ev.error === "language-not-supported") { mic.hidden = true; campo.classList.remove("com-mic"); falha = " "; }
+          else if (ev.error === "not-allowed") falha = "Permita o uso do microfone para este app (no cadeado ao lado do endereço) e tente de novo.";
+          else if (ev.error === "aborted") falha = " ";
+        };
+        rec.onend = function () {
+          ouvindo = null; mic.classList.remove("ouvindo"); mic.setAttribute("aria-label", "Falar o endereço"); campo.placeholder = antes;
+          if (!entendeu) mostrarMsg(falha.trim() || (falha ? "" : "Não entendi, tente de novo."));
+        };
+        try { rec.start(); } catch (e) { rec.onend(); }
+      });
     }
 
     campo.addEventListener("input", function () {
@@ -3913,7 +3959,7 @@ body { font-size: 16px; }
      - Cada celular ganha um código sorteado (não diz quem é) para contar quantos usam o app.
      - Nome e WhatsApp: só de quem preencher e aceitar. Pede UMA vez; quem pular vê de novo em 7 dias.
      - Novidades: aparece só a mais recente, uma vez, e nunca durante a navegação. */
-  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v35";
+  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v36";
   var CHAVE_CAD = "rotaCaminhaoSP.cadastro", CHAVE_PULOU = "rotaCaminhaoSP.cadastroPulado", CHAVE_VISTAS = "rotaCaminhaoSP.novidadesVistas";
   var aparelhoId = (function () {
     var id = ler("rotaCaminhaoSP.aparelho") || "";
