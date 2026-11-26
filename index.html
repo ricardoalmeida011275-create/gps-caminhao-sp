@@ -589,6 +589,50 @@ body.modo-inicio .leaflet-bottom.leaflet-right { bottom: calc(var(--alt-base, 15
   font-family: var(--f-titulo); font-weight: 700; font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
   background: var(--aviso); color: var(--aviso-texto); border-radius: 999px; padding: 3px 9px; opacity: .9; box-shadow: 0 2px 6px rgba(0,0,0,.15);
 }
+.ini-marca {
+  display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 6px 14px; border-radius: 999px;
+  background: var(--vidro); color: var(--asfalto); box-shadow: var(--sombra);
+}
+.ini-marca strong { font-family: var(--f-titulo); font-weight: 700; font-size: 21px; letter-spacing: .02em; white-space: nowrap; }
+.ini-marca .selo-piloto { box-shadow: none; font-size: 10px; padding: 2px 7px; }
+@media (max-width: 340px) { .ini-marca .selo-piloto { display: none; } }
+/* Painel da rota: o resultado (com "Iniciar navegação") fica no alto, logo abaixo do mapa */
+.painel-corpo > #resultado { order: -1; }
+.resultado > .res-status { order: -3; }
+.resultado > .res-numeros { order: -2; }
+.resultado > .btn-navegar { order: -1; margin-top: 2px; min-height: 60px; font-size: 22px; }
+/* ===== Etapa 2: tela de escolha da rota ===== */
+.titulo-escolha { display: none; margin: 0 auto 0 0; font-family: var(--f-titulo); font-weight: 700; font-size: 22px; }
+body.tem-rota .titulo-escolha { display: block; }
+body.tem-rota .painel-topo .marca { display: none; }
+body.tem-rota:not(.editando-rota) #secRota { display: none; }
+#resumoTrajeto { display: none; order: -2; }
+body.tem-rota #resumoTrajeto { display: flex; }
+body.tem-rota #msgRota { order: -1; margin: -8px 0 0; }
+body.tem-rota #msgRota:empty { display: none; }
+.resumo-trajeto {
+  align-items: center; gap: 10px; background: var(--papel); border: 1px solid var(--linha); border-radius: 14px; padding: 8px 8px 8px 12px;
+}
+.resumo-trajeto .rt-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; font-size: 15px; }
+.resumo-trajeto .rt-linha { display: flex; gap: 8px; align-items: center; min-width: 0; }
+.resumo-trajeto .rt-linha span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.resumo-trajeto .rt-de { color: var(--suave); }
+.resumo-trajeto .rt-para { font-weight: 700; }
+.resumo-trajeto .pino { width: 20px; height: 20px; font-size: 12px; }
+.btn-alterar { flex: none; min-height: 44px; }
+body.tem-rota .painel-corpo { gap: 12px; }
+body.tem-rota .resultado { border-width: 0; padding: 0; background: transparent; }
+body.tem-rota .res-status { font-size: 16px; }
+.tipos-rota { order: -2; }
+.tipo-rota { min-height: 104px; border-radius: 14px; padding: 12px; position: relative; }
+.tipo-rota[aria-pressed="true"] { border-width: 3px; padding: 11px; box-shadow: var(--sombra); }
+.tipo-rota .tipo-nome { font-size: 16px; }
+.tipo-rota .op-tempo { font-size: 26px; line-height: 1.05; }
+.tipo-rota .op-km { font-size: 14px; }
+.selo-eco {
+  display: inline-block; margin-top: 2px; font-family: var(--f-titulo); font-weight: 700; font-size: 13px; letter-spacing: .02em;
+  background: var(--liberado-fundo); color: var(--liberado); border-radius: 999px; padding: 2px 9px;
+}
 .btn-minhapos {
   position: absolute; z-index: 1050; right: max(12px, env(safe-area-inset-right, 0px));
   bottom: calc(var(--alt-base, 150px) + 12px + env(safe-area-inset-bottom, 0px));
@@ -732,7 +776,7 @@ body.navegando .pos-inicio { display: none; }
     <!-- ===== Tela inicial: mapa limpo, "Para onde?" e atalhos ===== -->
     <div class="ini-topo ini-so">
       <button class="btn-menu" type="button" id="btnMenu" aria-label="Abrir o menu" aria-haspopup="dialog" aria-controls="menuFundo"><span aria-hidden="true">☰</span></button>
-      <span class="selo-piloto">Teste piloto</span>
+      <div class="ini-marca"><strong><span aria-hidden="true">🚚</span> Rota Liberada</strong><span class="selo-piloto">Teste piloto</span></div>
     </div>
     <button class="btn-minhapos ini-so" type="button" id="btnMinhaPos" aria-label="Mostrar minha posição no mapa"><span aria-hidden="true">◎</span></button>
     <div class="ini-base ini-so" id="iniBase">
@@ -867,6 +911,7 @@ body.navegando .pos-inicio { display: none; }
   <aside class="painel" id="painel">
     <div class="painel-topo">
       <button class="btn-inicio" id="btnInicio" type="button" aria-label="Voltar para a tela inicial">✕</button>
+      <p class="titulo-escolha">Escolha a rota</p>
       <h1 class="marca">Rota Liberada <span class="selo">Teste piloto</span><small>GPS de caminhão que respeita as restrições</small></h1>
       <button class="btn-painel" id="btnPainel" type="button" aria-expanded="true" aria-controls="painelCorpo">Esconder</button>
     </div>
@@ -3056,15 +3101,20 @@ body.navegando .pos-inicio { display: none; }
     var rodape = '<p class="nota" style="margin:0">Rota do OpenRouteService com mapas do OpenStreetMap, conferida com as restrições da CET no horário de saída. Siga sempre as placas.</p>';
     // Lista de opções (quando há mais de uma rota que respeita as restrições)
     var ops = estado.opcoes || [];
+    if (ops.length <= 1 && !nav.ativo) numeros += '<p class="nota" style="margin:0">⛽ Consumo estimado: ~' + litrosTxt(litrosEstimados(res)) + ' de diesel</p>';
     if (ops.length > 1 && !nav.ativo) {
       var mesmo = Math.abs(ops[0].distancia - ops[1].distancia) < Math.max(80, ops[0].distancia * 0.01);
+      var litros = ops.map(litrosEstimados), lMin = Math.min.apply(null, litros), lMax = Math.max.apply(null, litros);
+      var iEco = lMax - lMin >= Math.max(0.3, lMax * 0.04) ? litros.indexOf(lMin) : -1;   // só marca se a economia for de verdade
       numeros = '<div class="tipos-rota" role="group" aria-label="Tipo de rota">' + ops.map(function (o, i) {
-        var nome = o.preferencia === "shortest" ? "Mais curta" : "Mais rápida (avenidas)";
+        var nome = o.preferencia === "shortest" ? "📏 Mais curta" : "⚡ Mais rápida";
         return '<button type="button" class="opcao-rota tipo-rota" data-i="' + i + '" aria-pressed="' + (o === res ? "true" : "false") + '">' +
           '<span class="tipo-nome"><span class="cor-rota" style="background:' + CORES_OPCOES[i] + '"></span>' + nome + '</span>' +
-          '<span class="op-tempo">' + tempo(o.duracao) + '</span><span class="op-km">' + km(o.distancia) + '</span>' +
+          '<span class="op-tempo">' + tempo(o.duracao) + '</span><span class="op-km">' + km(o.distancia) + ' · ⛽ ~' + litrosTxt(litros[i]) + '</span>' +
+          (i === iEco && !mesmo ? '<span class="selo-eco">💰 Mais econômica</span>' : "") +
           (o.restrito && o.restrito.metros > 0 ? '<span class="op-restr">⚠️ ' + km(o.restrito.metros) + ' em área restrita</span>' : "") + '</button>';
       }).join("") + '</div><p class="nota" style="margin:0">' +
+        (mesmo ? "" : "Diesel estimado pelo tipo de caminhão, distância e velocidade média (só uma referência)" + (iEco < 0 ? ": as duas gastam quase o mesmo. " : ". ")) +
         (mesmo ? "As duas opções dão praticamente o mesmo caminho. " : "A mais curta costuma entrar mais pelos bairros. ") +
         (ops.some(function (o) { return o.restrito && o.restrito.metros > 0; }) ? "Não há caminho sem área restrita: o app escolheu o menor trecho possível dentro dela." : "As duas respeitam as restrições conhecidas.") +
         ' Toque para escolher.</p>' + numeros;
@@ -3087,6 +3137,17 @@ body.navegando .pos-inicio { display: none; }
       b.addEventListener("click", function () { escolherOpcao(parseInt(b.getAttribute("data-i"), 10)); });
     });
   }
+
+  /* Diesel estimado (só para comparar as opções; não muda a rota).
+     Média de km/l por tipo de caminhão, piorando no anda-e-para (velocidade média baixa). */
+  var KM_POR_LITRO = { vuc: 6, "3-4": 5.5, toco: 4.5, truck: 3.3, bitruck: 3, carreta: 2.4, bitrem: 2, rodotrem: 1.8, outro: 3.3, carro: 10 };
+  function litrosEstimados(o) {
+    var tipo = estado.caminhao && estado.caminhao.tipo || "truck", kml = KM_POR_LITRO[tipo] || 3.3;
+    var kmTot = o.distancia / 1000, kmh = kmTot / Math.max(o.duracao / 3600, 0.01);
+    var fator = kmh < 20 ? 1.35 : kmh < 35 ? 1.15 : kmh < 60 ? 1 : 0.95;
+    return kmTot / kml * fator;
+  }
+  function litrosTxt(l) { return (l < 10 ? l.toFixed(1).replace(".", ",") : Math.round(l)) + " L"; }
 
   /* Prepara a rota para acompanhar a posição: pontos em metros e distância acumulada */
   function prepararRota(res) {
@@ -4148,7 +4209,7 @@ body.navegando .pos-inicio { display: none; }
      - Cada celular ganha um código sorteado (não diz quem é) para contar quantos usam o app.
      - Nome e WhatsApp: só de quem preencher e aceitar. Pede UMA vez; quem pular vê de novo em 7 dias.
      - Novidades: aparece só a mais recente, uma vez, e nunca durante a navegação. */
-  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v37";
+  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v38";
   var CHAVE_CAD = "rotaCaminhaoSP.cadastro", CHAVE_PULOU = "rotaCaminhaoSP.cadastroPulado", CHAVE_VISTAS = "rotaCaminhaoSP.novidadesVistas";
   var aparelhoId = (function () {
     var id = ler("rotaCaminhaoSP.aparelho") || "";
@@ -4484,7 +4545,7 @@ body.navegando .pos-inicio { display: none; }
   el("btnParaOnde").addEventListener("click", abrirBusca);
   el("btnVoltarBusca").addEventListener("click", fecharBusca);
   el("txtBusca").addEventListener("keydown", function (ev) { if (ev.key === "Escape" && el("sugBusca").hidden) fecharBusca(); });
-  el("btnRota").addEventListener("click", function () { definirModo("rota"); });
+  el("btnRota").addEventListener("click", function () { definirModo("rota"); el("painelCorpo").scrollTop = 0; });
   // ✕ do painel: volta para a tela inicial limpa (tira a rota do mapa)
   el("btnInicio").addEventListener("click", function () {
     limparOpcoes();
@@ -4571,6 +4632,36 @@ body.navegando .pos-inicio { display: none; }
     { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 });
   });
   window.addEventListener("resize", function () { if (document.body.classList.contains("modo-inicio")) medirBase(); });
+
+  /* ===== Etapa 2: tela de escolha da rota =====
+     Com a rota pronta, o formulário A/B some e fica só o resumo "De / Para" (botão Alterar abre de novo). */
+  (function () {
+    var pc = el("painelCorpo"), sec = el("tituloRota").closest("section"), r = el("resultado");
+    sec.id = "secRota";
+    var rt = document.createElement("div");
+    rt.id = "resumoTrajeto"; rt.className = "resumo-trajeto";
+    rt.innerHTML = '<div class="rt-textos"><div class="rt-linha rt-de"><span class="pino a" aria-hidden="true">A</span><span id="rtDe"></span></div>' +
+      '<div class="rt-linha rt-para"><span class="pino b" aria-hidden="true">B</span><span id="rtPara"></span></div></div>' +
+      '<button type="button" class="btn-pequeno btn-alterar" id="btnAlterarRota" aria-expanded="false" aria-controls="secRota">✏️ Alterar</button>';
+    pc.insertBefore(rt, pc.firstChild);
+    pc.insertBefore(el("msgRota"), r.nextSibling);   // avisos da rota ficam visíveis mesmo com o formulário fechado
+    function atualizarTela() {
+      var tem = !r.hidden && !!el("btnNavegar") && !nav.ativo;
+      document.body.classList.toggle("tem-rota", tem);
+      if (!tem) document.body.classList.remove("editando-rota");
+      el("btnAlterarRota").setAttribute("aria-expanded", document.body.classList.contains("editando-rota") ? "true" : "false");
+      el("rtDe").textContent = estado.A ? estado.A.nome : "Sua localização";
+      el("rtPara").textContent = estado.B ? estado.B.nome : "Destino";
+    }
+    new MutationObserver(atualizarTela).observe(r, { attributes: true, attributeFilter: ["hidden"], childList: true });
+    el("btnAlterarRota").addEventListener("click", function () {
+      document.body.classList.toggle("editando-rota");
+      atualizarTela();
+      if (document.body.classList.contains("editando-rota")) sec.scrollIntoView({ block: "nearest" });
+    });
+    // Traçou de novo: fecha o formulário e volta a mostrar as opções
+    el("btnRota").addEventListener("click", function () { document.body.classList.remove("editando-rota"); });
+  })();
   definirModo("inicio");
   desenharAtalhos();
 
