@@ -12,6 +12,9 @@
 //    Portaria 137/18, as zonas residenciais (ZER) ou as faixas/corredores
 //    de ônibus. Se mudou, NÃO mexe no app: abre um aviso (Issue) no GitHub
 //    para conferir antes. Regra errada pode gerar multa para o motorista.
+// 3) ÁREAS DE RISCO (riscos-sp.js): roubo de carga por delegacia, da SSP-SP.
+//    Quando a SSP publica um mês novo (1 vez por mês), refaz o mapa sozinho
+//    (ferramentas/riscos-ssp.mjs).
 //
 // O que o robô já viu fica guardado em ferramentas/robo-estado.json.
 // Na primeira vez ele só anota como está tudo (não avisa nada).
@@ -21,6 +24,7 @@ import fs from "node:fs";
 import vm from "node:vm";
 import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
+import { atualizarRiscos } from "./riscos-ssp.mjs";
 
 const RAIZ = fileURLToPath(new URL("..", import.meta.url));
 const ARQ_LOCAIS = RAIZ + "locais-sp.js";
@@ -251,6 +255,19 @@ estado.lugares = estado.lugares || {}; estado.fontes = estado.fontes || {};
 const aviso = { regras: [], lugares: [], lugaresAtualizados: [], semResposta: [] };
 if (!SO_REGRAS) await conferirLugares(estado, aviso);
 if (!SO_LUGARES) await conferirRegras(estado, aviso);
+// 3) ÁREAS DE RISCO (roubo de carga, SSP-SP): quando a SSP publica um mês novo, refaz riscos-sp.js
+//    e sobe a versão do app. Se a SSP ou o GeoSampa não responderem, o arquivo antigo continua valendo.
+if (!SO_LUGARES && !SO_REGRAS) {
+  try {
+    const r = await atualizarRiscos(false);
+    estado.riscos = { ate: r.ate, conferidoEm: new Date().toISOString().slice(0, 10) };
+    if (r.mudou) {
+      const sw = fs.readFileSync(ARQ_SW, "utf8");
+      fs.writeFileSync(ARQ_SW, sw.replace(/rota-caminhao-v(\d+)/, (m, n) => "rota-caminhao-v" + (parseInt(n, 10) + 1)), "utf8");
+      if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `\n✅ Áreas de risco atualizadas (SSP-SP, dados até ${r.ate}): ${r.resumo.vermelho} vermelhas, ${r.resumo.laranja} laranjas, ${r.resumo.amarelo} amarelas.\n`);
+    }
+  } catch (e) { console.log("Riscos: não deu para atualizar agora (" + e.message + "). Fica o arquivo antigo."); aviso.semResposta.push("Áreas de risco (SSP-SP)"); }
+}
 estado.ultimaConferencia = new Date().toISOString();
 fs.writeFileSync(ARQ_ESTADO, JSON.stringify(estado, null, 1) + "\n", "utf8");
 if (primeiraVez) console.log("Primeira conferência: só anotei como está tudo hoje. Os avisos começam na próxima.");
