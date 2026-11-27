@@ -787,6 +787,22 @@ body.navegando .leaflet-bottom { bottom: calc(96px + env(safe-area-inset-bottom,
   background: var(--papel); color: var(--asfalto); box-shadow: var(--sombra);
 }
 .btn-visao span { font-size: 22px; line-height: 1; }
+.btn-entregas-mapa { display: none; bottom: calc(270px + env(safe-area-inset-bottom, 0px)); }
+body.navegando.com-roteiro .btn-entregas-mapa { display: flex; }
+.btn-entregas-mapa small { font-size: 11px; }
+.nav-dia {
+  pointer-events: auto; align-self: flex-start; max-width: 100%; border: 0; cursor: pointer; text-align: left;
+  background: var(--nav-fundo); color: var(--nav-texto); border-radius: 14px; padding: 8px 12px; box-shadow: 0 4px 14px rgba(0,0,0,.25);
+  font-family: var(--f-titulo); font-weight: 700; font-size: 16px; line-height: 1.25;
+}
+.nav-dia[hidden] { display: none; }
+.pino-entrega {
+  width: 30px; height: 30px; border-radius: 50%; border: 3px solid #fff; background: #6a1b9a; color: #fff;
+  display: flex; align-items: center; justify-content: center; font: 700 14px/1 var(--f-titulo); box-shadow: 0 2px 6px rgba(0,0,0,.4);
+}
+.pino-entrega.feita { background: #9e9e9e; }
+.pino-entrega.proxima { background: var(--rota); width: 36px; height: 36px; font-size: 16px; }
+.pino-entrega.final { background: #2e7d32; font-size: 16px; }
 .btn-visao small { font-family: var(--f-titulo); font-size: 12px; font-weight: 700; }
 .velocimetro { bottom: calc(108px + env(safe-area-inset-bottom, 0px)); width: 72px; height: 72px; border-width: 0; box-shadow: var(--sombra); }
 .velocimetro strong { font-size: 28px; }
@@ -896,6 +912,9 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
   padding: 10px max(14px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px));
 }
 .rot-rodape .fim-btn:disabled { opacity: .5; cursor: default; }
+.rot-dupla { display: flex; gap: 8px; width: 100%; }
+.rot-dupla .fim-btn { flex: 1; min-width: 0; padding-left: 6px; padding-right: 6px; }
+@media (min-width: 700px) { .rot-dupla { max-width: 620px; } }
 @media (min-width: 700px) { .rot-rodape { align-items: center; } .rot-rodape .fim-btn { max-width: 620px; } }
 /* Aviso de novidade: número vermelho no ☰, no item Novidades e botão redondo 📢 na tela inicial */
 .btn-menu { position: relative; }
@@ -942,6 +961,7 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
         <p class="nav-texto" id="navTexto">Buscando o sinal do GPS…</p>
       </div>
     </div>
+    <button type="button" class="nav-dia" id="navDia" hidden aria-label="Ver as entregas no mapa"></button>
     <div class="nav-proibido" id="navProibido" hidden role="alert"></div>
     <div class="nav-alerta" id="navAlerta" hidden role="alert"></div>
     <div class="nav-faixa" id="navFaixa" hidden></div>
@@ -952,6 +972,7 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
     <button class="btn-centro" type="button" id="btnCentro" hidden><span aria-hidden="true">◎</span> Centralizar</button>
     <button class="btn-marcar" type="button" id="btnMarcar" hidden aria-label="Marcar problema neste local"><span aria-hidden="true">⚠️</span><small>Problema</small></button>
     <button class="btn-visao nav-so" type="button" id="btnVisao" aria-label="Ver a rota inteira"><span aria-hidden="true">🗺️</span><small>Rota</small></button>
+    <button class="btn-visao btn-entregas-mapa" type="button" id="btnEntregasMapa" aria-label="Ver as entregas no mapa"><span aria-hidden="true">📦</span><small>Entregas</small></button>
     <div class="velocimetro" id="velocimetro" hidden aria-label="Velocidade atual em quilômetros por hora"><strong id="velNum">0</strong><span>km/h</span></div>
     <button class="btn-bussola" type="button" id="btnBussola" hidden aria-label="Alternar direção para cima ou norte para cima">
       <span class="agulha" id="agulhaBussola" aria-hidden="true"><b>N</b></span>
@@ -1345,7 +1366,10 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
   </div>
   <div class="rot-rodape">
     <p class="rot-prev-rodape" id="rotPrevRodape" hidden></p>
-    <button type="button" class="fim-btn fim-secundario" id="btnRotOrdem">🔀 Organizar a melhor ordem</button>
+    <div class="rot-dupla">
+      <button type="button" class="fim-btn fim-secundario" id="btnRotOrdem">🔀 Organizar ordem</button>
+      <button type="button" class="fim-btn fim-secundario" id="btnRotMapa">🗺️ Ver no mapa</button>
+    </div>
     <button type="button" class="fim-btn fim-principal" id="btnRotComecar">▶ Começar entregas</button>
   </div>
 </div>
@@ -4456,7 +4480,7 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
      - Cada celular ganha um código sorteado (não diz quem é) para contar quantos usam o app.
      - Nome e WhatsApp: só de quem preencher e aceitar. Pede UMA vez; quem pular vê de novo em 7 dias.
      - Novidades: aparece só a mais recente, uma vez, e nunca durante a navegação. */
-  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v43";
+  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v44";
   var CHAVE_CAD = "rotaCaminhaoSP.cadastro", CHAVE_PULOU = "rotaCaminhaoSP.cadastroPulado", CHAVE_VISTAS = "rotaCaminhaoSP.novidadesVistas";
   var aparelhoId = (function () {
     var id = ler("rotaCaminhaoSP.aparelho") || "";
@@ -5036,7 +5060,7 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
     return { km: km, min: km / vel * 60 + 3 };
   }
   function previsaoRoteiro(r) {
-    var ori = posInicio ? posInicio.getLatLng() : null, prev = ori ? { lat: ori.lat, lon: ori.lng } : (r.origem || null);
+    var ori = nav.ativo && nav.ultimaPos ? { lat: nav.ultimaPos.lat, lng: nav.ultimaPos.lon } : (posInicio ? posInicio.getLatLng() : null), prev = ori ? { lat: ori.lat, lon: ori.lng } : (r.origem || null);
     var pernas = {}, km = 0, rodando = 0, n = 0;
     r.paradas.forEach(function (p, i) {
       if (p.feita) return;
@@ -5133,6 +5157,7 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
     }
     var pend = n - feitas;
     el("btnRotOrdem").disabled = pend < 2;
+    el("btnRotMapa").disabled = !pend;
     el("btnRotComecar").disabled = !pend;
     el("btnRotComecar").textContent = !n ? "Adicione as entregas" : !pend ? "Todas as entregas feitas ✓" : (r.ativo && feitas ? "▶ Continuar: próxima entrega" : "▶ Começar entregas");
     el("rotNota").textContent = n > 1 ? "A melhor ordem é organizada pela distância no mapa, a partir de onde você está. Cada trecho é traçado respeitando as restrições do caminhão no horário." : "";
@@ -5210,7 +5235,56 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
         : "Fim do dia";
     }
     if (document.body.classList.contains("modo-inicio")) medirBase();
+    document.body.classList.toggle("com-roteiro", !!mostra);
+    desenharEntregasMapa(); atualizarNavDia();
   }
+  /* Pontos de entrega no mapa: números na ordem, ✓ nas feitas, 🏁 no ponto final */
+  var camadaEntregas = L.layerGroup().addTo(mapa), mapaEntregasAberto = false;
+  function desenharEntregasMapa() {
+    camadaEntregas.clearLayers();
+    var r = lerRoteiro(), prox = proximaParada(r);
+    if (!r.ativo && !mapaEntregasAberto) return;
+    r.paradas.forEach(function (p, i) {
+      var cls = p.feita ? " feita" : (i === prox ? " proxima" : "");
+      L.marker([p.lat, p.lon], { icon: L.divIcon({ className: "", html: '<div class="pino-entrega' + cls + '">' + (p.feita ? "✓" : (i + 1)) + '</div>', iconSize: [36, 36], iconAnchor: [18, 18] }),
+        zIndexOffset: i === prox ? 900 : 500, keyboard: false })
+        .bindTooltip((i + 1) + ". " + nomeCurto(p.nome) + (p.feita ? " (feita)" : ""), { direction: "top", offset: [0, -16] })
+        .addTo(camadaEntregas);
+    });
+    var pf = pontoFinal(r);
+    if (pf) L.marker([pf.lat, pf.lon], { icon: L.divIcon({ className: "", html: '<div class="pino-entrega final">' + (pf.tipo === "saida" ? "↩" : "🏁") + '</div>', iconSize: [36, 36], iconAnchor: [18, 18] }), keyboard: false })
+      .bindTooltip(nomeFinal(pf), { direction: "top", offset: [0, -16] }).addTo(camadaEntregas);
+  }
+  // Enquadra no mapa todas as entregas que faltam (e onde o caminhão está)
+  function verEntregasNoMapa() {
+    var r = lerRoteiro(), pts = [];
+    r.paradas.forEach(function (p) { if (!p.feita) pts.push([p.lat, p.lon]); });
+    var pf = pontoFinal(r); if (pf) pts.push([pf.lat, pf.lon]);
+    if (!pts.length) { avisoRapido("Nenhuma entrega pendente."); return; }
+    if (nav.ativo) {
+      nav.seguindo = false; giro.ultimoToque = Date.now() + 12000; el("btnCentro").hidden = false;
+      if (nav.ultimaPos) pts.push([nav.ultimaPos.lat, nav.ultimaPos.lon]);
+    } else if (posInicio) { var o = posInicio.getLatLng(); pts.push([o.lat, o.lng]); }
+    mapaEntregasAberto = true; desenharEntregasMapa();
+    var alto = nav.ativo ? (el("navTopo").offsetHeight || 90) + 60 : 70,
+        baixo = nav.ativo ? (el("navBase").offsetHeight || 90) + 30 : (el("iniBase").offsetHeight || 150) + 30;
+    if (pts.length === 1) mapa.setView(pts[0], 15);
+    else mapa.fitBounds(L.latLngBounds(pts), { paddingTopLeft: [40, alto], paddingBottomRight: [nav.ativo ? 90 : 40, baixo] });
+  }
+  // Faixa na navegação: qual entrega é e a hora prevista para terminar o dia
+  function atualizarNavDia() {
+    var b = el("navDia"), r = lerRoteiro();
+    if (!nav.ativo || !r.ativo) { b.hidden = true; return; }
+    var pv = previsaoRoteiro(r), i = proximaParada(r);
+    if (pv.n) b.textContent = "📦 Entrega " + (i + 1) + " de " + r.paradas.length + " · fim do dia ~" + horaFim(pv.total) + " (" + duracaoTxt(pv.total) + ")";
+    else b.textContent = r.voltando ? "🏁 Entregas feitas · indo para o ponto final" : "📦 Todas as entregas feitas";
+    b.hidden = false;
+  }
+  setInterval(atualizarNavDia, 60000);
+  new MutationObserver(atualizarNavDia).observe(document.body, { attributes: true, attributeFilter: ["class"] });
+  el("navDia").addEventListener("click", verEntregasNoMapa);
+  el("btnEntregasMapa").addEventListener("click", verEntregasNoMapa);
+  el("btnRotMapa").addEventListener("click", function () { fecharRoteiro(); definirModo("inicio"); setTimeout(verEntregasNoMapa, 80); });
   // Chamado pela tela de fim de viagem
   function prepararFimRoteiro(chegou) {
     var r = lerRoteiro(), bp = el("btnFimProxima");
@@ -5307,7 +5381,7 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
   desenharAtalhos();
 
   // Só para testes (abrir o app com ?teste=1 no endereço): deixa conferir as rotas pelo console
-  if (/[?&]teste=1/.test(location.search)) window._teste = { fraseMotorista: fraseMotorista, calcularRota: calcularRota, manobrasRuins: manobrasRuins, momentoAtual: momentoAtual, bloqueios: BLOQ };
+  if (/[?&]teste=1/.test(location.search)) window._teste = { fraseMotorista: fraseMotorista, calcularRota: calcularRota, manobrasRuins: manobrasRuins, momentoAtual: momentoAtual, bloqueios: BLOQ, nav: nav, atualizarBannerRoteiro: atualizarBannerRoteiro };
 })();
 </script>
 
