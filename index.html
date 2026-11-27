@@ -619,6 +619,8 @@ body.tem-rota #msgRota:empty { display: none; }
 .resumo-trajeto .rt-de { color: var(--suave); }
 .resumo-trajeto .rt-para { font-weight: 700; }
 .resumo-trajeto .pino { width: 20px; height: 20px; font-size: 12px; }
+.resumo-trajeto .rt-dia { margin-top: 4px; padding: 6px 8px; border-radius: 10px; background: color-mix(in srgb, var(--rota) 14%, transparent); font-weight: 700; font-size: 15px; line-height: 1.3; }
+.resumo-trajeto .rt-dia[hidden] { display: none; }
 .btn-alterar { flex: none; min-height: 44px; }
 body.tem-rota .painel-corpo { gap: 12px; }
 body.tem-rota .resultado { border-width: 0; padding: 0; background: transparent; }
@@ -4454,7 +4456,7 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
      - Cada celular ganha um código sorteado (não diz quem é) para contar quantos usam o app.
      - Nome e WhatsApp: só de quem preencher e aceitar. Pede UMA vez; quem pular vê de novo em 7 dias.
      - Novidades: aparece só a mais recente, uma vez, e nunca durante a navegação. */
-  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v42";
+  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v43";
   var CHAVE_CAD = "rotaCaminhaoSP.cadastro", CHAVE_PULOU = "rotaCaminhaoSP.cadastroPulado", CHAVE_VISTAS = "rotaCaminhaoSP.novidadesVistas";
   var aparelhoId = (function () {
     var id = ler("rotaCaminhaoSP.aparelho") || "";
@@ -5047,6 +5049,13 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
     var parado = n * minParada(r);
     return { pernas: pernas, ultimo: ultimo, km: km, rodando: rodando, parado: parado, total: rodando + parado, n: n, temInicio: !!(ori || r.origem) };
   }
+  // Linha curta com o total do dia, para a tela da rota e o botão da tela inicial
+  function textoDia() {
+    var r = lerRoteiro(); if (!r.ativo) return "";
+    var pv = previsaoRoteiro(r); if (!pv.n) return "";
+    var i = proximaParada(r);
+    return "📦 Entrega " + (i + 1) + " de " + r.paradas.length + " · ⏱️ Dia todo: ~" + duracaoTxt(pv.total) + " · termina ~" + horaFim(pv.total);
+  }
   function duracaoTxt(min) { min = Math.max(1, Math.round(min / 5) * 5); var h = Math.floor(min / 60), m = min % 60; return h ? h + "h" + (m ? String(m).padStart(2, "0") : "") : m + " min"; }
   function kmTxt(km) { return (km < 10 ? km.toFixed(1).replace(".", ",") : Math.round(km)) + " km"; }
   function horaFim(min) { var d = new Date(Date.now() + min * 60000); return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); }
@@ -5195,6 +5204,10 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
     if (mostra) {
       el("iniRotNum").textContent = i >= 0 ? (i + 1) + "/" + r.paradas.length : (pf.tipo === "saida" ? "↩️" : "🏁");
       el("iniRotNome").textContent = i >= 0 ? nomeCurto(r.paradas[i].nome) : nomeFinal(pf);
+      var pvb = previsaoRoteiro(r);
+      el("btnRotProxima").querySelector("small").textContent = i >= 0
+        ? "Próxima entrega" + (pvb.n ? " · dia todo ~" + duracaoTxt(pvb.total) + ", termina ~" + horaFim(pvb.total) : "")
+        : "Fim do dia";
     }
     if (document.body.classList.contains("modo-inicio")) medirBase();
   }
@@ -5266,7 +5279,8 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
     var rt = document.createElement("div");
     rt.id = "resumoTrajeto"; rt.className = "resumo-trajeto";
     rt.innerHTML = '<div class="rt-textos"><div class="rt-linha rt-de"><span class="pino a" aria-hidden="true">A</span><span id="rtDe"></span></div>' +
-      '<div class="rt-linha rt-para"><span class="pino b" aria-hidden="true">B</span><span id="rtPara"></span></div></div>' +
+      '<div class="rt-linha rt-para"><span class="pino b" aria-hidden="true">B</span><span id="rtPara"></span></div>' +
+      '<div class="rt-dia" id="rtDia" hidden></div></div>' +
       '<button type="button" class="btn-pequeno btn-alterar" id="btnAlterarRota" aria-expanded="false" aria-controls="secRota">✏️ Alterar</button>';
     pc.insertBefore(rt, pc.firstChild);
     pc.insertBefore(el("msgRota"), r.nextSibling);   // avisos da rota ficam visíveis mesmo com o formulário fechado
@@ -5277,6 +5291,8 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
       el("btnAlterarRota").setAttribute("aria-expanded", document.body.classList.contains("editando-rota") ? "true" : "false");
       el("rtDe").textContent = estado.A ? estado.A.nome : "Sua localização";
       el("rtPara").textContent = estado.B ? estado.B.nome : "Destino";
+      var dia = tem ? textoDia() : "";
+      el("rtDia").textContent = dia; el("rtDia").hidden = !dia;
     }
     new MutationObserver(atualizarTela).observe(r, { attributes: true, attributeFilter: ["hidden"], childList: true });
     el("btnAlterarRota").addEventListener("click", function () {
