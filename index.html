@@ -1383,7 +1383,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
         <p class="rotulo" id="tituloConvite">Indique para outros motoristas</p>
         <div id="caixaConvite" class="convite">
           <button class="btn-rota btn-convidar" type="button" id="btnConvidar">📲 Convidar motoristas</button>
-          <p class="nota" style="margin:0">Manda pelo WhatsApp (ou outro app) um texto pronto com o link do GPS e o passo a passo. Quem receber entra com a conta Google, sem senha nova. Para ganhar dias de bônus, use "🎁 Indique e ganhe 7 dias".</p>
+          <p class="nota" style="margin:0">Manda pelo WhatsApp (ou outro app) um texto pronto com o link do GPS e o passo a passo. Quem receber entra com a conta Google, sem senha nova. Para ganhar dias de bônus, use "🎁 Indique e ganhe".</p>
           <textarea id="txtConvite" class="campo-texto" rows="8" hidden aria-label="Texto do convite"></textarea>
           <button class="btn-pequeno" type="button" id="btnCopiarConvite" hidden>Copiar texto</button>
         </div>
@@ -1732,7 +1732,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
   }).setView([-23.56, -46.64], 12);
   if (location.hostname === "localhost") { window._mapa = mapa; window._estado = estado; window._teste = function () { return { medirRestrito: medirRestrito, trechosProibidos: trechosProibidos, conferir: conferir, dentroDe: dentroDe, areaComEntrada: areaComEntrada, areas: areas, itemTomTom: itemTomTom, confirmarBairros: confirmarBairros }; }; } // só para testes no computador
   mapa.attributionControl.setPrefix(false); // tira o "Leaflet"; o crédito do OpenStreetMap continua (é obrigatório)
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  var camadaOSM = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
     attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">colaboradores do OpenStreetMap</a>'
   }).addTo(mapa);
@@ -1976,7 +1976,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
       "Ele traça a rota respeitando as restrições da CET (ZMRC, rodízio e avenidas proibidas por horário), de acordo com o tipo de veículo.\n\n" +
       "É uma versão de teste: ainda vai melhorar bastante, inclusive o visual. Se der certo, a ideia é lançar no mercado, então a sua opinião vale muito.\n\n" +
       "Como usar:\n" +
-      "1. Abra este link no Chrome e entre com a sua conta Google (sem senha nova; 7 dias grátis para testar): " + linkConvite() + "\n" +
+      "1. Abra este link no Chrome e entre com a sua conta Google (sem senha nova; " + ((window.PLANOS && PLANOS.TESTE && PLANOS.TESTE.DIAS_TESTE) || 14) + " dias grátis para testar): " + linkConvite() + "\n" +
       "2. Para deixar como app: toque no botão azul \"Instalar o GPS\" no alto da tela e confirme. No iPhone, o botão mostra o passo a passo.\n" +
       "3. Toque em \"Cadastrar caminhão\" e coloque o tipo e as medidas do seu caminhão (altura, peso...). Depois escolha o final da placa, a saída (\"Minha localização\") e o destino, e toque em \"Traçar rota\".\n" +
       "4. Toque em \"Iniciar navegação\" ANTES de sair. Não mexa no celular dirigindo e deixe a tela ligada.\n\n" +
@@ -3858,6 +3858,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
     // Velocímetro: velocidade do GPS (média suave). Abaixo de 3 km/h mostra 0 (parado).
     var kmh = Math.round(giro.velocidade * 3.6);
     document.getElementById("velNum").textContent = kmh < 3 ? "0" : String(kmh);
+    if (window.RL && RL.ganchos.velocidade) { try { RL.ganchos.velocidade(kmh < 3 ? 0 : kmh, lon, lat, dirGps); } catch (e) {} }   // alerta de velocidade (velocidade.js)
 
     // Direção que o GPS mede (só confiável andando)
     var gps = (dirGps !== null && !isNaN(dirGps)) ? dirGps : dirMov;
@@ -4026,9 +4027,12 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
         recalcular(nav.precisaRecalc ? "Ajustando a rota a partir de onde você está…" : "Você saiu da rota. Recalculando…", lon, lat);
         if (nav.recalculando) return;
       }
+      // Sem internet (offline.js): mostra o caminho de volta para a rota salva
+      if (nav.semRedeFora) { if (window.RL && RL.ganchos.guiaVolta) RL.ganchos.guiaVolta(lon, lat); seguirCaminhao(lat, lon); return; }
       mostrarAlertaNav("Fora da rota…", "info");
       seguirCaminhao(lat, lon);
     } else {
+      if (nav.semRedeFora) { nav.semRedeFora = false; if (window.RL && RL.ganchos.voltouParaRota) RL.ganchos.voltouParaRota(); }
       nav.foraDesde = null; nav.foraRegistrado = false;
       nav.ultimoNaRota = { lon: lon, lat: lat, s: pos.s, instr: nav.instrAtual };
       if (document.getElementById("navAlerta").className.indexOf("info") >= 0 && document.getElementById("navAlerta").textContent.indexOf("✅") !== 0) mostrarAlertaNav("");
@@ -4085,6 +4089,12 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
   function recalcular(motivo, lon, lat) {
     // Espera pelo menos 10 s entre um recálculo e outro (economiza o limite diário de rotas)
     if (nav.recalculando || Date.now() - nav.ultimaRecalc < 10000) return;
+    // Sem internet (offline.js): não dá para pedir rota nova; segue a rota salva e orienta a voltar para ela
+    if (window.RL && RL.ganchos.semRede && RL.ganchos.semRede()) {
+      nav.ultimaRecalc = Date.now();
+      if (RL.ganchos.recalcularSemRede) RL.ganchos.recalcularSemRede(motivo, lon, lat);
+      return;
+    }
     nav.recalculando = true;
     mostrarAlertaNav(motivo, "info");
     falar(/saiu da rota/.test(motivo) ? "Recalculando" : motivo.replace("…", ""), "manobra");
@@ -4113,7 +4123,8 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
         }
       } else { nav.problemaFalado = ""; mostrarAlertaNav(""); }
     }).catch(function (e) {
-      mostrarAlertaNav(e.message + " Siga as placas.", "alerta");
+      if (window.RL && RL.ganchos.semRede && RL.ganchos.semRede() && RL.ganchos.recalcularSemRede) RL.ganchos.recalcularSemRede(motivo, lon, lat);
+      else mostrarAlertaNav(e.message + " Siga as placas.", "alerta");
     }).then(function () {
       nav.recalculando = false; nav.ultimaRecalc = Date.now(); nav.foraDesde = null;
     });
@@ -4670,7 +4681,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
      - Cada celular ganha um código sorteado (não diz quem é) para contar quantos usam o app.
      - Nome e WhatsApp: só de quem preencher e aceitar. Pede UMA vez; quem pular vê de novo em 7 dias.
      - Novidades: aparece só a mais recente, uma vez, e nunca durante a navegação. */
-  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v47";
+  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v48";
   var CHAVE_CAD = "rotaCaminhaoSP.cadastro", CHAVE_PULOU = "rotaCaminhaoSP.cadastroPulado", CHAVE_VISTAS = "rotaCaminhaoSP.novidadesVistas";
   var aparelhoId = (function () {
     var id = ler("rotaCaminhaoSP.aparelho") || "";
@@ -5667,6 +5678,8 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
      Busca por "quadradinhos" de ~5 km e guarda no celular por 7 dias (não consulta o serviço toda hora). */
   var OVERPASS = ["https://overpass-api.de/api/interpreter", "https://maps.mail.ru/osm/tools/overpass/api/interpreter", "https://overpass.kumi.systems/api/interpreter"];
   var CEL = 0.05, CHAVE_POSTOS = "rotaCaminhaoSP.postos", POSTOS_VALIDADE = 7 * 86400000, MAX_CEL = 80;
+  // Com o mapa de SP salvo (offline.js), guarda os postos da Grande SP inteira (≈ 500 quadradinhos)
+  function maxCelulas() { return (window.RL && RL.ganchos.mapaSalvo && RL.ganchos.mapaSalvo()) ? 700 : MAX_CEL; }
   var cachePostos = (function () { var c = lerJsonLocal(CHAVE_POSTOS, {}); return c && typeof c === "object" && !Array.isArray(c) ? c : {}; })();
   function celula(lat, lon) { return Math.floor(lat / CEL) + "_" + Math.floor(lon / CEL); }
   function celulasDosPontos(pts, margem) {
@@ -5682,7 +5695,8 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
   }
   function guardarCachePostos() {
     var ks = Object.keys(cachePostos);
-    if (ks.length > MAX_CEL) ks.sort(function (a, b) { return cachePostos[a].t - cachePostos[b].t; }).slice(0, ks.length - MAX_CEL).forEach(function (k) { delete cachePostos[k]; });
+    var maxC = maxCelulas();
+    if (ks.length > maxC) ks.sort(function (a, b) { return cachePostos[a].t - cachePostos[b].t; }).slice(0, ks.length - maxC).forEach(function (k) { delete cachePostos[k]; });
     if (!gravar(CHAVE_POSTOS, JSON.stringify(cachePostos))) {   // sem espaço no celular: guarda só os mais novos
       ks = Object.keys(cachePostos).sort(function (a, b) { return cachePostos[b].t - cachePostos[a].t; });
       ks.slice(20).forEach(function (k) { delete cachePostos[k]; });
@@ -5765,6 +5779,40 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
       if (window.RL && RL.ganchos.paradasAprovadas) { var cs = {}; cels.forEach(function (c) { cs[c] = 1; }); RL.ganchos.paradasAprovadas().forEach(function (p) { if (cs[celula(p.lat, p.lon)]) out.push(p); }); }
       if (!out.length && falhou) throw new Error("Não consegui buscar os postos agora.");
       return out;
+    });
+  }
+  /* Mapa sem internet (offline.js): guarda os postos e paradas de uma região inteira (Grande SP), em pedaços,
+     um pedido por vez ao Overpass. aoAndar(feitos, total). Devolve quantos postos guardou. */
+  function guardarPostosRegiao(s, w, n, e, aoAndar) {
+    // pedaços de 10 x 10 células (≈ 50 km), alinhados com as células: cada célula fica inteira em um pedaço só
+    var pedacos = [], P = 10, ia0 = Math.floor(s / CEL), ia1 = Math.floor(n / CEL), ib0 = Math.floor(w / CEL), ib1 = Math.floor(e / CEL);
+    for (var ia = ia0; ia <= ia1; ia += P) for (var ib = ib0; ib <= ib1; ib += P) pedacos.push({ ia: ia, ib: ib, q: [ia * CEL, ib * CEL, Math.min(ia + P, ia1 + 1) * CEL, Math.min(ib + P, ib1 + 1) * CEL] });
+    var total = 0, feitos = 0, falhas = 0;
+    // dois pedidos por vez (o Overpass aceita até 2 ao mesmo tempo por aparelho)
+    var filas = [[], []]; pedacos.forEach(function (pd, i) { filas[i % 2].push(pd); });
+    return Promise.all(filas.map(function (fila) { return fila.reduce(function (p, pd) {
+      return p.then(function () {
+        var q = pd.q, bb = "(" + q[0].toFixed(3) + "," + q[1].toFixed(3) + "," + q[2].toFixed(3) + "," + q[3].toFixed(3) + ")";
+        var consulta = '[out:json][timeout:60];(nwr["amenity"~"^(fuel|truck_stop)$"]' + bb + ';nwr["amenity"="parking"]["hgv"~"^(yes|designated)$"]' + bb +
+          ';nwr["highway"="services"]' + bb + ';nwr["highway"="rest_area"]' + bb + ';);out center tags;';
+        return pedirOverpass(consulta).then(function (j) {
+          var agora = Date.now(), novo = {};
+          for (var la = pd.ia; la < Math.min(pd.ia + P, ia1 + 1); la++) for (var lo = pd.ib; lo < Math.min(pd.ib + P, ib1 + 1); lo++) novo[la + "_" + lo] = [];
+          (j.elements || []).forEach(function (el) {
+            var lat = el.lat !== undefined ? el.lat : (el.center && el.center.lat), lon = el.lon !== undefined ? el.lon : (el.center && el.center.lon);
+            if (lat === undefined || lon === undefined) return;
+            var tags = el.tags || {}, t = classificarPosto(tags), c = celula(lat, lon);
+            if (!t || !novo[c]) return;
+            novo[c].push([Number(lat.toFixed(5)), Number(lon.toFixed(5)), t, nomePosto(tags, t).slice(0, 50)]);
+            total++;
+          });
+          Object.keys(novo).forEach(function (c) { cachePostos[c] = { t: agora, l: novo[c] }; });
+        }, function () { falhas++; }).then(function () { feitos++; if (aoAndar) aoAndar(feitos, pedacos.length); });
+      });
+    }, Promise.resolve()); })).then(function () {
+      guardarCachePostos();
+      if (falhas === pedacos.length) throw new Error("Não consegui buscar os postos agora.");
+      return { postos: total, falhas: falhas };
     });
   }
   // Posto que fica em área proibida para este veículo agora (ZER para caminhão; ZMRC/rodízio no horário): não serve para esperar
@@ -6763,6 +6811,15 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
     definirPonto: definirPonto, tracarAteDestino: tracarAteDestino, irParaPosto: irParaPosto, postosNasCelulas: postosNasCelulas,
     celulasEmVolta: celulasEmVolta, desenharPostos: desenharPostos, rotuloPosto: rotuloPosto, distLinhaReta: distLinhaReta,
     guardarFoto: guardarFoto, lerFoto: lerFoto, apagarFoto: apagarFoto, reduzirFoto: reduzirFoto,
+    // mapa sem internet (offline.js)
+    camadaOSM: camadaOSM, guardarPostosRegiao: guardarPostosRegiao, pedirOverpass: pedirOverpass, localizarNaRota: localizarNaRota, pontoNaRota: pontoNaRota,
+    retomarViagem: function (res, A, B) {
+      if (A) definirPonto("A", A.lat, A.lon, A.nome); definirPonto("B", B.lat, B.lon, B.nome, { aproximado: B.aproximado });
+      if (estado.modo !== "agora") document.getElementById("mAgora").click();
+      estado.opcoes = [res]; estado.escolhida = 0;
+      prepararRota(res); desenharRota(res.coords, true); exibirResultado(res);
+      iniciarNavegacao();
+    },
     posicao: function () { if (nav.ativo && nav.ultimaPos) return nav.ultimaPos; if (posInicio) { var l = posInicio.getLatLng(); return { lat: l.lat, lon: l.lng }; } return null; },
     avisoAtual: function (f) { return avisos.fontes[f] || null; },
     registrarAviso: function (fonte, id) { AVISO_EL[fonte] = id; el(id).addEventListener("click", function () { var a = avisos.fontes[fonte]; if (a) { avisos.fechados[fonte + "|" + a.chave] = true; escolherAviso(); } }); },
@@ -6838,6 +6895,9 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
 </script>
 <!-- Funções novas (compartilhar viagem, emergência, jornada, gastos, documentos, frete, paradas, entregas) -->
 <script src="extras.js"></script>
+<!-- Mapa sem internet (Tarefa 10) e alerta de velocidade (Tarefa 11) -->
+<script src="offline.js"></script>
+<script src="velocidade.js"></script>
 <!-- Conta do motorista: login Google, cadastro, controle de acesso e indicação (Firebase) -->
 <script type="module" src="conta.js"></script>
 </body>

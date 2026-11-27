@@ -4,12 +4,18 @@
 
    COBRANCA_LIGADA:
      false = fase de teste: TUDO liberado para todos (é como está agora).
-     true  = Play Store: quem não é parceiro, nem assinante, e já passou dos 7 dias de teste
+     true  = Play Store: quem não é parceiro, nem assinante, e já passou dos dias de teste
              vê o cadeado 🔒 nas funções PLUS (botão "Assinar para liberar"). As GRÁTIS continuam.
    Parceiros, assinantes e quem está nos dias de teste têm sempre tudo liberado.
    ===================================================================== */
 (function () {
   var COBRANCA_LIGADA = false;
+
+  /* TESTE GRÁTIS – o ÚNICO lugar com o número de dias (o app e o painel do Ricardo leem daqui).
+     DIAS_TESTE: dias grátis contados do cadastro.  DIAS_INDICACAO: quem entra com código ganha a mais,
+     e quem indicou ganha isso depois da 1ª viagem do indicado.
+     Quem já tinha o teste VENCIDO antes de TESTE_NOVO_DESDE continua com os dias antigos (DIAS_TESTE_ANTES). */
+  var TESTE = { DIAS_TESTE: 14, DIAS_INDICACAO: 7, DIAS_TESTE_ANTES: 7, TESTE_NOVO_DESDE: "2026-11-27" };
 
   var FUNCOES = {
     // ---------- GRÁTIS ----------
@@ -21,6 +27,7 @@
     marcarProblema:    { plano: "gratis", nome: "Marcar problema" },
     indique:           { plano: "gratis", nome: "Indique um amigo" },
     basico:            { plano: "gratis", nome: "Login, menu e configurações básicas" },
+    alertaVelocidade:  { plano: "gratis", nome: "Alerta de velocidade (meu limite e limite da rua)" },
     // ---------- PLUS ----------
     rotaCaminhao:      { plano: "plus", nome: "Rota de caminhão que desvia das restrições (ZMRC, horários, vias proibidas, tipo de caminhão)" },
     avisosRestricao:   { plano: "plus", nome: "Avisos de área restrita durante a viagem" },
@@ -38,13 +45,14 @@
     paradas:           { plano: "plus", nome: "Pontos de parada com avaliações" },
     frete:             { plano: "plus", nome: "Calculadora de frete" },
     entregarAqui:      { plano: "plus", nome: "\"Como é entregar aqui\"" },
+    mapaOffline:       { plano: "plus", nome: "Modo sem internet (mapa de SP salvo no celular)" },
     // Funções que já existiam e não estavam na lista do Ricardo: ficaram PLUS (ver PROGRESSO.md)
     minhasViagens:     { plano: "plus", nome: "Minhas viagens (tempo previsto x real)" },
     faixasOnibus:      { plano: "plus", nome: "Avisos de faixa e corredor de ônibus na viagem" },
     enviarChegada:     { plano: "plus", nome: "Enviar minha chegada (WhatsApp)" }
   };
 
-  // Situação do motorista (vem do conta.js): parceiro, assinante, teste (dentro dos 7 dias), vencido, bloqueado
+  // Situação do motorista (vem do conta.js): parceiro, assinante, teste (dentro dos dias de teste), vencido, bloqueado
   function situacao() { try { return (window.RotaConta && window.RotaConta.situacao && window.RotaConta.situacao()) || null; } catch (e) { return null; } }
   function temTudo() {
     var c = situacao();
@@ -76,11 +84,20 @@
     t.querySelector(".op-fechar").onclick = function () { t.hidden = true; };
     t.hidden = false;
   }
+  // Dias de teste de um cadastro (sem contar os bônus): criadoEm em milissegundos, indicado = veio com código
+  function diasDoTeste(criadoEm, indicado) {
+    var desde = new Date(TESTE.TESTE_NOVO_DESDE + "T00:00:00-03:00").getTime();
+    var extra = indicado ? TESTE.DIAS_INDICACAO : 0;
+    // o teste antigo já tinha acabado antes da mudança: continua como era
+    if (criadoEm + (TESTE.DIAS_TESTE_ANTES + extra) * 86400000 < desde) return TESTE.DIAS_TESTE_ANTES + extra;
+    return TESTE.DIAS_TESTE + extra;
+  }
   // Use antes de abrir uma função: se estiver bloqueada, mostra o cadeado e devolve false
   function exigir(chave) { if (liberado(chave)) return true; cadeado(chave); return false; }
 
   window.PLANOS = {
     COBRANCA_LIGADA: COBRANCA_LIGADA, FUNCOES: FUNCOES, liberado: liberado, exigir: exigir, cadeado: cadeado, temTudo: temTudo,
+    TESTE: TESTE, diasDoTeste: diasDoTeste,
     // Para o teste no computador: PLANOS._testeCobranca(true) liga a cobrança só nesta aba
     _testeCobranca: function (v) { if (location.hostname === "localhost") { COBRANCA_LIGADA = !!v; window.PLANOS.COBRANCA_LIGADA = COBRANCA_LIGADA; } }
   };

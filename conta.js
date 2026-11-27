@@ -3,7 +3,7 @@
 
    - Entra com a conta Google UMA vez; o celular lembra.
    - Cadastro: nome, telefone (WhatsApp), tipo de caminhão e código de indicação (opcional).
-   - Acesso: PARCEIRO (sempre liberado), TESTE (7 dias; 14 se veio indicado),
+   - Acesso: PARCEIRO (sempre liberado), TESTE (14 dias; 21 se veio indicado – números em planos.js, TESTE),
      ASSINANTE (campo pronto para a Play Store), mais os dias ganhos/dados pelo Ricardo.
    - Indique e ganhe: quem indicou ganha +7 dias quando o indicado faz a 1ª viagem.
    - Banco de dados: Firebase (plano gratuito). As regras de segurança do Firestore
@@ -41,13 +41,22 @@ const ms = (t) => (t && typeof t.toMillis === "function") ? t.toMillis() : (type
   } catch (e) {}
 })();
 
+/* ---------- Dias do teste: configuração única em planos.js (PLANOS.TESTE) ---------- */
+const testeCfg = () => (window.PLANOS && window.PLANOS.TESTE) || { DIAS_TESTE: 14, DIAS_INDICACAO: 7 };
+const diasN = () => testeCfg().DIAS_TESTE;          // dias grátis de quem entra sem código
+const diasI = () => testeCfg().DIAS_INDICACAO;      // a mais para o indicado; e o bônus de quem indicou
+function diasDoTeste(criado, indicado) {
+  if (window.PLANOS && window.PLANOS.diasDoTeste) return window.PLANOS.diasDoTeste(criado, indicado);
+  return diasN() + (indicado ? diasI() : 0);
+}
+
 /* ---------- Cálculo do acesso (o painel do Ricardo usa a mesma conta) ----------
-   Fim = cadastro + 7 dias (14 se veio indicado); depois, em ordem de data, cada bônus
+   Fim = cadastro + dias do teste (14; 21 se veio indicado); depois, em ordem de data, cada bônus
    (dado pelo Ricardo ou ganho por indicação) soma os dias a partir do maior entre o fim e a data do bônus. */
 export function fimDoAcesso(m, viagensIndicados) {
-  let fim = ms(m.criadoEm) + (m.indicadoPor ? 14 : 7) * DIA;
+  let fim = ms(m.criadoEm) + diasDoTeste(ms(m.criadoEm), !!m.indicadoPor) * DIA;
   const ev = (m.bonus || []).map((b) => ({ t: ms(b.em), dias: Number(b.dias) || 0 }))
-    .concat((viagensIndicados || []).map((t) => ({ t: ms(t), dias: 7 })))
+    .concat((viagensIndicados || []).map((t) => ({ t: ms(t), dias: diasI() })))
     .sort((a, b) => a.t - b.t);
   ev.forEach((e) => { fim = Math.max(fim, e.t) + e.dias * DIA; });
   return fim;
@@ -144,7 +153,7 @@ async function atualizarConta(u) {
   const snap = await fs.getDoc(fs.doc(db, "motoristas", u.uid));
   if (!snap.exists()) { telaCadastro(u); return; }
   const m = snap.data();
-  // Indicações deste motorista que já viajaram (cada uma vale +7 dias)
+  // Indicações deste motorista que já viajaram (cada uma vale +7 dias – PLANOS.TESTE.DIAS_INDICACAO)
   let viagens = [], indicados = 0;
   try {
     const q = await fs.getDocs(fs.query(fs.collection(db, "indicacoes"), fs.where("de", "==", u.uid)));
@@ -184,7 +193,7 @@ function avisoPlanoGratis() {
 function telaLogin(erro) {
   tela('<div class="rl-logo">🚚</div><h2>Bem-vindo ao Rota Liberada</h2>' +
     "<p>GPS de caminhão que respeita as restrições de São Paulo. Entre com a sua conta Google para começar. É só uma vez: depois o app lembra.</p>" +
-    '<p><b>Novos motoristas ganham 7 dias grátis</b> (14 dias se vierem indicados por um amigo).</p>' +
+    '<p><b>Novos motoristas ganham ' + diasN() + ' dias grátis</b> (' + (diasN() + diasI()) + ' dias se vierem indicados por um amigo).</p>' +
     '<button class="rl-btn rl-google" id="rlGoogle"><svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg> Entrar com Google</button>' +
     '<div class="rl-erro" id="rlErro">' + esc(erro || "") + "</div>" +
     '<p class="rl-mini">Usamos seu nome, telefone e tipo de caminhão só para liberar o acesso e falar com você. Veja a <a href="privacidade.html">política de privacidade</a>.</p>');
@@ -212,7 +221,7 @@ function telaCadastro(u, erro, dados) {
     '<label for="rlCam">Tipo de caminhão</label><select id="rlCam"><option value="">Escolha…</option>' +
       CAMINHOES.map((c) => '<option' + (c === d.caminhao ? " selected" : "") + ">" + esc(c) + "</option>").join("") + "</select>" +
     '<label for="rlCod">Código de quem indicou (se tiver)</label><input id="rlCod" maxlength="6" autocapitalize="characters" placeholder="Ex.: K7M2QX" value="' + esc(d.codigo) + '">' +
-    '<p class="rl-mini">Veio indicado? Ganha 7 dias a mais (14 no total).</p>' +
+    '<p class="rl-mini">Veio indicado? Ganha ' + diasI() + ' dias a mais (' + (diasN() + diasI()) + ' no total).</p>' +
     '<label class="rl-chk"><input type="checkbox" id="rlAceite"' + (d.aceite ? " checked" : "") + "> Aceito receber novidades do app pelo WhatsApp (pode cancelar quando quiser).</label>" +
     '<div class="rl-erro" id="rlErro">' + esc(erro || "") + "</div>" +
     '<button class="rl-btn" id="rlSalvar">Começar</button>' +
@@ -299,7 +308,7 @@ function telaVencido() {
     '<button class="rl-btn" id="rlAssinar">Assinar</button>' +
     '<div id="rlBreve" hidden><p style="margin-top:14px"><b>Em breve</b> a assinatura estará disponível. Fale com o Ricardo pelo WhatsApp:</p>' +
     '<a class="rl-btn rl-zap" target="_blank" rel="noopener" href="' + linkZap("Oi Ricardo, meu teste do Rota Liberada acabou e quero continuar usando.") + '">WhatsApp do Ricardo</a></div>' +
-    '<button class="rl-btn rl-sec" id="rlIndicar">🎁 Indique e ganhe 7 dias</button>' +
+    '<button class="rl-btn rl-sec" id="rlIndicar">🎁 Indique e ganhe ' + diasI() + ' dias</button>' +
     '<button class="rl-btn rl-sec" id="rlAtualizar">Já falei com o Ricardo – conferir de novo</button>' +
     '<button class="rl-btn rl-sec" id="rlSair">Sair desta conta</button>');
   $("rlAssinar").onclick = () => { $("rlBreve").hidden = false; $("rlAssinar").hidden = true; };
@@ -325,11 +334,11 @@ async function conferirDeNovo() {
 function textoIndicacao() {
   return "Fala! Estou usando o Rota Liberada, GPS de caminhão que respeita as restrições de São Paulo (ZMRC, rodízio e horários da CET).\n\n" +
     "Baixe pelo link: " + LINK_APP + "?ind=" + conta.codigo + "\n\n" +
-    "No cadastro, use meu código " + conta.codigo + " e ganhe 14 dias grátis em vez de 7.";
+    "No cadastro, use meu código " + conta.codigo + " e ganhe " + (diasN() + diasI()) + " dias grátis em vez de " + diasN() + ".";
 }
 function telaIndicar(voltarVencido) {
-  tela("<h2>🎁 Indique e ganhe 7 dias</h2>" +
-    "<p>Mande o app para um amigo caminhoneiro. Ele ganha <b>14 dias grátis</b> (7 a mais) e você ganha <b>+7 dias</b> quando ele fizer a primeira viagem.</p>" +
+  tela("<h2>🎁 Indique e ganhe " + diasI() + " dias</h2>" +
+    "<p>Mande o app para um amigo caminhoneiro. Ele ganha <b>" + (diasN() + diasI()) + " dias grátis</b> (" + diasI() + " a mais) e você ganha <b>+" + diasI() + " dias</b> quando ele fizer a primeira viagem.</p>" +
     '<p class="rl-mini" style="margin-bottom:0">Seu código:</p><div class="rl-codigo">' + esc(conta.codigo) + "</div>" +
     '<p class="rl-mini">Indicados: ' + (conta.indicados || 0) + " · já viajaram: " + (conta.indicadosViajaram || 0) + (conta.estado === "parceiro" ? " · Você é parceiro: seu acesso já é liberado, mas a indicação conta no painel." : "") + "</p>" +
     '<a class="rl-btn rl-zap" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent(textoIndicacao()) + '">Enviar pelo WhatsApp</a>' +
@@ -337,7 +346,7 @@ function telaIndicar(voltarVencido) {
   $("rlVoltar").onclick = () => voltarVencido ? telaVencido() : fecharTela();
 }
 
-/* ---------- Menu ☰: "Seu acesso" e "Indique e ganhe 7 dias" ---------- */
+/* ---------- Menu ☰: "Seu acesso" e "Indique e ganhe" ---------- */
 function textoAcesso(c) {
   if (c.bloqueado) return "Seu acesso: bloqueado";
   if (c.estado === "parceiro") return "Seu acesso: Parceiro";
@@ -356,7 +365,7 @@ function montarMenu() {
     corpo.insertBefore(a, corpo.firstChild);
     $("rlSairMenu").onclick = () => { if (confirm("Sair da sua conta neste celular? Para voltar, é só entrar de novo com o Google.")) sair(); };
     const i = document.createElement("button"); i.type = "button"; i.className = "menu-item"; i.id = "secIndique";
-    i.innerHTML = '<span class="mi-icone" aria-hidden="true">🎁</span><span class="mi-texto">Indique e ganhe 7 dias<small>Seu código e envio pelo WhatsApp</small></span>';
+    i.innerHTML = '<span class="mi-icone" aria-hidden="true">🎁</span><span class="mi-texto">Indique e ganhe ' + diasI() + ' dias<small>Seu código e envio pelo WhatsApp</small></span>';
     i.onclick = () => { const f = $("menuFundo"); if (f) f.hidden = true; telaIndicar(false); };
     corpo.insertBefore(i, a.nextSibling);
   }
