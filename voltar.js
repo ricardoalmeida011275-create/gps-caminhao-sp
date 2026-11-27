@@ -97,19 +97,21 @@
   }
 
   /* ---------- "Sair da navegação?" (aviso pequeno, sem alert do navegador) ---------- */
+  /* Ícone de voltar (desenho, não letra: fica no centro exato em qualquer celular) */
+  var SETA = '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>';
+  var BOTOES = "#rlSeta,.rl-seta-menu,.btn-voltar,#btnInicio.rl-seta-ini";
   var css = document.createElement("style");
   css.textContent =
-    "#rlSeta{position:fixed;z-index:100001;top:calc(env(safe-area-inset-top,0px) + 10px);left:calc(env(safe-area-inset-left,0px) + 10px);" +
-    "width:54px;height:54px;border-radius:50%;border:2px solid var(--linha,#c9d1dc);background:var(--papel,#fff);color:var(--asfalto,#1b2430);" +
-    "font-size:30px;font-weight:700;line-height:1;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;padding:0 0 3px}" +
+    "#rlSeta{position:fixed;z-index:100001;top:calc(env(safe-area-inset-top,0px) + 10px);left:calc(env(safe-area-inset-left,0px) + 10px)}" +
+    /* todas as setinhas iguais: círculo de 52px, ícone de 26px no centro */
+    BOTOES + "{flex:none;box-sizing:border-box;width:52px;height:52px;border-radius:50%;border:1px solid var(--linha);background:var(--papel);color:var(--asfalto);" +
+    "box-shadow:var(--sombra);display:grid;place-items:center;padding:0;line-height:0;font-size:0;cursor:pointer;transition:transform .12s ease}" +
+    BOTOES.split(",").map(function (s) { return s + " svg"; }).join(",") + "{display:block;width:26px;height:26px}" +
+    BOTOES.split(",").map(function (s) { return s + ":active"; }).join(",") + "{transform:scale(.94)}" +
     "#rlSeta[hidden]{display:none}" +
-    "#rlSeta:active{transform:scale(.94)}" +
+    ".busca-topo .btn-voltar{margin-top:2px}" +   // alinha com o campo de 56px ao lado
     "body.rl-com-seta .aj-topo{padding-left:76px}" +
     "body.rl-com-seta .rl-tela{padding-top:78px}" +
-    /* setinhas que já existiam: maiores e com fundo que aparece no claro e no escuro */
-    ".busca-topo .btn-voltar{width:52px;height:52px;border-radius:50%;background:var(--fundo);border:2px solid var(--linha);font-size:28px;padding:0 0 3px;margin-top:2px}" +
-    ".btn-inicio.rl-seta-ini{width:52px;height:52px;font-size:28px;font-weight:700;border-width:2px;padding:0 0 3px}" +
-    ".menu-topo .rl-seta-menu{flex:none;width:52px;height:52px;border-radius:50%;border:2px solid var(--linha);background:var(--fundo);color:var(--asfalto);font-size:28px;font-weight:700;line-height:1;cursor:pointer;padding:0 0 3px}" +
     "#rlSairNav{position:fixed;z-index:100002;left:12px;right:12px;max-width:440px;margin:0 auto;bottom:calc(env(safe-area-inset-bottom,0px) + 120px);" +
     "background:var(--papel,#fff);color:var(--asfalto,#1b2430);border:2px solid var(--linha,#c9d1dc);border-radius:16px;padding:14px;box-shadow:0 8px 28px rgba(0,0,0,.45);" +
     "font-family:var(--f-texto,system-ui,sans-serif)}" +
@@ -140,7 +142,7 @@
 
   /* ---------- Setinha ← nas telas que não são a inicial ---------- */
   var seta = document.createElement("button");
-  seta.type = "button"; seta.id = "rlSeta"; seta.hidden = true; seta.textContent = "←"; seta.setAttribute("aria-label", "Voltar");
+  seta.type = "button"; seta.id = "rlSeta"; seta.hidden = true; seta.innerHTML = SETA; seta.setAttribute("aria-label", "Voltar");
   B.appendChild(seta);
   function voltar() { if (guarda) history.back(); else { voltarUmPasso(); agendar(); } }
   seta.addEventListener("click", voltar);
@@ -148,13 +150,13 @@
   var mt = document.querySelector(".menu-topo");
   if (mt) {
     var sm = document.createElement("button");
-    sm.type = "button"; sm.className = "rl-seta-menu"; sm.textContent = "←"; sm.setAttribute("aria-label", "Voltar");
+    sm.type = "button"; sm.className = "rl-seta-menu"; sm.innerHTML = SETA; sm.setAttribute("aria-label", "Voltar");
     sm.addEventListener("click", voltar);
     mt.insertBefore(sm, mt.firstChild);
   }
   // Escolha da rota: o ✕ do painel vira ← (faz a mesma coisa: volta para a tela inicial)
   var bi = $("btnInicio");
-  if (bi) { bi.textContent = "←"; bi.classList.add("rl-seta-ini"); }
+  if (bi) { bi.innerHTML = SETA; bi.classList.add("rl-seta-ini"); }
 
   function atualizarSeta() {
     var l = camadas(), topo = l[l.length - 1];

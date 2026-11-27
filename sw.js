@@ -1,5 +1,5 @@
 // Faz o celular aceitar instalar o app e guarda a última versão para abrir sem internet.
-const CACHE = "rota-caminhao-v51";
+const CACHE = "rota-caminhao-v52";
 const ARQUIVOS = ["./", "./index.html", "./dados-restricoes.js", "./locais-sp.js", "./zer-sp.js", "./onibus-sp.js", "./bloqueios-sp.js", "./riscos-sp.js", "./alertas-cet.js", "./planos.js", "./extras.js", "./offline.js", "./velocidade.js", "./chegada.js", "./voltar.js", "./conta.js", "./manifest.webmanifest", "./icones/icone-192.png", "./icones/icone-512.png"];
 // Bibliotecas de fora (mapa, cálculos, letras, login): guardadas para o app abrir sem internet
 const CACHE_LIBS = "rota-libs-v1";
