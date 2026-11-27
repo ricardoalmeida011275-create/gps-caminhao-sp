@@ -4807,7 +4807,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
      - Cada celular ganha um código sorteado (não diz quem é) para contar quantos usam o app.
      - Nome e WhatsApp: só de quem preencher e aceitar. Pede UMA vez; quem pular vê de novo em 7 dias.
      - Novidades: aparece só a mais recente, uma vez, e nunca durante a navegação. */
-  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v50";
+  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v51";
   var CHAVE_CAD = "rotaCaminhaoSP.cadastro", CHAVE_PULOU = "rotaCaminhaoSP.cadastroPulado", CHAVE_VISTAS = "rotaCaminhaoSP.novidadesVistas";
   var aparelhoId = (function () {
     var id = ler("rotaCaminhaoSP.aparelho") || "";
@@ -7052,6 +7052,8 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
 <script src="offline.js"></script>
 <script src="velocidade.js"></script>
 <script src="chegada.js"></script>
+<!-- Botão voltar do celular e setinha ← (volta só uma tela; na navegação pergunta antes de sair) -->
+<script src="voltar.js"></script>
 <!-- Conta do motorista: login Google, cadastro, controle de acesso e indicação (Firebase) -->
 <script type="module" src="conta.js"></script>
 </body>
