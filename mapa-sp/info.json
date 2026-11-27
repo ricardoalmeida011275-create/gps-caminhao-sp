@@ -1,0 +1,20 @@
+{
+ "versao": "20261127",
+ "tamanho": 47253875,
+ "partes": [
+  "parte-01.bin",
+  "parte-02.bin",
+  "parte-03.bin",
+  "parte-04.bin",
+  "parte-05.bin",
+  "parte-06.bin"
+ ],
+ "zoomMax": 14,
+ "bbox": {
+  "oeste": -47.22,
+  "sul": -24.08,
+  "leste": -46,
+  "norte": -23.15
+ },
+ "fonte": "Protomaps 4.15.2 (OpenStreetMap, ODbL)"
+}
