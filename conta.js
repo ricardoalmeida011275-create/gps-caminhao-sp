@@ -155,12 +155,29 @@ async function atualizarConta(u) {
             indicadoPor: m.indicadoPor || "", primeiraViagem: !!m.primeiraViagemEm, indicados, indicadosViajaram: viagens.length, ts: Date.now() };
   gravar(CHAVE, conta);
   if (!conta.primeiraViagem && ler(CHAVE_VIAGEM)) marcarViagem();   // viagem feita sem internet
+  depoisDoLogin();   // envia marcações de local perigoso guardadas e baixa os pontos aprovados
   mostrarSituacao();
 }
 function mostrarSituacao() {
   montarMenu();
   if (podeUsar(conta)) { fecharTela(); return; }
-  if (conta.bloqueado) telaBloqueado(); else telaVencido();
+  if (conta.bloqueado) { telaBloqueado(); return; }
+  // Cobrança ligada (planos.js): o teste acabou, mas o app NÃO trava. As funções GRÁTIS continuam e as PLUS mostram o cadeado 🔒.
+  if (window.PLANOS && window.PLANOS.COBRANCA_LIGADA) { fecharTela(); avisoPlanoGratis(); return; }
+  telaVencido();
+}
+function avisoPlanoGratis() {
+  if (sessionStorage.getItem("rlAvisoGratis")) return;
+  sessionStorage.setItem("rlAvisoGratis", "1");
+  const t = document.createElement("div");
+  t.className = "rl-faixa-gratis";
+  t.style.cssText = "position:fixed;left:10px;right:10px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:99990;background:#0b1a33;color:#fff;border-radius:14px;padding:12px 14px;font:600 15px/1.35 system-ui,sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.35)";
+  t.innerHTML = "🔒 Seu teste grátis acabou. As funções grátis continuam; as PLUS mostram o cadeado. " +
+    '<a style="color:#8fd3ff" target="_blank" rel="noopener" href="' + linkZap("Oi Ricardo, quero assinar o Rota Liberada Plus.") + '">Assinar para liberar</a> ' +
+    '<button type="button" style="margin-left:6px;background:#ffffff22;color:#fff;border:0;border-radius:8px;padding:4px 10px;font:inherit">OK</button>';
+  t.querySelector("button").onclick = () => t.remove();
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 15000);
 }
 
 /* ---------- Login ---------- */
@@ -364,7 +381,138 @@ async function marcarViagem() {
   } catch (e) { /* tenta de novo na próxima abertura */ }
 }
 
+/* ---------- Áreas de risco: "Tentativa de roubo / local perigoso" ----------
+   A marcação vai para riscoMarcas (só o Ricardo lê e aprova no painel). Sem internet, fica na fila do celular.
+   Os pontos aprovados (riscoPontos, valem 90 dias) aparecem no mapa de todos. */
+const CHAVE_RISCO_FILA = "rotaCaminhaoSP.riscoFila", CHAVE_PONTOS = "rotaCaminhaoSP.pontosRisco";
+async function enviarRiscos() {
+  const fila = ler(CHAVE_RISCO_FILA) || [];
+  if (!fila.length) return true;
+  await carregarFirebase();
+  const u = await usuarioAtual(); if (!u) return false;
+  const { fs, db } = fb;
+  while (fila.length) {
+    const r = fila[0];
+    await fs.addDoc(fs.collection(db, "riscoMarcas"), {
+      uid: u.uid, nome: String((conta && conta.nome) || u.displayName || "").slice(0, 60),
+      lat: r.lat, lon: r.lon, marcadoEm: r.em, criadoEm: fs.serverTimestamp(), situacao: "pendente"
+    });
+    fila.shift(); gravar(CHAVE_RISCO_FILA, fila);
+  }
+  return true;
+}
+async function marcarRisco(lat, lon) {
+  const fila = ler(CHAVE_RISCO_FILA) || [];
+  fila.push({ lat: +(+lat).toFixed(6), lon: +(+lon).toFixed(6), em: Date.now() });
+  gravar(CHAVE_RISCO_FILA, fila.slice(-20));
+  try { return await enviarRiscos(); } catch (e) { return false; }
+}
+async function buscarPontosRisco() {
+  try {
+    await carregarFirebase();
+    const u = await usuarioAtual(); if (!u) return;
+    const { fs, db } = fb;
+    const q = await fs.getDocs(fs.query(fs.collection(db, "riscoPontos"), fs.where("ate", ">", fs.Timestamp.now())));
+    const lista = [];
+    q.forEach((d) => { const x = d.data(); if (typeof x.lat === "number" && typeof x.lon === "number") lista.push({ lat: x.lat, lon: x.lon, ate: ms(x.ate) }); });
+    gravar(CHAVE_PONTOS, lista);
+    window.dispatchEvent(new CustomEvent("rota-pontos-risco", { detail: lista }));
+  } catch (e) { /* fica a lista guardada */ }
+}
+function depoisDoLogin() { enviarRiscos().catch(() => {}); buscarPontosRisco(); }
+
+/* ---------- Compartilhar viagem ao vivo (aoVivo/{código}) ----------
+   O link tem um código sorteado e difícil de adivinhar. Quem tem o link vê só: posição, destino e chegada.
+   Para de funcionar ao chegar, ao encerrar, ao parar de compartilhar ou depois de 12 horas (regras do Firestore). */
+async function dbUsuario() { await carregarFirebase(); const u = await usuarioAtual(); if (!u) throw erro("Entre na sua conta para usar esta função."); return { u, fs: fb.fs, db: fb.db }; }
+async function aoVivoIniciar(codigo, d) {
+  const { u, fs, db } = await dbUsuario();
+  await fs.setDoc(fs.doc(db, "aoVivo", codigo), {
+    uid: u.uid, nome: String((conta && conta.nome) || "").split(" ")[0].slice(0, 30), lat: d.lat, lon: d.lon,
+    destino: String(d.destino || "").slice(0, 120), destLat: d.destLat == null ? null : d.destLat, destLon: d.destLon == null ? null : d.destLon,
+    chegada: d.chegada || null, emergencia: !!d.emergencia, ativo: true,
+    atualizadoEm: fs.serverTimestamp(), expira: fs.Timestamp.fromMillis(Date.now() + 12 * 3600000)
+  });
+}
+async function aoVivoAtualizar(codigo, d) {
+  const { fs, db } = await dbUsuario();
+  const m = { lat: d.lat, lon: d.lon, chegada: d.chegada || null, atualizadoEm: fs.serverTimestamp() };
+  if (d.emergencia) m.emergencia = true;
+  await fs.updateDoc(fs.doc(db, "aoVivo", codigo), m);
+}
+async function aoVivoParar(codigo) {
+  const { fs, db } = await dbUsuario();
+  await fs.updateDoc(fs.doc(db, "aoVivo", codigo), { ativo: false, atualizadoEm: fs.serverTimestamp() });
+}
+
+/* ---------- "Como é entregar aqui" (dicasEntrega) ----------
+   Cada dica fica numa "célula" de ~200 m; o app busca a célula do endereço e as vizinhas. */
+const celulaDica = (lat, lon) => Math.round(lat / 0.002) + "_" + Math.round(lon / 0.002);
+function celulasVizinhas(lat, lon) {
+  const a = Math.round(lat / 0.002), b = Math.round(lon / 0.002), l = [];
+  for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) l.push((a + i) + "_" + (b + j));
+  return l;
+}
+async function salvarDica(d) {
+  const { u, fs, db } = await dbUsuario();
+  await fs.addDoc(fs.collection(db, "dicasEntrega"), {
+    uid: u.uid, lat: +(+d.lat).toFixed(5), lon: +(+d.lon).toFixed(5), celula: celulaDica(d.lat, d.lon),
+    estacionar: String(d.estacionar || "").slice(0, 120), horario: String(d.horario || "").slice(0, 60),
+    espera: ["rapido", "medio", "demorado", ""].includes(d.espera) ? d.espera : "",
+    doca: !!d.doca, portaoBaixo: !!d.portaoBaixo, ruaApertada: !!d.ruaApertada,
+    comentario: String(d.comentario || "").slice(0, 200), criadoEm: fs.serverTimestamp()
+  });
+}
+async function dicasPerto(lat, lon) {
+  const { fs, db } = await dbUsuario();
+  const q = await fs.getDocs(fs.query(fs.collection(db, "dicasEntrega"), fs.where("celula", "in", celulasVizinhas(lat, lon))));
+  const l = []; q.forEach((d) => l.push({ id: d.id, ...d.data(), criadoEm: ms(d.data().criadoEm) }));
+  return l;
+}
+
+/* ---------- Pontos de parada: avaliações e sugestões ---------- */
+async function avaliarParada(pid, d) {
+  const { u, fs, db } = await dbUsuario();
+  // uma avaliação por motorista por ponto (documento com o id dos dois): avaliar de novo substitui
+  await fs.setDoc(fs.doc(db, "avaliacoesParada", pid + "__" + u.uid), {
+    uid: u.uid, pid, nota: Math.max(1, Math.min(5, Math.round(+d.nota || 0))),
+    banho: !!d.banho, comida: !!d.comida, seguranca: !!d.seguranca, pernoite: !!d.pernoite, banheiro: !!d.banheiro,
+    preco: d.preco === "gratis" || d.preco === "pago" ? d.preco : "", comentario: String(d.comentario || "").slice(0, 200),
+    criadoEm: fs.serverTimestamp()
+  });
+}
+async function avaliacoesParada(pid) {
+  const { fs, db } = await dbUsuario();
+  const q = await fs.getDocs(fs.query(fs.collection(db, "avaliacoesParada"), fs.where("pid", "==", pid)));
+  const l = []; q.forEach((d) => l.push({ ...d.data(), criadoEm: ms(d.data().criadoEm) }));
+  return l;
+}
+async function sugerirParada(d) {
+  const { u, fs, db } = await dbUsuario();
+  await fs.addDoc(fs.collection(db, "paradasSugeridas"), {
+    uid: u.uid, nome: String(d.nome || "").slice(0, 60), lat: +(+d.lat).toFixed(5), lon: +(+d.lon).toFixed(5),
+    tipo: ["posto", "estacionamento", "parada", "descanso"].includes(d.tipo) ? d.tipo : "parada",
+    obs: String(d.obs || "").slice(0, 200), situacao: "pendente", criadoEm: fs.serverTimestamp()
+  });
+}
+async function paradasAprovadas() {
+  const { fs, db } = await dbUsuario();
+  const q = await fs.getDocs(fs.collection(db, "paradas"));
+  const l = []; q.forEach((d) => l.push({ id: d.id, ...d.data() }));
+  return l;
+}
+/* ---------- Alertas da CET colocados pelo Ricardo no painel (alertasCet) ---------- */
+async function alertasManuais() {
+  const { fs, db } = await dbUsuario();
+  const q = await fs.getDocs(fs.query(fs.collection(db, "alertasCet"), fs.where("fim", ">", fs.Timestamp.now())));
+  const l = []; q.forEach((d) => { const x = d.data(); l.push({ id: d.id, ...x, inicio: ms(x.inicio), fim: ms(x.fim) }); });
+  return l;
+}
+
 window.RotaConta = {
+  marcarRisco,
+  aoVivoIniciar, aoVivoAtualizar, aoVivoParar,
+  salvarDica, dicasPerto, avaliarParada, avaliacoesParada, sugerirParada, paradasAprovadas, alertasManuais,
   viagem: () => { marcarViagem(); },
   temConta: () => !!(conta && conta.uid),
   situacao: () => conta

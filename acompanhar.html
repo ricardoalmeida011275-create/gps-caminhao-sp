@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Acompanhar viagem – Rota Liberada</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+  html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: #f3f4f2; color: #1d2226; }
+  #mapa { position: absolute; inset: 0 0 auto 0; bottom: 0; }
+  .cartao { position: absolute; z-index: 1000; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); background: #fff; border-radius: 16px;
+            box-shadow: 0 6px 20px rgba(0,0,0,.25); padding: 14px 16px; max-width: 520px; margin: 0 auto; }
+  .cartao h1 { font-size: 19px; margin: 0 0 6px; }
+  .cartao p { margin: 4px 0; font-size: 16px; line-height: 1.35; }
+  .cartao small { color: #5c666b; font-size: 14px; }
+  .sos { background: #c62828; color: #fff; font-weight: 800; padding: 8px 10px; border-radius: 10px; margin: 0 0 8px; }
+  .fim { text-align: center; padding: 30px 10px; }
+  .caminhao { font-size: 30px; line-height: 1; filter: drop-shadow(0 2px 3px rgba(0,0,0,.4)); }
+</style>
+</head>
+<body>
+<div id="mapa"></div>
+<div class="cartao" id="cartao"><p>Carregando a viagem…</p></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script type="module">
+/* Página aberta pelo link "Acompanhe minha viagem": não precisa de login.
+   Só mostra posição do caminhão, destino, previsão de chegada e hora da última atualização.
+   Atualiza a cada 30 segundos. Quando o motorista chega, encerra ou para de compartilhar (ou passa de 12 h), mostra "encerrado". */
+const FB = "https://www.gstatic.com/firebasejs/10.14.1/";
+const CONFIG = { apiKey: "AIzaSyBIFG5jHC9N0KK4wAdynRnySgAY6QpBxH0", authDomain: "rota-liberada.firebaseapp.com", projectId: "rota-liberada",
+  storageBucket: "rota-liberada.firebasestorage.app", messagingSenderId: "639607872277", appId: "1:639607872277:web:a9a0dad6237fc5dd0d671c" };
+const cartao = document.getElementById("cartao");
+const codigo = (new URLSearchParams(location.search).get("v") || "").replace(/[^a-z0-9]/gi, "").slice(0, 40);
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const ms = (t) => (t && t.toMillis ? t.toMillis() : (typeof t === "number" ? t : 0));
+const hora = (m) => { const d = new Date(m); return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); };
+
+const mapa = L.map("mapa", { zoomControl: true }).setView([-23.55, -46.63], 11);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap" }).addTo(mapa);
+const icone = L.divIcon({ className: "", html: '<div class="caminhao">🚚</div>', iconSize: [34, 34], iconAnchor: [17, 17] });
+let marca = null, destino = null, linha = null, primeira = true, timer = null;
+
+function encerrado() {
+  clearInterval(timer);
+  cartao.innerHTML = '<div class="fim"><h1>Compartilhamento encerrado</h1><p>O motorista chegou, encerrou a viagem ou parou de compartilhar.</p></div>';
+  if (marca) marca.setOpacity(0.4);
+}
+let fs, db;
+async function ler() {
+  let snap;
+  try { snap = await fs.getDoc(fs.doc(db, "aoVivo", codigo)); }
+  catch (e) { return encerrado(); }   // as regras só deixam ler enquanto está ativo e dentro das 12 horas
+  if (!snap.exists()) return encerrado();
+  const v = snap.data();
+  if (!v.ativo || ms(v.expira) < Date.now()) return encerrado();
+  if (typeof v.lat !== "number" || typeof v.lon !== "number") { cartao.innerHTML = "<p>Esperando o sinal de GPS do motorista…</p>"; return; }
+  const p = [v.lat, v.lon];
+  if (!marca) marca = L.marker(p, { icon: icone }).addTo(mapa); else marca.setLatLng(p);
+  if (typeof v.destLat === "number" && typeof v.destLon === "number") {
+    const q = [v.destLat, v.destLon];
+    if (!destino) destino = L.marker(q).addTo(mapa).bindTooltip("Destino"); else destino.setLatLng(q);
+    if (!linha) linha = L.polyline([p, q], { color: "#1565c0", weight: 3, dashArray: "6 8", opacity: 0.7 }).addTo(mapa); else linha.setLatLngs([p, q]);
+    if (primeira) mapa.fitBounds(L.latLngBounds([p, q]).pad(0.25));
+  } else if (primeira) mapa.setView(p, 14);
+  primeira = false;
+  const at = ms(v.atualizadoEm), min = Math.round((Date.now() - at) / 60000);
+  cartao.innerHTML = (v.emergencia ? '<div class="sos">🆘 O motorista pediu AJUDA. Entre em contato com ele ou ligue 190.</div>' : "") +
+    '<h1>🚚 Viagem de ' + esc(v.nome || "motorista") + "</h1>" +
+    (v.destino ? "<p><b>Destino:</b> " + esc(v.destino) + "</p>" : "") +
+    (v.chegada ? "<p><b>Chegada prevista:</b> " + esc(v.chegada) + "</p>" : "") +
+    "<p><small>Última atualização: " + (at ? hora(at) + (min >= 2 ? " (há " + min + " min)" : "") : "agora") + " · atualiza sozinho a cada 30 s</small></p>" +
+    '<p><small><a href="https://maps.google.com/?q=' + v.lat + "," + v.lon + '" target="_blank" rel="noopener">Abrir posição no Google Maps</a></small></p>';
+}
+(async () => {
+  if (!codigo) return encerrado();
+  try {
+    const [a, f] = await Promise.all([import(FB + "firebase-app.js"), import(FB + "firebase-firestore.js")]);
+    fs = f; db = f.getFirestore(a.initializeApp(CONFIG));
+  } catch (e) { cartao.innerHTML = "<p>Sem internet. Tente de novo em instantes.</p>"; return; }
+  await ler();
+  timer = setInterval(ler, 30000);
+})();
+</script>
+</body>
+</html>

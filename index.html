@@ -156,6 +156,17 @@ body.navegando .leaflet-bottom { bottom: calc(92px + env(safe-area-inset-bottom,
 @keyframes piscaProibido { 0% { background: #c8102e; color: #fff; } 50% { background: #ffd400; color: #1d2226; } }
 @media (prefers-reduced-motion: reduce) { .nav-proibido.pisca { animation: none; } }
 @media (prefers-reduced-motion: reduce) { .nav-faixa { animation: none; } }
+/* Áreas de risco (roubo de carga): aviso discreto, abaixo dos avisos de restrição */
+.nav-faixa.nav-risco { border-left-color: #e65100; }
+.risco-caixa { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--papel); border-left: 5px solid #c62828; font-size: 15px; line-height: 1.4; }
+.risco-caixa.ok { border-left-color: #1f7a3d; }
+.risco-caixa .btn-pequeno { margin-top: 8px; width: 100%; min-height: 46px; }
+.pop-risco { margin: 6px 0 0; padding-top: 6px; border-top: 1px solid rgba(0,0,0,.12); font-size: 14px; line-height: 1.35; }
+.pop-risco b.n1 { color: #b08000; } .pop-risco b.n2 { color: #e65100; } .pop-risco b.n3 { color: #e53935; }
+.pop-risco ul { margin: 4px 0 0; padding-left: 18px; }
+.risco-opcao { display: block; width: 100%; text-align: left; margin: 0 0 10px; padding: 14px; min-height: 56px; font: inherit; font-size: 17px; font-weight: 700; border-radius: 12px; border: 2px solid var(--linha); background: var(--papel); color: var(--asfalto); cursor: pointer; }
+.risco-opcao small { display: block; font-weight: 500; font-size: 14px; color: var(--suave); margin-top: 2px; }
+.risco-opcao.perigo { border-color: #c62828; }
 .nav-base {
   position: absolute; z-index: 1100;
   left: max(10px, env(safe-area-inset-left, 0px)); right: max(10px, env(safe-area-inset-right, 0px));
@@ -1045,6 +1056,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
     <div class="nav-proibido" id="navProibido" hidden role="alert"></div>
     <div class="nav-alerta" id="navAlerta" hidden role="alert"></div>
     <div class="nav-faixa" id="navFaixa" hidden></div>
+    <div class="nav-faixa nav-risco" id="navRisco" hidden role="status"></div>
     <div class="nav-proibido vermelho" id="navSaida" hidden role="alert">⛔ Você está dentro de uma área restrita para caminhão.<small>Esta rota vai te levar para fora da zona.</small></div>
   </div>
   <div class="mapa-caixa">
@@ -1559,6 +1571,9 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
 <script src="zer-sp.js"></script>
 <script src="onibus-sp.js"></script>
 <script src="bloqueios-sp.js"></script>
+<script src="riscos-sp.js"></script>
+<script src="alertas-cet.js"></script>
+<script src="planos.js"></script>
 <script>
 (function () {
   "use strict";
@@ -3258,6 +3273,9 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
     // Nunca fica "carregando" para sempre: depois do prazo, fica com a melhor rota que já tem (ou explica o erro)
     var PRAZO_SEG = opcoes.prazoSeg || 25, prazo = Date.now() + PRAZO_SEG * 1000;
     function temTempo() { return Date.now() < prazo - 1500; }
+    // Plano GRÁTIS com a cobrança ligada (planos.js): rota comum, sem desviar das restrições de caminhão
+    var simples = !!(window.PLANOS && !window.PLANOS.liberado("rotaCaminhao"));
+    if (simples) { opcoes = Object.assign({}, opcoes, { semSaida: true }); }
     var saida = opcoes.semSaida ? null : precisaSair(orig, dest, m, opcoes.rumoInicial);
     var alvoSaida = null, RAIOS_SAIDA = [600, 2000, 5000, 0], nivelSaida = 0;
     if (saida) {
@@ -3290,7 +3308,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
         l = l.concat(ignorar.zmrc ? entrada("zmrc") : areas.zmrc);
       return l;
     }
-    desvios = montarAreas();
+    desvios = simples ? [] : montarAreas();
     // Saída ou destino dentro de zona residencial (ZER): a rota precisa entrar nela; avisa
     if (situacao("zerc", m) === "proibido") {
       [[orig, "A saída"], [dest, "O destino"]].forEach(function (par) {
@@ -3342,7 +3360,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
     function rodar(usarAlternativas) {
       tentativa++;
       if (aoTentar) aoTentar(tentativa, maxTentativas);
-      var polis = desvios.concat(desviosTrecho.map(function (d) { return d.poli; }));
+      var polis = desvios.concat(desviosTrecho.map(function (d) { return d.poli; })).concat(opcoes.desviosRisco || []).concat(opcoes.desviosAlertas || []);   // áreas de alto risco (opção do menu) e interdições da CET
       var limite = Math.max(4, Math.round((prazo - Date.now()) / 1000));
       return pedirRota(orig, alvoSaida || dest, polis, usarAlternativas, preferencia, limite).then(function (r) {
         var feats = (r && r.features) || [];
@@ -3353,6 +3371,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
           var c = { f: f, coords: f.geometry.coordinates };
           // Rota para sair da zona: ela passa dentro da restrição de propósito (é o caminho para fora)
           if (saida) { c.problemas = []; c.ruins = []; validas.push(c); return; }
+          if (simples) { c.problemas = []; c.ruins = []; c.simples = true; if (!repetida(c)) validas.push(c); return; }
           c.problemas = conferir(c.coords, m, ignorar);
           // Manobras proibidas da lista, retornos e (no recálculo) mandar voltar: aprende a barreira e pede de novo
           c.ruins = manobrasRuins(c.coords, rumoInicial);
@@ -3696,6 +3715,9 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
   function zerarAvisos() { avisos = { fontes: {}, desde: {}, fechados: {}, sumiu: {} }; escolherAviso(); }
   // a: { nivel (4 saída, 3 vermelho, 2 amarelo, 1 informação, 0 verde), chave, segundos, fixo } ou null
   function definirAviso(fonte, a) {
+    // funções PLUS (planos.js): sem plano, o aviso não aparece
+    var plano = { onibus: "faixasOnibus", risco: "areasRisco", proib: "avisosRestricao" }[fonte];
+    if (a && plano && window.PLANOS && !window.PLANOS.liberado(plano)) a = null;
     var agora = Date.now(), ant = avisos.fontes[fonte];
     if (ant && (!a || ant.chave !== a.chave)) avisos.sumiu[fonte + "|" + ant.chave] = agora;
     if (a) {
@@ -4033,6 +4055,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
 
   function mostrarAvisoOnibus(o, s) {
     var el = document.getElementById("navFaixa");
+    if (o && window.PLANOS && !window.PLANOS.liberado("faixasOnibus")) o = null;   // função PLUS (planos.js)
     if (!o) {
       // só esconde depois de 150 m sem faixa (nos cruzamentos a faixa some por alguns metros)
       if (nav.onibusAtual && s - (nav.sUltimoOnibus || 0) > 150) { definirAviso("onibus", null); nav.onibusAtual = null; }
@@ -4181,6 +4204,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
   function textoTrecho(t) { return "a " + t.nome; }
   function atualizarAvisoProibido(s) {
     var r = estado.rota, el = document.getElementById("navProibido"), agora = Date.now(), p = nav.proib || (nav.proib = {});
+    if (window.PLANOS && !window.PLANOS.liberado("avisosRestricao")) { el.hidden = true; definirAviso("proib", null); return; }   // função PLUS (planos.js)
     var minuto = Math.floor(agora / 60000);
     // recalcula quando a rota muda ou a cada minuto (as restrições dependem do horário)
     if (p.rota !== r || p.minuto !== minuto) { p.lista = trechosProibidos(r, momentoAtual()); p.rota = r; p.minuto = minuto; }
@@ -4535,12 +4559,17 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
   // Botão grande na navegação: um toque grava o local, sem escrever nada
   document.getElementById("btnMarcar").addEventListener("click", function () {
     if (!nav.ultimaPos) { mostrarAlertaNav("Ainda sem sinal de GPS para marcar o local.", "info"); return; }
+    // Caminhão parado: pode escolher "Tentativa de roubo / local perigoso". Andando: só grava o problema (um toque).
+    if (giro.velocidade < 1) { escolherTipoProblema(nav.ultimaPos.lon, nav.ultimaPos.lat, true); return; }
+    marcarProblemaNav();
+  });
+  function marcarProblemaNav() {
     registrarOcorrencia("marcado", nav.ultimaPos.lon, nav.ultimaPos.lat, nav.instrAtual, nav.sAtual);
     mostrarAlertaNav("✅ Problema marcado. Você confere no fim da viagem.", "info");
     falar("Problema marcado.", "manobra");
     vibrar(120);
     setTimeout(function () { if (document.getElementById("navAlerta").textContent.indexOf("✅") === 0) mostrarAlertaNav(""); }, 4000);
-  });
+  }
 
   /* Revisão no fim da viagem (só com o veículo parado) */
   var mapasRevisao = [];
@@ -4641,7 +4670,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
      - Cada celular ganha um código sorteado (não diz quem é) para contar quantos usam o app.
      - Nome e WhatsApp: só de quem preencher e aceitar. Pede UMA vez; quem pular vê de novo em 7 dias.
      - Novidades: aparece só a mais recente, uma vez, e nunca durante a navegação. */
-  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v46";
+  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v47";
   var CHAVE_CAD = "rotaCaminhaoSP.cadastro", CHAVE_PULOU = "rotaCaminhaoSP.cadastroPulado", CHAVE_VISTAS = "rotaCaminhaoSP.novidadesVistas";
   var aparelhoId = (function () {
     var id = ler("rotaCaminhaoSP.aparelho") || "";
@@ -5104,9 +5133,10 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
     if (!navigator.geolocation) { avisoRapido("Este aparelho não informa a localização."); return; }
     avisoRapido("Pegando sua localização…");
     navigator.geolocation.getCurrentPosition(function (p) {
-      registrarOcorrencia("marcado", p.coords.longitude, p.coords.latitude, "", null);
-      fecharMenu(); vibrar(120);
-      avisoRapido("✅ Problema marcado. Toque em \"Revisar\" na tela inicial para enviar.");
+      fecharMenu();
+      // andando (mais de ~7 km/h): não deixa marcar, por segurança
+      if (p.coords.speed !== null && p.coords.speed !== undefined && p.coords.speed > 2) { avisoRapido("🚚 Pare o caminhão em local seguro para marcar."); return; }
+      escolherTipoProblema(p.coords.longitude, p.coords.latitude, false);
     }, function (e) { avisoRapido(e.code === 1 ? "Localização bloqueada: libere nas permissões do navegador." : "Não consegui pegar a localização agora."); },
     { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 });
   });
@@ -5666,6 +5696,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
     }
     if (tags.amenity === "parking") return "p";
     if (tags.amenity === "truck_stop") return "s";
+    if (tags.highway === "rest_area") return "s";
     // highway=services na cidade costuma ser o pátio sem nome de um posto (repetido) ou outra coisa: só fica se for parada de verdade
     if (tags.hgv === "yes" || tags.hgv === "designated" || /posto|graal|parada|caminh|truck|rodo|ponto de apoio/i.test(tags.name || "")) return "s";
     return null;
@@ -5681,7 +5712,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
     cels.forEach(function (c) { var p = c.split("_"), a = Number(p[0]) * CEL, b = Number(p[1]) * CEL; s = Math.min(s, a); w = Math.min(w, b); n = Math.max(n, a + CEL); e = Math.max(e, b + CEL); });
     var bb = "(" + s.toFixed(3) + "," + w.toFixed(3) + "," + n.toFixed(3) + "," + e.toFixed(3) + ")";
     return '[out:json][timeout:40];(nwr["amenity"~"^(fuel|truck_stop)$"]' + bb + ';nwr["amenity"="parking"]["hgv"~"^(yes|designated)$"]' + bb +
-           ';nwr["highway"="services"]' + bb + ';);out center tags;';
+           ';nwr["highway"="services"]' + bb + ';nwr["highway"="rest_area"]' + bb + ';);out center tags;';
   }
   // Pergunta a um servidor; se em 8 s não respondeu, pergunta também ao próximo. Fica com a primeira resposta boa.
   function pedirOverpass(q) {
@@ -5730,6 +5761,8 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
       if (lotes.length && !falhou) guardarCachePostos(); else if (lotes.length) guardarCachePostos();
       var out = [];
       cels.forEach(function (c) { (cachePostos[c] ? cachePostos[c].l : []).forEach(function (a) { out.push({ lat: a[0], lon: a[1], t: a[2], nome: a[3] }); }); });
+      // pontos de parada aprovados pelo Ricardo (Tarefa 6, extras.js)
+      if (window.RL && RL.ganchos.paradasAprovadas) { var cs = {}; cels.forEach(function (c) { cs[c] = 1; }); RL.ganchos.paradasAprovadas().forEach(function (p) { if (cs[celula(p.lat, p.lon)]) out.push(p); }); }
       if (!out.length && falhou) throw new Error("Não consegui buscar os postos agora.");
       return out;
     });
@@ -5741,7 +5774,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
     return ["zmrc", "rodizio"].some(function (t) { return situacao(t, m) === "proibido" && dentroDe(t, o.lon, o.lat); });
   }
   var SVG_BOMBA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 3.5A1.5 1.5 0 0 1 5.5 2h7A1.5 1.5 0 0 1 14 3.5V11h.5a2 2 0 0 1 2 2v4a.75.75 0 0 0 1.5 0V9.6l-2.3-2.3 1.06-1.06 2.6 2.6c.24.24.36.55.36.88V17a2.25 2.25 0 0 1-4.5 0v-4a.5.5 0 0 0-.5-.5H14V20h1v2H3v-2h1V3.5zM6 4.5V10h6V4.5H6z"/></svg>';
-  function htmlPino(t) { return t === "p" ? '<div class="pino-posto parada">P<small>🚚</small></div>' : '<div class="pino-posto' + (t === "f" ? "" : " diesel") + '">' + SVG_BOMBA + '</div>'; }
+  function htmlPino(t) { if (t === "s") return '<div class="pino-posto parada">🛏️<small>🚚</small></div>'; return t === "p" ? '<div class="pino-posto parada">P<small>🚚</small></div>' : '<div class="pino-posto' + (t === "f" ? "" : " diesel") + '">' + SVG_BOMBA + '</div>'; }
   function rotuloPosto(t) { return { d: "Posto com diesel", f: "Posto (diesel não confirmado no mapa)", p: "Estacionamento de caminhão", s: "Parada de caminhão" }[t] || "Posto"; }
   var camadaPostos = L.layerGroup().addTo(mapa), postosVisiveis = false;
   function desenharPostos(lista) {
@@ -5763,7 +5796,8 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
     div.querySelector("strong").textContent = p.nome;
     var dist = p.distRota || distLinhaReta(p);
     div.querySelector("small").textContent = rotuloPosto(p.t) + (dist ? " · " + dist : "");
-    var pop = L.popup({ maxWidth: 260, autoPan: !nav.ativo }).setLatLng([p.lat, p.lon]).setContent(div).openOn(mapa);
+    if (window.RL && RL.ganchos.popupPosto) { try { RL.ganchos.popupPosto(p, div); } catch (e) {} }
+    var pop = L.popup({ maxWidth: 280, autoPan: !nav.ativo }).setLatLng([p.lat, p.lon]).setContent(div).openOn(mapa);
     div.querySelector("button").addEventListener("click", function () { mapa.closePopup(pop); irParaPosto(p); });
   }
   // "Ir para cá": fora da navegação traça a rota; durante a navegação troca o destino e guarda o antigo para continuar depois
@@ -6280,6 +6314,8 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
     gravarRoteiro(r);
     fecharTelaEntrega();
     vibrar(120);
+    // "Como é entregar aqui" (extras.js): pergunta como foi, com o caminhão parado
+    if (status === "entregue" && window.RL && RL.ganchos.entregaMarcada && typeof p.lat === "number") { var pe = { lat: p.lat, lon: p.lon, nome: p.nome }; setTimeout(function () { RL.ganchos.entregaMarcada(pe); }, 1500); }
     if (proximaParada(r) >= 0) {
       avisoRapido(status === "entregue" ? "✅ Entregue! Indo para a próxima entrega." : "❌ Anotado: " + p.motivo + ". Indo para a próxima entrega.");
       irParaProxima();   // já traça a rota até a próxima
@@ -6403,23 +6439,336 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
   (function opcoesDeRota() {
     var corpo = el("menuCorpo"), d = document.createElement("details");
     d.className = "menu-grupo sem-rotulo"; d.id = "secOpcoesRota";
-    d.innerHTML = '<summary class="menu-item"><span class="mi-icone" aria-hidden="true">🛣️</span><span class="mi-texto">Opções de rota<small>Evitar pedágios e balsas</small></span></summary>' +
+    d.innerHTML = '<summary class="menu-item"><span class="mi-icone" aria-hidden="true">🛣️</span><span class="mi-texto">Opções de rota<small>Pedágios, balsas e áreas de alto risco</small></span></summary>' +
       '<div class="menu-conteudo"><label class="chave-op"><span>💰 Evitar pedágios</span><input type="checkbox" id="opPedagio"></label>' +
       '<label class="chave-op"><span>⛴️ Evitar balsas</span><input type="checkbox" id="opBalsa"></label>' +
-      '<p class="nota">Fica salvo neste celular e vale para as próximas rotas. Na cidade de São Paulo quase não há pedágio nem balsa: serve mais para as estradas e o litoral.</p></div>';
+      '<label class="chave-op"><span>🛡️ Evitar áreas de alto risco</span><input type="checkbox" id="opRisco"></label>' +
+      '<p class="nota">Fica salvo neste celular e vale para as próximas rotas. Na cidade de São Paulo quase não há pedágio nem balsa: serve mais para as estradas e o litoral.</p>' +
+      '<p class="nota">🛡️ Alto risco: regiões em vermelho no mapa (registros de roubo de carga, SSP-SP). A rota desvia delas só se ficar no máximo 15% mais longa. As restrições de caminhão vêm sempre primeiro.</p></div>';
     corpo.insertBefore(d, el("secCamadas"));
     d.addEventListener("toggle", function () {
       if (!d.open) return;
       [].forEach.call(corpo.querySelectorAll("details.menu-grupo[open]"), function (o) { if (o !== d) o.open = false; });
     });
-    [["opPedagio", "pedagio"], ["opBalsa", "balsa"]].forEach(function (par) {
+    [["opPedagio", "pedagio"], ["opBalsa", "balsa"], ["opRisco", "risco"]].forEach(function (par) {
       var c = el(par[0]); c.checked = !!opRota[par[1]];
       c.addEventListener("change", function () {
         opRota[par[1]] = c.checked; gravar(CHAVE_OPROTA, JSON.stringify(opRota));
-        avisoRapido((c.checked ? "✅ Ligado: " : "Desligado: ") + (par[1] === "pedagio" ? "evitar pedágios" : "evitar balsas") + ". Vale para a próxima rota.");
+        avisoRapido((c.checked ? "✅ Ligado: " : "Desligado: ") + ({ pedagio: "evitar pedágios", balsa: "evitar balsas", risco: "evitar áreas de alto risco" })[par[1]] + ". Vale para a próxima rota.");
       });
     });
   })();
+
+  /* ================= ÁREAS DE RISCO (roubo de carga) =================
+     Dados oficiais: SSP-SP (estatística mensal por delegacia, últimos 12 meses), arquivo riscos-sp.js,
+     atualizado pelo robô quando a SSP publica um mês novo. Nível comparado com a média da cidade.
+     Mais os pontos marcados por motoristas que o Ricardo aprovou no painel (valem 90 dias).
+     Regras: linguagem neutra ("região com registros"); nunca atrapalha os avisos de restrição,
+     que continuam mais importantes; a rota NUNCA troca restrição por risco. */
+  var RS = window.RISCOS_SP || null;
+  var NIVEL_RISCO = { 1: { nome: "Atenção", cor: "#f9a825", fundo: 0.10 }, 2: { nome: "Risco médio", cor: "#ef6c00", fundo: 0.13 }, 3: { nome: "Risco alto", cor: "#d32f2f", fundo: 0.16 } };
+  var DICAS_RISCO = ["Evite parar, principalmente à noite.", "Mantenha portas travadas e vidros fechados.", "Prefira postos e locais movimentados para descansar.", "Em caso de roubo, não reaja. Ligue 190."];
+  var CHAVE_RISCO_MAPA = "rotaCaminhaoSP.riscoMapa", CHAVE_PONTOS_RISCO = "rotaCaminhaoSP.pontosRisco";
+  var riscoAreas = ((RS && RS.areas && RS.areas.features) || []).map(function (f) {
+    var b = turf.bbox(f);
+    return { f: f, nivel: f.properties.nivel, dp: f.properties.dp, caixa: b };
+  });
+  function dentroRisco(lon, lat) {
+    var pt = null, achou = null;
+    for (var i = 0; i < riscoAreas.length; i++) {
+      var a = riscoAreas[i], b = a.caixa;
+      if (lon < b[0] || lon > b[2] || lat < b[1] || lat > b[3]) continue;
+      pt = pt || turf.point([lon, lat]);
+      if (turf.booleanPointInPolygon(pt, a.f) && (!achou || a.nivel > achou.nivel)) achou = a;
+    }
+    return achou;
+  }
+  function textoFonteRisco() { return RS ? "Fonte: SSP-SP, dados até " + RS.ate : ""; }
+  function htmlRisco(a) {
+    var n = NIVEL_RISCO[a.nivel];
+    return '<div class="pop-risco"><b class="n' + a.nivel + '">🛡️ ' + n.nome + ': região com registros de roubo de carga</b><br>' +
+      a.f.properties.casos + ' registros em 12 meses (' + escapar(RS.periodo) + '), ' + String(a.f.properties.vezes).replace(".", ",") + ' vezes a média da cidade por km².' +
+      '<ul>' + DICAS_RISCO.map(function (d) { return "<li>" + escapar(d) + "</li>"; }).join("") + '</ul>' +
+      '<span class="nota">' + escapar(textoFonteRisco()) + ' (boletins de ocorrência por delegacia). Áreas: GeoSampa.</span></div>';
+  }
+
+  /* --- Camada no mapa (abaixo das restrições, cores claras e borda pontilhada) --- */
+  mapa.createPane("riscos", mapa.getPane("rotatePane") || undefined); mapa.getPane("riscos").style.zIndex = 350; mapa.getPane("riscos").style.pointerEvents = "none";
+  var rendRisco = L.svg({ pane: "riscos" });
+  var camadaRisco = L.layerGroup();
+  riscoAreas.forEach(function (a) {
+    var n = NIVEL_RISCO[a.nivel];
+    L.geoJSON(a.f, { pane: "riscos", renderer: rendRisco, interactive: false,
+      style: { color: n.cor, weight: 1.5, dashArray: "2 6", opacity: 0.8, fillColor: n.cor, fillOpacity: n.fundo } }).addTo(camadaRisco);
+  });
+  var camadaPontosRisco = L.layerGroup().addTo(camadaRisco);
+  var pontosRisco = lerJsonLocal(CHAVE_PONTOS_RISCO, []) || [];
+  function desenharPontosRisco() {
+    camadaPontosRisco.clearLayers();
+    pontosRisco.filter(function (p) { return p.ate > Date.now(); }).forEach(function (p) {
+      L.circle([p.lat, p.lon], { pane: "riscos", renderer: rendRisco, interactive: false, radius: 200, color: "#f9a825", weight: 2, dashArray: "2 5", fillColor: "#f9a825", fillOpacity: 0.18 }).addTo(camadaPontosRisco);
+    });
+  }
+  desenharPontosRisco();
+  window.addEventListener("rota-pontos-risco", function (ev) { pontosRisco = ev.detail || []; desenharPontosRisco(); });
+  function pontoRiscoPerto(lon, lat) {
+    var q = xy(lon, lat);
+    return pontosRisco.filter(function (p) { if (p.ate <= Date.now()) return false; var c = xy(p.lon, p.lat); return Math.hypot(c[0] - q[0], c[1] - q[1]) <= 200; })[0] || null;
+  }
+  var mostrarRisco = ler(CHAVE_RISCO_MAPA) !== "0";
+  function atualizarCamadaRisco() {
+    if (mostrarRisco && !mapa.hasLayer(camadaRisco)) camadaRisco.addTo(mapa);
+    if (!mostrarRisco && mapa.hasLayer(camadaRisco)) mapa.removeLayer(camadaRisco);
+  }
+  atualizarCamadaRisco();
+  (function itemNoMenu() {
+    var li = document.createElement("li"); li.className = "item";
+    li.innerHTML = '<input type="checkbox" id="liga-risco"' + (mostrarRisco ? " checked" : "") + ' aria-label="Mostrar áreas de risco de roubo de carga">' +
+      '<label class="item-nome" for="liga-risco">🛡️ Áreas de risco (roubo de carga)</label><span class="chip atencao">Aviso</span>' +
+      '<span class="item-hora">Amarelo: atenção · laranja: risco médio · vermelho: risco alto (comparado com a média da cidade). Não é restrição: o caminhão pode passar. Toque na área para ver as dicas.</span>' +
+      '<span class="item-fonte">' + (RS ? 'Fonte: <a href="https://www.ssp.sp.gov.br/estatistica/dados-mensais" target="_blank" rel="noopener">SSP-SP</a>, dados até ' + escapar(RS.ate) + ' · áreas das delegacias: GeoSampa' : "Dados ainda não carregados") + '</span>';
+    el("lista").appendChild(li);
+    li.querySelector("input").addEventListener("change", function (ev) { mostrarRisco = ev.target.checked; gravar(CHAVE_RISCO_MAPA, mostrarRisco ? "1" : "0"); atualizarCamadaRisco(); });
+  })();
+  // Toque no mapa: se for numa área de risco, mostra o nível, a fonte e as dicas
+  // (dentro de uma área restrita, junta as duas informações no mesmo balão)
+  mapa.on("click", function (e) {
+    if (!mostrarRisco || nav.ativo) return;
+    var a = dentroRisco(e.latlng.lng, e.latlng.lat), pr = pontoRiscoPerto(e.latlng.lng, e.latlng.lat);
+    if (!a && !pr) return;
+    var html = (a ? htmlRisco(a) : "") + (pr ? '<div class="pop-risco"><b class="n1">⚠️ Ponto de atenção informado por motoristas</b><br>Revisado pelo Rota Liberada. Vale até ' +
+      new Date(pr.ate).toLocaleDateString("pt-BR") + '.<ul><li>' + escapar(DICAS_RISCO[0]) + '</li><li>' + escapar(DICAS_RISCO[1]) + '</li></ul></div>' : "");
+    setTimeout(function () {
+      var p = mapa._popup;
+      if (p && mapa.hasLayer(p) && p.getLatLng() && p.getLatLng().distanceTo(e.latlng) < 1) {
+        var c = p.getElement() && p.getElement().querySelector(".leaflet-popup-content");
+        if (c && !c.querySelector(".pop-risco")) { c.insertAdjacentHTML("beforeend", html); p.update(); }
+      } else {
+        L.popup({ maxWidth: 300 }).setLatLng(e.latlng).setContent(html.replace('<div class="pop-risco">', '<div class="pop-risco" style="border:0;margin:0;padding:0">')).openOn(mapa);
+      }
+    }, 0);
+  });
+
+  /* --- Quanto a rota passa por cada área (pontos a cada ~20 m) --- */
+  function riscoNaRota(coords, orig, dest) {
+    var out = { vermelho: 0, laranja: 0, areas: {}, inevitavel: {} };
+    if (!riscoAreas.length || !coords || coords.length < 2) return out;
+    var pts = amostrar(coords);
+    for (var i = 0; i < pts.length; i += 2) {
+      var a = dentroRisco(pts[i].lon, pts[i].lat);
+      if (!a) continue;
+      var m = pts[i].passo * 2;
+      if (a.nivel === 3) out.vermelho += m; else if (a.nivel === 2) out.laranja += m;
+      out.areas[a.dp] = a; out.metros = out.metros || {}; out.metros[a.dp] = (out.metros[a.dp] || 0) + m;
+    }
+    [orig, dest].forEach(function (p) { if (!p) return; var a = dentroRisco(p.lon, p.lat); if (a) out.inevitavel[a.dp] = true; });
+    out.evitaveis = Object.keys(out.areas).map(function (k) { return out.areas[k]; })
+      .filter(function (a) { return a.nivel === 3 && !out.inevitavel[a.dp] && out.metros[a.dp] >= 150; });
+    return out;
+  }
+  // só o contorno de fora de cada pedaço (o serviço de rotas não precisa dos "furos")
+  function poligonosRisco(lista) {
+    var r = [];
+    lista.forEach(function (a) {
+      var g = a.f.geometry, partes = g.type === "Polygon" ? [g.coordinates] : g.coordinates;
+      partes.forEach(function (p) { r.push({ type: "Polygon", coordinates: [p[0]] }); });
+    });
+    return r;
+  }
+
+  /* --- Opção de rota: "Evitar áreas de alto risco" (desligada de fábrica) ---
+     Primeiro a rota normal (com todas as restrições). Se ela passa por área vermelha, pede outra desviando
+     dessas áreas e só troca se: não piora nenhuma restrição e fica no máximo 15% mais longa. */
+  var MAX_A_MAIS_RISCO = 1.15;
+  if (location.hostname === "localhost") window._riscoMax = function (v) { MAX_A_MAIS_RISCO = v; };   // só para testes no computador
+  estado.riscoViagem = null;   // "Ver rota alternativa": vale para esta viagem (inclusive recálculos)
+  function querEvitarRisco(dest) {
+    if (opRota.risco) return true;
+    var v = estado.riscoViagem;
+    return !!(v && dest && Math.abs(v.lat - dest.lat) < 1e-5 && Math.abs(v.lon - dest.lon) < 1e-5);
+  }
+  var calcularRotaSemRisco = calcularRota;
+  calcularRota = function (orig, dest, m, aoTentar, opcoes) {
+    opcoes = opcoes || {};
+    var p = calcularRotaSemRisco(orig, dest, m, aoTentar, opcoes);
+    if (opcoes.desviosRisco || !riscoAreas.length || !querEvitarRisco(dest)) return p;
+    return p.then(function (lista) {
+      var base = lista[0];
+      if (!base || base.saida) return lista;
+      var rr = riscoNaRota(base.coords, orig, dest);
+      base.risco = rr;
+      if (!rr.evitaveis.length || rr.vermelho < 200) return lista;   // só encostou na divisa: não vale um pedido a mais
+      var o2 = Object.assign({}, opcoes, { desviosRisco: poligonosRisco(rr.evitaveis), prazoSeg: Math.min(opcoes.prazoSeg || 25, 20) });
+      return calcularRotaSemRisco(orig, dest, m, null, o2).then(function (l2) {
+        var nova = l2[0], rn = nova ? riscoNaRota(nova.coords, orig, dest) : null;
+        var restrOk = nova && nova.restrito.metros <= base.restrito.metros + 50 && nova.problemas.length <= base.problemas.length;
+        var tamOk = nova && nova.distancia <= base.distancia * MAX_A_MAIS_RISCO;
+        // rua na divisa da área conta pouco: vale se a nova passa bem menos (ou quase nada) em área vermelha
+        var menosRisco = rn && (rn.vermelho < 200 || rn.vermelho <= rr.vermelho * 0.5);
+        if (location.hostname === "localhost") window._ultimoRisco = { base: base.distancia, nova: nova && nova.distancia, antes: rr.vermelho, depois: rn && rn.vermelho, restrOk: restrOk };
+        if (restrOk && tamOk && menosRisco) {
+          l2.forEach(function (r) { r.riscoEvitado = { km: Math.max(0, r.distancia - base.distancia) }; r.risco = riscoNaRota(r.coords, orig, dest); });
+          return l2;
+        }
+        lista.forEach(function (r) { r.riscoNaoEvitado = !restrOk ? "restricao" : !tamOk ? "longa" : "igual"; });
+        return lista;
+      }, function () { lista.forEach(function (r) { r.riscoNaoEvitado = "semCaminho"; }); return lista; });
+    });
+  };
+
+  /* --- Antes de sair: aviso no resultado da rota --- */
+  var exibirResultadoSemRisco = exibirResultado;
+  exibirResultado = function (res) {
+    exibirResultadoSemRisco(res);
+    if (!riscoAreas.length || !res || !res.coords) return;
+    if (!res.risco) res.risco = riscoNaRota(res.coords, estado.A, estado.B);
+    var rr = res.risco, html = "";
+    if (res.riscoEvitado) {
+      html = '<p class="risco-caixa ok">🛡️ Rota desviando das regiões de alto risco' + (res.riscoEvitado.km >= 100 ? " (" + km(res.riscoEvitado.km) + " a mais)" : "") + ', respeitando as restrições.</p>';
+    }
+    if (rr.vermelho >= 200) {
+      var motivo = { restricao: "O caminho fora dela passaria por área restrita, então a rota continua esta.",
+                     longa: "O caminho fora dela ficaria mais de 15% mais longo, então a rota continua esta.",
+                     semCaminho: "Não achei outro caminho agora.", igual: "Não achei caminho melhor." }[res.riscoNaoEvitado] || "";
+      var soInevitavel = !rr.evitaveis.length && Object.keys(rr.inevitavel).some(function (k) { return rr.areas[k] && rr.areas[k].nivel === 3; });
+      html += '<div class="risco-caixa">🛡️ <b>Sua rota passa por região de alto risco.</b> (' + km(rr.vermelho) + ' em região com registros de roubo de carga)' +
+        (soInevitavel ? "<br><small>A saída ou o destino fica nessa região.</small>" : motivo ? "<br><small>" + escapar(motivo) + "</small>" : "") +
+        "<br><small>Evite parar e mantenha portas travadas. " + escapar(textoFonteRisco()) + ".</small>" +
+        (rr.evitaveis.length && !res.riscoNaoEvitado && !res.riscoEvitado && !nav.ativo ? '<button type="button" class="btn-pequeno" id="btnRotaSemRisco">Ver rota alternativa</button>' : "") + '</div>';
+    }
+    if (!html) return;
+    var antes = el("btnNavegar");
+    if (antes) antes.insertAdjacentHTML("beforebegin", html);
+    var b = el("btnRotaSemRisco");
+    if (b) b.addEventListener("click", function () {
+      if (!estado.B) return;
+      estado.riscoViagem = { lat: estado.B.lat, lon: estado.B.lon };
+      el("btnRota").click();
+    });
+  };
+
+  /* --- Alertas da CET (interdições, obras, eventos): extras.js diz quais estão no caminho.
+     Se a interdição tem trecho conhecido, pede outra rota desviando dela, mas só aceita se NÃO piorar as restrições. --- */
+  var calcularRotaSemAlerta = calcularRota;
+  calcularRota = function (orig, dest, m, aoTentar, opcoes) {
+    opcoes = opcoes || {};
+    var p = calcularRotaSemAlerta(orig, dest, m, aoTentar, opcoes);
+    var G = window.RL && window.RL.ganchos;
+    if (opcoes.desviosAlertas || !G || !G.alertasNaRota) return p;
+    return p.then(function (lista) {
+      var base = lista[0];
+      if (!base || base.saida) return lista;
+      var ach = G.alertasNaRota(base.coords, m) || [];
+      if (!ach.length) return lista;
+      var desv = ach.filter(function (a) { return a.poli; });
+      lista.forEach(function (r) { r.alertasCet = { no: ach.map(function (a) { return a.nome; }) }; });
+      if (!desv.length) return lista;
+      var o2 = Object.assign({}, opcoes, { desviosAlertas: desv.map(function (a) { return a.poli; }), prazoSeg: Math.min(opcoes.prazoSeg || 25, 20) });
+      return calcularRotaSemAlerta(orig, dest, m, null, o2).then(function (l2) {
+        var nova = l2[0];
+        var restrOk = nova && !nova.saida && nova.restrito.metros <= base.restrito.metros + 50 && nova.problemas.length <= base.problemas.length;
+        var resto = nova ? (G.alertasNaRota(nova.coords, m) || []) : [];
+        var desviou = desv.filter(function (a) { return !resto.some(function (b) { return b.id === a.id; }); });
+        if (restrOk && desviou.length) {
+          l2.forEach(function (r) { r.alertasCet = { desviou: desviou.map(function (a) { return a.nome; }), no: resto.map(function (a) { return a.nome; }) }; });
+          return l2;
+        }
+        lista.forEach(function (r) { r.alertasCet.naoDesviou = restrOk ? "semCaminho" : "restricao"; });
+        return lista;
+      }, function () { lista.forEach(function (r) { r.alertasCet.naoDesviou = "semCaminho"; }); return lista; });
+    });
+  };
+  var exibirResultadoSemAlerta = exibirResultado;
+  exibirResultado = function (res) {
+    exibirResultadoSemAlerta(res);
+    if (res && !nav.ativo && window.RL && RL.ganchos.resultado) { try { RL.ganchos.resultado(res); } catch (e) {} }
+    var a = res && res.alertasCet; if (!a) return;
+    var html = "";
+    if (a.desviou && a.desviou.length) html += '<p class="risco-caixa ok">🚧 Desviando de interdição: ' + escapar(a.desviou.join("; ")) + ' (fonte: CET).</p>';
+    if (a.no && a.no.length) html += '<p class="risco-caixa">🚧 <b>No caminho:</b> ' + escapar(a.no.join("; ")) + ' (fonte: CET).' +
+      (a.naoDesviou === "restricao" ? "<br><small>O desvio passaria por área restrita, então a rota continua esta.</small>" : "") + '</p>';
+    var antes = el("btnNavegar");
+    if (html && antes) antes.insertAdjacentHTML("beforebegin", html);
+  };
+
+  /* --- Na navegação: ao entrar em área laranja ou vermelha, avisa uma vez por área (tela e voz) --- */
+  AVISO_EL.risco = "navRisco";
+  el("navRisco").addEventListener("click", function () { var a = avisos.fontes.risco; if (a) { avisos.fechados["risco|" + a.chave] = true; escolherAviso(); } });
+  var FRASE_RISCO = "Atenção: região com registros de roubo de carga. Evite parar, mantenha portas travadas.";
+  var riscoNav = { viagem: null, falados: {} };
+  setInterval(function () {
+    if (!nav.ativo) { el("navRisco").hidden = true; return; }
+    if (riscoNav.viagem !== nav.viagem) { riscoNav = { viagem: nav.viagem, falados: {} }; }
+    if (!nav.ultimaPos || !riscoAreas.length) return;
+    var a = dentroRisco(nav.ultimaPos.lon, nav.ultimaPos.lat);
+    if (!a || a.nivel < 2) { if (avisos.fontes.risco) definirAviso("risco", null); return; }
+    var chave = "dp" + a.dp;
+    if (riscoNav.falados[chave]) return;   // uma vez só por área nesta viagem
+    // Os avisos de restrição vêm primeiro: espera eles saírem da tela e a voz terminar
+    var pr = avisos.fontes.proib, sd = avisos.fontes.saida;
+    if ((pr && pr.nivel >= 2) || sd || (window.speechSynthesis && speechSynthesis.speaking)) return;
+    riscoNav.falados[chave] = Date.now();
+    el("navRisco").innerHTML = "🛡️ " + escapar("Atenção: região com registros de roubo de carga.") + "<small> Evite parar, mantenha portas travadas.</small>";
+    definirAviso("risco", { nivel: 1.5, chave: chave, segundos: 12 });
+    if (!window.PLANOS || window.PLANOS.liberado("areasRisco")) falar(FRASE_RISCO, "aviso");
+  }, 1500);
+
+  /* --- Marcar "Tentativa de roubo / local perigoso" (só parado ou depois da viagem; vai para o painel do Ricardo) --- */
+  var telaProb = document.createElement("div");
+  telaProb.className = "nav-opcoes"; telaProb.id = "telaTipoProblema"; telaProb.hidden = true;
+  telaProb.setAttribute("role", "dialog"); telaProb.setAttribute("aria-modal", "true"); telaProb.setAttribute("aria-labelledby", "tpTitulo");
+  telaProb.innerHTML = '<div class="nav-opcoes-caixa"><p class="nav-opcoes-titulo" id="tpTitulo">⚠️ O que aconteceu aqui?</p>' +
+    '<div id="tpEscolha"><button type="button" class="risco-opcao" id="tpRota">🛣️ Problema na rota<small>Rua proibida, erro do app, placa diferente…</small></button>' +
+    '<button type="button" class="risco-opcao perigo" id="tpRisco">🚨 Tentativa de roubo / local perigoso<small>Vai para revisão antes de aparecer para os outros motoristas</small></button></div>' +
+    '<div id="tpConfirma" hidden><p class="cp-bloco">Vamos enviar <b>este local</b> como <b>tentativa de roubo / local perigoso</b>, com o seu nome, para o Rota Liberada conferir.</p>' +
+    '<p class="cad-dica">Ele <b>não aparece no mapa na hora</b>: só depois de revisado. Se aprovado, vira um ponto de atenção por 90 dias.</p>' +
+    '<p class="cad-dica">🚓 Em perigo agora? Ligue <b>190</b>.</p>' +
+    '<button type="button" class="btn-rota" id="tpEnviar">Enviar para revisão</button></div>' +
+    '<button type="button" class="btn-pequeno op-fechar" id="tpVoltar">Cancelar</button></div>';
+  document.body.appendChild(telaProb);
+  var tpLocal = null;
+  function escolherTipoProblema(lon, lat, naViagem) {
+    tpLocal = { lon: lon, lat: lat, naViagem: naViagem };
+    el("tpEscolha").hidden = false; el("tpConfirma").hidden = true;
+    telaProb.hidden = false;
+  }
+  function fecharTipoProblema() { telaProb.hidden = true; tpLocal = null; }
+  el("tpVoltar").addEventListener("click", fecharTipoProblema);
+  telaProb.addEventListener("click", function (ev) { if (ev.target === telaProb) fecharTipoProblema(); });
+  el("tpRota").addEventListener("click", function () {
+    var t = tpLocal; fecharTipoProblema(); if (!t) return;
+    if (t.naViagem) { marcarProblemaNav(); return; }
+    registrarOcorrencia("marcado", t.lon, t.lat, "", null); vibrar(120);
+    avisoRapido("✅ Problema marcado. Toque em \"Revisar\" na tela inicial para enviar.");
+  });
+  el("tpRisco").addEventListener("click", function () {
+    if (nav.ativo && giro.velocidade >= 1) { fecharTipoProblema(); mostrarAlertaNav("🚚 Pare o caminhão para marcar local perigoso.", "info"); return; }
+    el("tpEscolha").hidden = true; el("tpConfirma").hidden = false;
+  });
+  el("tpEnviar").addEventListener("click", function () {
+    var t = tpLocal; fecharTipoProblema(); if (!t) return;
+    if (!window.RotaConta || !window.RotaConta.marcarRisco) { avisoRapido("Não deu para enviar agora. Tente de novo em instantes."); return; }
+    vibrar(120);
+    window.RotaConta.marcarRisco(t.lat, t.lon).then(function (enviado) {
+      var txt = enviado ? "✅ Local enviado para revisão. Obrigado por avisar!" : "✅ Local guardado. Vai para revisão assim que tiver internet.";
+      if (nav.ativo) mostrarAlertaNav(txt, "info"); else avisoRapido(txt);
+    });
+  });
+
+  /* ===== Ponte para as funções novas (extras.js): o que elas podem usar do app ===== */
+  window.RL = {
+    mapa: mapa, estado: estado, nav: nav, giro: giro, opRota: opRota, el: el, ler: ler, gravar: gravar, lerJsonLocal: lerJsonLocal,
+    falar: falar, vibrar: vibrar, avisoRapido: avisoRapido, mostrarAlertaNav: mostrarAlertaNav, definirAviso: definirAviso,
+    km: km, tempo: tempo, hhmm: hhmm, escapar: escapar, xy: xy, amostrar: amostrar, fecharMenu: fecharMenu, momentoAtual: momentoAtual,
+    definirPonto: definirPonto, tracarAteDestino: tracarAteDestino, irParaPosto: irParaPosto, postosNasCelulas: postosNasCelulas,
+    celulasEmVolta: celulasEmVolta, desenharPostos: desenharPostos, rotuloPosto: rotuloPosto, distLinhaReta: distLinhaReta,
+    guardarFoto: guardarFoto, lerFoto: lerFoto, apagarFoto: apagarFoto, reduzirFoto: reduzirFoto,
+    posicao: function () { if (nav.ativo && nav.ultimaPos) return nav.ultimaPos; if (posInicio) { var l = posInicio.getLatLng(); return { lat: l.lat, lon: l.lng }; } return null; },
+    avisoAtual: function (f) { return avisos.fontes[f] || null; },
+    registrarAviso: function (fonte, id) { AVISO_EL[fonte] = id; el(id).addEventListener("click", function () { var a = avisos.fontes[fonte]; if (a) { avisos.fechados[fonte + "|" + a.chave] = true; escolherAviso(); } }); },
+    // ganchos que extras.js preenche (o app chama se existirem)
+    ganchos: {}
+  };
 
   // Só para testes (abrir o app com ?teste=1 no endereço): deixa conferir as rotas pelo console
   if (/[?&]teste=1/.test(location.search)) window._teste = { fraseMotorista: fraseMotorista, calcularRota: calcularRota, manobrasRuins: manobrasRuins, momentoAtual: momentoAtual, bloqueios: BLOQ, nav: nav, atualizarBannerRoteiro: atualizarBannerRoteiro };
@@ -6487,6 +6836,8 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
   window.addEventListener("appinstalled", function () { btn.style.display = "none"; });
 })();
 </script>
+<!-- Funções novas (compartilhar viagem, emergência, jornada, gastos, documentos, frete, paradas, entregas) -->
+<script src="extras.js"></script>
 <!-- Conta do motorista: login Google, cadastro, controle de acesso e indicação (Firebase) -->
 <script type="module" src="conta.js"></script>
 </body>
