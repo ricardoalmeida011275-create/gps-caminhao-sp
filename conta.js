@@ -428,7 +428,66 @@ async function buscarPontosRisco() {
     window.dispatchEvent(new CustomEvent("rota-pontos-risco", { detail: lista }));
   } catch (e) { /* fica a lista guardada */ }
 }
-function depoisDoLogin() { enviarRiscos().catch(() => {}); buscarPontosRisco(); }
+function depoisDoLogin() { enviarRiscos().catch(() => {}); buscarPontosRisco(); enviarFilasRelatos().catch(() => {}); buscarCorrecoes(); }
+
+/* ---------- Relatos e correções de endereço (pedido de 28/11/2026) ----------
+   - relatos: o que o motorista conta no fim da viagem ou no "Marcar problema" (só o Ricardo lê, aba "Relatos").
+   - correcoesSugeridas: "Ajustar ponto de chegada" (fica PENDENTE até o Ricardo aprovar).
+   - correcoes: as aprovadas; todo motorista logado lê, e a rota passa a chegar no ponto corrigido.
+   Sem internet ou sem conta, fica na fila do celular e vai depois. */
+const CHAVE_REL_FILA = "rotaCaminhaoSP.relatosFila", CHAVE_COR_FILA = "rotaCaminhaoSP.correcoesFila", CHAVE_CORRECOES = "rotaCaminhaoSP.correcoesAprovadas";
+const txt = (v, n) => String(v == null ? "" : v).slice(0, n);
+const num6 = (v) => (typeof v === "number" && isFinite(v)) ? +v.toFixed(6) : null;
+let enviandoFilas = false;
+async function enviarFilasRelatos() {
+  if (enviandoFilas) return false;
+  const rel = ler(CHAVE_REL_FILA) || [], cor = ler(CHAVE_COR_FILA) || [];
+  if (!rel.length && !cor.length) return true;
+  enviandoFilas = true;
+  try {
+    await carregarFirebase();
+    const u = await usuarioAtual(); if (!u) return false;
+    const { fs, db } = fb, nome = txt((conta && conta.nome) || u.displayName || "", 60);
+    while (rel.length) {
+      const r = rel[0];
+      await fs.addDoc(fs.collection(db, "relatos"), {
+        uid: u.uid, nome, tipo: txt(r.tipo, 20), resposta: txt(r.resposta, 60), texto: txt(r.texto, 400), instrucao: txt(r.instrucao, 200),
+        endereco: txt(r.endereco, 200), destLat: num6(r.destLat), destLon: num6(r.destLon), chegLat: num6(r.chegLat), chegLon: num6(r.chegLon),
+        paradaLat: num6(r.paradaLat), paradaLon: num6(r.paradaLon), lat: num6(r.lat), lon: num6(r.lon),
+        em: typeof r.em === "number" ? r.em : Date.now(), situacao: "novo", criadoEm: fs.serverTimestamp()
+      });
+      rel.shift(); gravar(CHAVE_REL_FILA, rel);
+    }
+    while (cor.length) {
+      const c = cor[0];
+      await fs.addDoc(fs.collection(db, "correcoesSugeridas"), {
+        uid: u.uid, nome, chave: txt(c.chave, 160), endereco: txt(c.endereco, 200), texto: txt(c.texto, 400),
+        antigoLat: num6(c.antigoLat), antigoLon: num6(c.antigoLon), lat: num6(c.lat), lon: num6(c.lon),
+        em: typeof c.em === "number" ? c.em : Date.now(), situacao: "pendente", criadoEm: fs.serverTimestamp()
+      });
+      cor.shift(); gravar(CHAVE_COR_FILA, cor);
+    }
+    return true;
+  } finally { enviandoFilas = false; }
+}
+async function enviarRelato(r) {
+  const fila = ler(CHAVE_REL_FILA) || []; fila.push(r); gravar(CHAVE_REL_FILA, fila.slice(-30));
+  try { return await enviarFilasRelatos(); } catch (e) { return false; }
+}
+async function sugerirCorrecao(c) {
+  const fila = ler(CHAVE_COR_FILA) || []; fila.push(c); gravar(CHAVE_COR_FILA, fila.slice(-30));
+  try { return await enviarFilasRelatos(); } catch (e) { return false; }
+}
+async function buscarCorrecoes() {
+  try {
+    await carregarFirebase();
+    const u = await usuarioAtual(); if (!u) return;
+    const { fs, db } = fb, q = await fs.getDocs(fs.collection(db, "correcoes")), lista = [];
+    q.forEach((d) => { const x = d.data(); if (typeof x.lat === "number" && typeof x.lon === "number") lista.push({ id: d.id, chave: x.chave || "", endereco: x.endereco || "", antigoLat: x.antigoLat, antigoLon: x.antigoLon, lat: x.lat, lon: x.lon }); });
+    gravar(CHAVE_CORRECOES, lista);
+    window.dispatchEvent(new CustomEvent("rota-correcoes", { detail: lista }));
+  } catch (e) { /* fica a lista guardada */ }
+}
 
 /* ---------- Compartilhar viagem ao vivo (aoVivo/{código}) ----------
    O link tem um código sorteado e difícil de adivinhar. Quem tem o link vê só: posição, destino e chegada.
@@ -522,6 +581,7 @@ window.RotaConta = {
   marcarRisco,
   aoVivoIniciar, aoVivoAtualizar, aoVivoParar,
   salvarDica, dicasPerto, avaliarParada, avaliacoesParada, sugerirParada, paradasAprovadas, alertasManuais,
+  enviarRelato, sugerirCorrecao, buscarCorrecoes, enviarFilasRelatos,
   viagem: () => { marcarViagem(); },
   temConta: () => !!(conta && conta.uid),
   situacao: () => conta

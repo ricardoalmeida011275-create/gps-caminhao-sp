@@ -28,6 +28,10 @@
     indique:           { plano: "gratis", nome: "Indique um amigo" },
     basico:            { plano: "gratis", nome: "Login, menu e configurações básicas" },
     alertaVelocidade:  { plano: "gratis", nome: "Alerta de velocidade (meu limite e limite da rua)" },
+    chegouDestino:     { plano: "gratis", nome: "\"Chegou ao destino?\" e botão \"Cheguei\" (encerra a viagem)" },
+    relatos:           { plano: "gratis", nome: "Relatar problema com texto livre (destino ou entrada errada)" },
+    ajustarChegada:    { plano: "gratis", nome: "Ajustar ponto de chegada (correção pelos motoristas)" },
+    entradaCerta:      { plano: "gratis", nome: "Chegar pela entrada certa em postos e lugares" },
     // ---------- PLUS ----------
     rotaCaminhao:      { plano: "plus", nome: "Rota de caminhão que desvia das restrições (ZMRC, horários, vias proibidas, tipo de caminhão)" },
     avisosRestricao:   { plano: "plus", nome: "Avisos de área restrita durante a viagem" },

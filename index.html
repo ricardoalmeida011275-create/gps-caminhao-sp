@@ -236,6 +236,8 @@ body.navegando .btn-centro { left: max(12px, env(safe-area-inset-left, 0px)); ri
 .rev-botoes button.rev-sim { border-color: #c62828; color: #c62828; }
 .rev-botoes button[aria-pressed="true"] { background: var(--botao-fundo, #e3eefb); border-color: var(--botao-borda, #0b5cad); color: var(--botao-texto, #0a3a70); }
 .rev-botoes button.rev-sim[aria-pressed="true"] { background: #c62828; border-color: #c62828; color: #fff; }
+.rev-texto-rot { display: block; margin-top: 10px; font-size: 15px; font-weight: 700; }
+.rev-texto { display: block; width: 100%; box-sizing: border-box; margin-top: 4px; font: inherit; font-size: 16px; font-weight: 400; padding: 10px; border: 1px solid var(--linha); border-radius: 10px; background: var(--fundo); color: var(--asfalto); }
 /* Chegada automática: aviso com contagem e botão "Ainda não cheguei" */
 .chegada-aviso { position: fixed; inset: 0; z-index: 3500; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; padding: 16px; }
 .chegada-aviso[hidden] { display: none; }
@@ -247,6 +249,16 @@ body.navegando .btn-centro { left: max(12px, env(safe-area-inset-left, 0px)); ri
   display: block; width: 100%; min-height: 76px; border: 3px solid #fff; border-radius: 16px; cursor: pointer;
   background: #e65100; color: #fff; font-family: var(--f-titulo); font-weight: 700; font-size: 24px; box-shadow: 0 4px 14px rgba(0,0,0,.3);
 }
+/* "Chegou ao destino?" (parado perto do destino) e botão "Cheguei" (faltando menos de 500 m) */
+.chegou-botoes { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.btn-sim-cheguei { display: block; width: 100%; min-height: 76px; border: 3px solid #fff; border-radius: 16px; cursor: pointer; background: #1f7a3d; color: #fff; font-family: var(--f-titulo); font-weight: 700; font-size: 26px; box-shadow: 0 4px 14px rgba(0,0,0,.3); }
+.btn-cheguei {
+  position: absolute; z-index: 1000; left: max(12px, env(safe-area-inset-left, 0px)); bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  min-width: 96px; min-height: 72px; border: 3px solid #fff; border-radius: 16px; padding: 8px 12px; cursor: pointer;
+  background: #1f7a3d; color: #fff; font-family: var(--f-titulo); font-weight: 700; font-size: 17px; line-height: 1.15; box-shadow: 0 4px 14px rgba(0,0,0,.3);
+}
+.btn-cheguei[hidden] { display: none; }
+.btn-cheguei span { display: block; font-size: 26px; }
 .viagem-concluida {
   position: fixed; z-index: 3400; left: 50%; top: 40%; transform: translate(-50%, -50%); max-width: calc(100% - 32px);
   background: #1f7a3d; color: #fff; border-radius: 18px; padding: 18px 26px; font-family: var(--f-titulo); font-weight: 700; font-size: 26px;
@@ -846,6 +858,10 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
 .fim-secundario { border: 1px solid var(--linha); background: var(--fundo); color: var(--asfalto); }
 .fim-principal { border: 0; background: var(--rota); color: #fff; font-size: 21px; min-height: 60px; margin-top: 4px; }
 .fim-btn:active { transform: scale(.98); }
+.fim-chegada { display: flex; flex-direction: column; gap: 8px; border: 2px solid var(--linha); border-radius: 16px; padding: 10px; }
+.fim-chegada[hidden] { display: none; }
+.fim-perg { margin: 0; font-family: var(--f-titulo); font-weight: 700; font-size: 19px; text-align: center; }
+.fim-alerta { border: 2px solid #e65100; color: #b23c00; }
 /* ===== Etapa 4: menu ☰ em grupos ===== */
 .menu-corpo { gap: 8px; }
 .menu-secao { margin: 10px 2px 2px; font-family: var(--f-titulo); font-weight: 700; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--suave); }
@@ -1063,6 +1079,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
     <div id="mapa" aria-label="Mapa de São Paulo com as restrições a caminhões"></div>
     <button class="btn-centro" type="button" id="btnCentro" hidden><span aria-hidden="true">◎</span> Centralizar</button>
     <button class="btn-marcar" type="button" id="btnMarcar" hidden aria-label="Marcar problema neste local"><span aria-hidden="true">⚠️</span><small>Problema</small></button>
+    <button class="btn-cheguei" type="button" id="btnCheguei" hidden aria-label="Cheguei: encerrar a viagem agora"><span aria-hidden="true">🏁</span>Cheguei</button>
     <button class="btn-visao nav-so" type="button" id="btnVisao" aria-label="Ver a rota inteira"><span aria-hidden="true">🗺️</span><small>Rota</small></button>
     <button class="btn-visao btn-entregas-mapa" type="button" id="btnEntregasMapa" aria-label="Ver as entregas no mapa"><span aria-hidden="true">📦</span><small>Entregas</small></button>
     <button class="btn-visao btn-posto-nav nav-so" type="button" id="btnPostoNav" aria-label="Posto mais próximo na rota"><span aria-hidden="true">⛽</span><small>Posto</small></button>
@@ -1146,6 +1163,16 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
       <p class="chegada-texto">Encerrando a viagem em <b id="chegadaSeg">10</b> segundos</p>
       <p class="chegada-num" id="chegadaNum" aria-hidden="true">10</p>
       <button type="button" class="btn-ainda-nao" id="btnAindaNao">Ainda não cheguei</button>
+    </div>
+  </div>
+  <div class="chegada-aviso" id="chegouPergunta" role="alertdialog" aria-modal="true" aria-labelledby="chegouTitulo" hidden>
+    <div class="chegada-caixa">
+      <p class="chegada-titulo" id="chegouTitulo">Chegou ao destino?</p>
+      <p class="chegada-texto" id="chegouTexto">Você está parado perto do destino.</p>
+      <div class="chegou-botoes">
+        <button type="button" class="btn-sim-cheguei" id="btnSimCheguei">Sim, cheguei</button>
+        <button type="button" class="btn-ainda-nao" id="btnChegouNao">Ainda não</button>
+      </div>
     </div>
   </div>
   <div class="viagem-concluida" id="viagemConcluida" role="status" hidden>✅ Viagem concluída</div>
@@ -1555,6 +1582,12 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
       <div><strong id="fimHora">–</strong><span id="fimHoraRot">chegada</span></div>
     </div>
     <p class="fim-nota" id="fimNota"></p>
+    <div class="fim-chegada" id="fimChegada" hidden>
+      <p class="fim-perg" id="fimPerg">A chegada deu certo?</p>
+      <button type="button" class="fim-btn fim-secundario" id="btnFimChegouCerto">👍 Sim, cheguei no lugar certo</button>
+      <button type="button" class="fim-btn fim-secundario fim-alerta" id="btnFimDestinoErrado">⚠️ Destino ou entrada no lugar errado</button>
+      <button type="button" class="fim-btn fim-secundario" id="btnFimAjustar">📍 Ajustar ponto de chegada</button>
+    </div>
     <button type="button" class="fim-btn fim-secundario" id="btnFimFav">☆ Salvar este destino nos favoritos</button>
     <button type="button" class="fim-btn fim-secundario" id="btnFimVolta">↩️ Voltar para a saída</button>
     <button type="button" class="fim-btn fim-principal fim-proxima" id="btnFimProxima" hidden></button>
@@ -2368,11 +2401,11 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
       var q = semAcento(texto).trim();
       if (q.length >= 2) {
         lerFavoritos().filter(function (f) { return semAcento(f.nome).indexOf(q) >= 0 || semAcento(f.end).indexOf(q) >= 0; }).slice(0, 4)
-          .forEach(function (f) { linha("⭐", f.nome, "Favorito · " + f.end, function () { irPara(f.lat, f.lon, f.nome, { aproximado: f.aprox }); }); });
+          .forEach(function (f) { linha("⭐", f.nome, "Favorito · " + f.end, function () { irPara(f.lat, f.lon, f.nome, { aproximado: f.aprox, tipo: "favorito" }); }); });
       }
       if (!numeroDigitado(texto) && !acharCep(texto)) {
         buscarLocal(texto).forEach(function (l) {
-          linha("📌", l.nome, ["Lugar conhecido", l.bairro, l.cidade || "São Paulo"].filter(Boolean).join(", "), function () { irPara(l.lat, l.lon, l.nome); });
+          linha("📌", l.nome, ["Lugar conhecido", l.bairro, l.cidade || "São Paulo"].filter(Boolean).join(", "), function () { irPara(l.lat, l.lon, l.nome, { tipo: "lugar" }); });
         });
       }
       lista.hidden = !lista.children.length;
@@ -2384,10 +2417,11 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
       var res = r.itens ? montarResultados(r.itens, r.numero) : [];
       res.forEach(function (it) {
         var nome = it.nome + (it.detalhe ? " – " + it.detalhe : "");
-        if (it.tipo === "aprox") linha("📍", it.nome, "⚠️ Número aproximado – confira na chegada · " + it.detalhe, function () { irPara(it.lat, it.lon, nome + " (número aproximado)", { aproximado: true }); });
-        else if (it.tipo === "exato") linha("📍", it.nome, "Endereço com número · " + it.detalhe, function () { irPara(it.lat, it.lon, nome); });
-        else if (it.tipo === "faixa") linha("📍", it.nome, "Número pela numeração da rua · " + it.detalhe, function () { irPara(it.lat, it.lon, nome); });
-        else linha(it.tipo === "rua" ? "🛣️" : "📌", it.nome, it.detalhe, function () { irPara(it.lat, it.lon, nome); });
+        var ex = { tipo: it.tipo, rua: it.rua || "" };
+        if (it.tipo === "aprox") linha("📍", it.nome, "⚠️ Número aproximado – confira na chegada · " + it.detalhe, function () { irPara(it.lat, it.lon, nome + " (número aproximado)", { aproximado: true, tipo: "aprox", rua: it.rua || "" }); });
+        else if (it.tipo === "exato") linha("📍", it.nome, "Endereço com número · " + it.detalhe, function () { irPara(it.lat, it.lon, nome, ex); });
+        else if (it.tipo === "faixa") linha("📍", it.nome, "Número pela numeração da rua · " + it.detalhe, function () { irPara(it.lat, it.lon, nome, ex); });
+        else linha(it.tipo === "rua" ? "🛣️" : "📌", it.nome, it.detalhe, function () { irPara(it.lat, it.lon, nome, ex); });
       });
       if (r.principalFora && !explicito) linha("ℹ️", "A busca principal não respondeu agora.", "Toque em Buscar (🔍) no teclado para procurar no OpenStreetMap.", null);
       if (!lista.children.length) linha("ℹ️", "Nada encontrado.", explicito ? "Confira o nome da rua, tente com o bairro, ou segure o dedo no mapa no lugar certo." : "Toque em Buscar (🔍) no teclado para procurar também no OpenStreetMap, ou segure o dedo no mapa no lugar certo.", null);
@@ -2480,9 +2514,15 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
   }
   function definirPonto(letra, lat, lon, nome, extra) {
     estado[letra] = { lat: lat, lon: lon, nome: nome || (lat.toFixed(5) + ", " + lon.toFixed(5)), aproximado: !!(extra && extra.aproximado) };
+    // tipo do destino (endereço, lugar, posto, ponto no mapa…) e a rua do endereço: usados para chegar pela entrada certa (chegada.js)
+    if (extra && extra.tipo) estado[letra].tipo = extra.tipo;
+    if (extra && extra.rua) estado[letra].rua = extra.rua;
     document.getElementById("txt" + letra).value = estado[letra].nome;
     atualizarMarcadores();
-    if (letra === "B") guardarRecente(estado.B);
+    if (letra === "B") {
+      guardarRecente(estado.B);
+      if (window.RL && RL.ganchos.destinoEscolhido) { try { RL.ganchos.destinoEscolhido(estado.B); } catch (e) {} }   // já procura a entrada (chegada.js)
+    }
   }
   function atualizarMarcadores() {
     ["A", "B"].forEach(function (l) {
@@ -2540,7 +2580,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
       li.querySelector("strong").textContent = f.nome;
       li.querySelector("small").textContent = f.end + (f.aprox && f.end.indexOf("aproximado") < 0 ? " · número aproximado" : "");
       li.querySelector(".fav-ir").addEventListener("click", function () {
-        definirPonto("B", f.lat, f.lon, f.nome, { aproximado: f.aprox });
+        definirPonto("B", f.lat, f.lon, f.nome, { aproximado: f.aprox, tipo: "favorito" });
         document.getElementById("listaFavoritos").hidden = true;
         document.getElementById("btnFavoritos").setAttribute("aria-expanded", "false");
         mapa.setView([f.lat, f.lon], Math.max(mapa.getZoom(), 15));
@@ -2624,7 +2664,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
     nomeDoPonto(lat, lon).then(function (n) { nome = "Perto de " + n; div.querySelector("small").textContent = nome; },
       function () { div.querySelector("small").textContent = lat.toFixed(5) + ", " + lon.toFixed(5); });
     div.querySelector(".btn-rota").addEventListener("click", function () {
-      definirPonto("B", lat, lon, nome || "Ponto marcado no mapa");
+      definirPonto("B", lat, lon, nome || "Ponto marcado no mapa", { tipo: "mapa" });
       mapa.closePopup(pop);
       tracarAteDestino();
     });
@@ -3612,6 +3652,18 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
     if (!estado.A || !estado.B) { mostrarMsg("Escolha a saída (A) e o destino (B): digite e toque numa sugestão, use sua localização ou toque no mapa."); return; }
 
     var btn = document.getElementById("btnRota");
+    // Antes de traçar: acha o ponto de chegada certo (correção aprovada, entrada marcada no mapa, rua do endereço) – chegada.js
+    if (window.RL && RL.ganchos.ajustarChegada && !estado.B.chegada) {
+      var B0 = estado.B;
+      btn.disabled = true; btn.textContent = "Procurando a entrada…";
+      Promise.resolve().then(function () { return RL.ganchos.ajustarChegada(B0); }).catch(function () {}).then(function () {
+        btn.disabled = false; btn.textContent = "Traçar rota";
+        if (estado.B !== B0) return;
+        if (!B0.chegada) B0.chegada = { fonte: "nenhuma" };
+        btn.click();
+      });
+      return;
+    }
     btn.disabled = true; mostrarMsg("");
     // Calcula as duas opções ao mesmo tempo: "Mais rápida (avenidas)" (padrão) e "Mais curta".
     // As duas passam pela mesma conferência de restrições e lista de bloqueios.
@@ -4328,8 +4380,62 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
      Chegou = até 50 m do destino E quase parado (abaixo de ~5 km/h) por 20 segundos seguidos.
      Aí mostra a contagem de 10 s; se o motorista não tocar em "Ainda não cheguei", encerra sozinho. */
   var CHEGADA = { raio: 50, velMax: 5 / 3.6, segundosParado: 20, contagem: 10, raioRearmar: 80 };
+  /* Chegou mesmo com o ponto um pouco errado (pedido de 28/11/2026):
+     parado (abaixo de 5 km/h) por 90 s a até 300 m do destino → pergunta "Chegou ao destino?".
+     Faltando menos de 500 m, o botão "Cheguei" fica na tela para encerrar na hora. */
+  var CHEGOU = { raio: 300, segundos: 90, botao: 500, rearmar: 100, andando: 10 / 3.6 };
+  function metrosEntre(a, b) { var p = xy(a.lon, a.lat), q = xy(b.lon, b.lat); return Math.hypot(p[0] - q[0], p[1] - q[1]); }
+  function vigiarPerguntaChegou(d) {
+    var p = nav.ultimaPos, perg = document.getElementById("chegouPergunta");
+    document.getElementById("btnCheguei").hidden = !(nav.ativo && d < CHEGOU.botao);
+    // Lugar sem entrada conferida (só achou a rua mais próxima): avisa uma vez ao chegar perto
+    var ch = estado.B && estado.B.chegada;
+    if (ch && ch.conferir && d < CHEGOU.raio && !nav.avisouEntrada) {
+      nav.avisouEntrada = true;
+      mostrarAlertaNav("🚪 Confira a entrada ao chegar.", "info"); falar("Confira a entrada ao chegar.", "manobra");
+    }
+    // Voltou a andar com a pergunta aberta: fecha sozinha (não mexer no celular andando)
+    if (!perg.hidden && giro.velocidade > CHEGOU.andando) { perg.hidden = true; nav.paradoPertoDesde = null; }
+    if (nav.chegouNao) {   // respondeu "Ainda não": só pergunta de novo depois de andar 100 m
+      if (p && metrosEntre(nav.chegouNao, p) > CHEGOU.rearmar) nav.chegouNao = null;
+      else { nav.paradoPertoDesde = null; return; }
+    }
+    if (d <= CHEGOU.raio && giro.velocidade < CHEGADA.velMax) { if (!nav.paradoPertoDesde) nav.paradoPertoDesde = Date.now(); }
+    else nav.paradoPertoDesde = null;
+  }
+  setInterval(function () {
+    if (!nav.ativo || nav.contagem || nav.chegouNao || !nav.paradoPertoDesde || !document.getElementById("chegouPergunta").hidden) return;
+    if (Date.now() - nav.paradoPertoDesde >= CHEGOU.segundos * 1000) perguntarChegou();
+  }, 1000);
+  function perguntarChegou() {
+    var d = nav.distB;
+    document.getElementById("chegouTexto").textContent = "Você está parado " + (d > 30 ? "a " + arredondar(d) + " do ponto que o app marcou como destino." : "no destino.");
+    document.getElementById("navOpcoes").hidden = true;
+    document.getElementById("chegouPergunta").hidden = false;
+    falar("Chegou ao destino?", "manobra");
+    vibrar([300, 150, 300]);
+  }
+  function confirmarChegada(como) {
+    if (!nav.ativo) return;
+    document.getElementById("chegouPergunta").hidden = true;
+    if (nav.ultimaPos) nav.paradaReal = { lat: nav.ultimaPos.lat, lon: nav.ultimaPos.lon, em: Date.now() };
+    nav.chegadaComo = como;
+    chegou();
+    encerrarNavegacao(true);
+  }
+  document.getElementById("btnSimCheguei").addEventListener("click", function () { confirmarChegada("pergunta"); });
+  document.getElementById("btnCheguei").addEventListener("click", function () { confirmarChegada("botao"); });
+  document.getElementById("btnChegouNao").addEventListener("click", function () {
+    document.getElementById("chegouPergunta").hidden = true;
+    nav.chegouNao = nav.ultimaPos ? { lat: nav.ultimaPos.lat, lon: nav.ultimaPos.lon } : { lat: 0, lon: 0 };
+    nav.paradoPertoDesde = null;
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    falar("Tudo bem. A navegação continua.", "manobra");
+  });
+
   function vigiarChegada(d) {
     nav.distB = d;
+    vigiarPerguntaChegou(d);
     // Tocou "Ainda não cheguei": só tenta de novo depois que ele se afastar do destino
     if (nav.chegadaBloqueada) {
       if (d > CHEGADA.raioRearmar) nav.chegadaBloqueada = false;
@@ -4399,6 +4505,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
                    de: estado.A && estado.A.nome || "", para: estado.B && estado.B.nome || "" };
     nav.foraRegistrado = false; nav.ultimoNaRota = null; nav.instrAtual = ""; nav.sAtual = 0; nav.revisarAoParar = false; trilha = [];
     nav.pertoParadoDesde = null; nav.chegadaBloqueada = false; pararContagem();
+    nav.paradaReal = null; nav.chegouNao = null; nav.paradoPertoDesde = null; nav.avisouEntrada = false; nav.chegadaComo = ""; nav.distB = Infinity;
     nav.proib = {}; nav.restritoLog = []; nav.problemaFalado = ""; nav.saidaFalada = false; nav.foraZonaDesde = null; zerarAvisos();
     centralApp({ acao: "sinal", evento: "viagem", versao: VERSAO_APP }).catch(function () {});   // conta a viagem (sem localização)
     try { if (window.RotaConta) window.RotaConta.viagem(); } catch (e) {}   // 1ª viagem: libera o bônus de quem indicou
@@ -4436,7 +4543,9 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
 
   function encerrarNavegacao(automatico) {
     automatico = automatico === true;   // pelo botão, chega aqui o clique (não é automático)
-    pararContagem(); nav.pertoParadoDesde = null;
+    pararContagem(); nav.pertoParadoDesde = null; nav.paradoPertoDesde = null;
+    // Onde o caminhão realmente parou (vai junto nos relatos e no "Ajustar ponto de chegada")
+    if (!nav.paradaReal && nav.ultimaPos) nav.paradaReal = { lat: nav.ultimaPos.lat, lon: nav.ultimaPos.lon, em: Date.now() };
     nav.ativo = false;
     if (nav.watch !== null) { navigator.geolocation.clearWatch(nav.watch); nav.watch = null; }
     if (nav.tela) { try { nav.tela.release(); } catch (e) {} nav.tela = null; }
@@ -4446,7 +4555,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
     limparDestaque();
     mapa.setBearing(0);
     document.body.classList.remove("navegando");
-    ["navTopo", "navBase", "navAlerta", "navFaixa", "navProibido", "navSaida", "btnBussola", "btnCentro", "velocimetro", "navOpcoes", "btnMarcar"].forEach(function (id) { document.getElementById(id).hidden = true; });
+    ["navTopo", "navBase", "navAlerta", "navFaixa", "navProibido", "navSaida", "btnBussola", "btnCentro", "velocimetro", "navOpcoes", "btnMarcar", "btnCheguei", "chegouPergunta"].forEach(function (id) { document.getElementById(id).hidden = true; });
     function depoisDaViagem() {
       if (automatico) {
         // Encerrou sozinho na chegada: perguntas só se nesta viagem ele marcou problema ou saiu da rota
@@ -4602,7 +4711,9 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
           '<button type="button" class="rev-sim" data-r="proibido">Sim, era proibido</button>' +
           '<button type="button" data-r="quis">Não, eu quis mudar</button>' +
           '<button type="button" data-r="naosei">Não lembro</button>' +
-        '</div></div>';
+          '<button type="button" class="rev-sim" data-r="destino">Destino ou entrada no lugar errado</button>' +
+        '</div>' +
+        '<label class="rev-texto-rot">Conte o que aconteceu (opcional)<textarea class="rev-texto" maxlength="400" rows="2"></textarea></label></div>';
     }).join("");
     document.getElementById("revisao").hidden = false;
     mapasRevisao.forEach(function (m) { try { m.remove(); } catch (e) {} });
@@ -4619,12 +4730,15 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
     });
     [].forEach.call(el.querySelectorAll(".rev-item"), function (item) {
       var o = ocorrencias.filter(function (x) { return x.id === item.getAttribute("data-id"); })[0];
-      [].forEach.call(item.querySelectorAll("button"), function (b) {
+      var ta = item.querySelector(".rev-texto");
+      if (o && o.texto) ta.value = o.texto;
+      ta.addEventListener("input", function () { if (!o) return; o.texto = ta.value.slice(0, 400); salvarOcorrencias(); atualizarEnvio(); });
+      [].forEach.call(item.querySelectorAll(".rev-botoes button"), function (b) {
         if (o && o.resposta === b.getAttribute("data-r")) b.setAttribute("aria-pressed", "true");
         b.addEventListener("click", function () {
           if (!o) return;
           o.resposta = b.getAttribute("data-r");
-          [].forEach.call(item.querySelectorAll("button"), function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+          [].forEach.call(item.querySelectorAll(".rev-botoes button"), function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
           salvarOcorrencias();
           atualizarEnvio();
           atualizarBotaoPendentes();
@@ -4633,7 +4747,9 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
     });
     atualizarEnvio();
   }
-  function paraEnviar() { return ocorrencias.filter(function (o) { return o.resposta === "proibido" && !o.enviado; }); }
+  // Vai para o WhatsApp e para a aba "Relatos" do painel: "era proibido", "destino/entrada errado" ou qualquer resposta com texto
+  function paraEnviar() { return ocorrencias.filter(function (o) { return o.resposta && o.resposta !== null && (o.resposta === "proibido" || o.resposta === "destino" || (o.texto && o.texto.trim())) && !o.enviado; }); }
+  var NOME_RESPOSTA = { proibido: "Sim, era proibido", quis: "Não, eu quis mudar", naosei: "Não lembro", destino: "Destino ou entrada no lugar errado" };
   function atualizarEnvio() {
     var n = paraEnviar().length, b = document.getElementById("btnRevEnviar");
     b.hidden = !n;
@@ -4644,12 +4760,21 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
   document.getElementById("btnRevEnviar").addEventListener("click", function () {
     var lista = paraEnviar();
     if (!lista.length) return;
-    var texto = "Rota Liberada: " + lista.length + (lista.length === 1 ? " ponto" : " pontos") + " com erro do app (motorista confirmou que era proibido)\n";
+    var texto = "Rota Liberada: " + lista.length + (lista.length === 1 ? " ponto relatado" : " pontos relatados") + " pelo motorista\n";
+    var dest = window.RL && RL.ganchos.dadosDestino ? RL.ganchos.dadosDestino() : null;
     lista.forEach(function (o, i) {
       texto += "\n" + (i + 1) + ") " + quando(o.data) + " · " + (o.tipo === "saiu" ? "saiu da rota" : "marcado pelo motorista") +
+               "\nResposta: " + (NOME_RESPOSTA[o.resposta] || o.resposta) +
                (o.instrucao ? "\nO app disse: " + o.instrucao : "") +
+               (o.texto && o.texto.trim() ? "\nO motorista contou: " + o.texto.trim() : "") +
                "\nLocal: https://maps.google.com/?q=" + o.lat.toFixed(6) + "," + o.lon.toFixed(6) + "\n";
+      if (o.resposta === "destino" && dest) texto += dest.texto + "\n";
       o.enviado = true;
+      // também vai para a aba "Relatos" do painel (chegada.js)
+      if (window.RL && RL.ganchos.enviarRelato) {
+        try { RL.ganchos.enviarRelato({ tipo: o.resposta === "destino" ? "destino" : o.resposta === "proibido" ? "proibido" : "outro", resposta: NOME_RESPOSTA[o.resposta] || "",
+          texto: o.texto || "", instrucao: o.instrucao || "", lat: o.lat, lon: o.lon, em: new Date(o.data).getTime(), comDestino: o.resposta === "destino" }); } catch (e) {}
+      }
     });
     salvarOcorrencias();
     atualizarEnvio();
@@ -4681,7 +4806,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
      - Cada celular ganha um código sorteado (não diz quem é) para contar quantos usam o app.
      - Nome e WhatsApp: só de quem preencher e aceitar. Pede UMA vez; quem pular vê de novo em 7 dias.
      - Novidades: aparece só a mais recente, uma vez, e nunca durante a navegação. */
-  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v48";
+  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v49";
   var CHAVE_CAD = "rotaCaminhaoSP.cadastro", CHAVE_PULOU = "rotaCaminhaoSP.cadastroPulado", CHAVE_VISTAS = "rotaCaminhaoSP.novidadesVistas";
   var aparelhoId = (function () {
     var id = ler("rotaCaminhaoSP.aparelho") || "";
@@ -4707,7 +4832,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
     return !pulou || Date.now() - pulou > 7 * 86400000;
   }
   function janelaAberta() {
-    return ["resumoRestrito", "confirmaProibido", "revisao", "telaCadastro", "telaNovidade", "navOpcoes", "telaTempos", "chegadaAviso"].some(function (id) { var el = document.getElementById(id); return el && !el.hidden; });
+    return ["resumoRestrito", "confirmaProibido", "revisao", "telaCadastro", "telaNovidade", "navOpcoes", "telaTempos", "chegadaAviso", "chegouPergunta", "telaRelato", "telaAjustar"].some(function (id) { var el = document.getElementById(id); return el && !el.hidden; });
   }
   var novidadePendente = null;
   // Abre UMA janela por vez, só com o app parado (fora da navegação): perguntas > cadastro > novidade
@@ -4968,7 +5093,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
   function irParaFavorito(f) {
     if (nav.ativo) return;
     if (estado.A && estado.A.nome === "Minha localização") estado.A = null;   // sai de onde está agora
-    definirPonto("B", f.lat, f.lon, f.nome, { aproximado: f.aprox });
+    definirPonto("B", f.lat, f.lon, f.nome, { aproximado: f.aprox, tipo: "favorito" });
     mapa.setView([f.lat, f.lon], Math.max(mapa.getZoom(), 15));
     tracarAteDestino();
   }
@@ -4996,7 +5121,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
   function guardarRecente(p) {
     if (!p || !p.nome || p.nome === "Minha localização") return;
     var l = lerRecentes().filter(function (r) { return r.nome !== p.nome && (Math.abs(r.lat - p.lat) > 0.0002 || Math.abs(r.lon - p.lon) > 0.0002); });
-    l.unshift({ nome: p.nome, lat: p.lat, lon: p.lon, aprox: !!p.aproximado });
+    l.unshift({ nome: p.nome, lat: p.lat, lon: p.lon, aprox: !!p.aproximado, tipo: p.tipo || "", rua: p.rua || "" });
     gravar(CHAVE_REC, JSON.stringify(l.slice(0, 10)));
   }
   function desenharBusca() {
@@ -5013,7 +5138,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
       b.innerHTML = '<span aria-hidden="true">🕘</span><span><strong></strong><small></small></span>';
       b.querySelector("strong").textContent = partes[0];
       b.querySelector("small").textContent = partes.slice(1).join(" – ") + (r.aprox && r.nome.indexOf("aproximado") < 0 ? " · número aproximado" : "");
-      b.addEventListener("click", function () { escolheuNaBusca(r.lat, r.lon, r.nome, { aproximado: r.aprox }); });
+      b.addEventListener("click", function () { escolheuNaBusca(r.lat, r.lon, r.nome, { aproximado: r.aprox, tipo: r.tipo, rua: r.rua }); });
       li.appendChild(b); ul.appendChild(li);
     });
   }
@@ -5190,6 +5315,10 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
       el("btnFimVolta").hidden = !pontoVolta || !chegou;
       el("btnFimInicio").textContent = "Pronto"; el("btnFimInicio").className = "fim-btn fim-principal";
       prepararFimRoteiro(chegou);   // roteiro de entregas: mostra a próxima
+      // Perguntas da chegada (pedido de 28/11/2026): deu certo? destino/entrada errado? ajustar o ponto?
+      el("fimChegada").hidden = !estado.B || !(window.RL && RL.ganchos.relatarDestino);
+      el("fimPerg").textContent = chegou ? "A chegada deu certo?" : "Teve problema com o destino?";
+      el("btnFimChegouCerto").hidden = !chegou;
       fim.hidden = false;
       el("btnFimInicio").focus();
     }
@@ -5201,6 +5330,9 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
       estavaNavegando = agora;
     }).observe(document.body, { attributes: true, attributeFilter: ["class"] });
     el("btnFimInicio").addEventListener("click", function () { fechar(); el("btnInicio").click(); });
+    el("btnFimChegouCerto").addEventListener("click", function () { el("fimChegada").hidden = true; avisoRapido("👍 Obrigado!"); });
+    el("btnFimDestinoErrado").addEventListener("click", function () { if (RL.ganchos.relatarDestino) RL.ganchos.relatarDestino({ origem: "fim" }); });
+    el("btnFimAjustar").addEventListener("click", function () { if (RL.ganchos.ajustarPonto) RL.ganchos.ajustarPonto({ origem: "fim" }); });
     el("btnFimFav").addEventListener("click", function () {
       var antes = lerFavoritos().length;
       salvarFavorito(estado.B);
@@ -5313,7 +5445,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
     }
     if (r.paradas.length >= MAX_PARADAS) { avisoRapido("Máximo de " + MAX_PARADAS + " entregas por roteiro."); return; }
     if (r.paradas.some(function (p) { return !p.feita && perto(p, { lat: lat, lon: lon }); })) { avisoRapido("Essa entrega já está na lista."); return; }
-    r.paradas.push({ id: Date.now().toString(36), nome: nome || "Ponto no mapa", lat: lat, lon: lon, aprox: !!(extra && extra.aproximado), feita: false });
+    r.paradas.push({ id: Date.now().toString(36), nome: nome || "Ponto no mapa", lat: lat, lon: lon, aprox: !!(extra && extra.aproximado), tipo: (extra && extra.tipo) || "", rua: (extra && extra.rua) || "", feita: false });
     gravarRoteiro(r);
     avisoRapido("➕ " + nomeCurto(nome) + " adicionada (" + r.paradas.length + ")");
     el("txtParada").focus();
@@ -5435,7 +5567,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
     gravar(CHAVE_ROT, JSON.stringify(r)); atualizarBannerRoteiro();
     telaRoteiro.hidden = true; telaBusca.hidden = true; el("fimViagem").hidden = true;
     estado.A = null; el("txtA").value = "";   // cada trecho sai de onde o motorista está
-    definirPonto("B", p.lat, p.lon, p.nome, { aproximado: p.aprox });
+    definirPonto("B", p.lat, p.lon, p.nome, { aproximado: p.aprox, tipo: p.tipo, rua: p.rua });
     mapa.setView([p.lat, p.lon], Math.max(mapa.getZoom(), 15));
     tracarAteDestino();
   }
@@ -5854,7 +5986,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
     el("cartaoPosto").hidden = true;
     if (nav.ativo) {
       if (estado.B && !estado.retomar) estado.retomar = { lat: estado.B.lat, lon: estado.B.lon, nome: estado.B.nome, aprox: !!estado.B.aproximado };
-      definirPonto("B", p.lat, p.lon, p.nome);
+      definirPonto("B", p.lat, p.lon, p.nome, { tipo: "posto" });
       nav.chegou = false; nav.ultimaRecalc = 0; nav.precisaRecalc = true;
       if (nav.ultimaPos) recalcular("Indo para " + p.nome + "…", nav.ultimaPos.lon, nav.ultimaPos.lat);
       return;
@@ -5862,7 +5994,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
     if (estado.B && document.body.classList.contains("tem-rota") && !estado.retomar && !perto(estado.B, p))
       estado.retomar = { lat: estado.B.lat, lon: estado.B.lon, nome: estado.B.nome, aprox: !!estado.B.aproximado };
     estado.A = null; el("txtA").value = "";
-    definirPonto("B", p.lat, p.lon, p.nome);
+    definirPonto("B", p.lat, p.lon, p.nome, { tipo: "posto" });
     mapa.setView([p.lat, p.lon], Math.max(mapa.getZoom(), 15));
     tracarAteDestino();
   }
@@ -6767,7 +6899,9 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
   telaProb.setAttribute("role", "dialog"); telaProb.setAttribute("aria-modal", "true"); telaProb.setAttribute("aria-labelledby", "tpTitulo");
   telaProb.innerHTML = '<div class="nav-opcoes-caixa"><p class="nav-opcoes-titulo" id="tpTitulo">⚠️ O que aconteceu aqui?</p>' +
     '<div id="tpEscolha"><button type="button" class="risco-opcao" id="tpRota">🛣️ Problema na rota<small>Rua proibida, erro do app, placa diferente…</small></button>' +
-    '<button type="button" class="risco-opcao perigo" id="tpRisco">🚨 Tentativa de roubo / local perigoso<small>Vai para revisão antes de aparecer para os outros motoristas</small></button></div>' +
+    '<button type="button" class="risco-opcao perigo" id="tpRisco">🚨 Tentativa de roubo / local perigoso<small>Vai para revisão antes de aparecer para os outros motoristas</small></button>' +
+    '<button type="button" class="risco-opcao" id="tpDestino">📍 Destino ou entrada no lugar errado<small>O app levou para o ponto ou a rua errada</small></button>' +
+    '<label class="rev-texto-rot">Conte o que aconteceu (opcional)<textarea class="rev-texto" id="tpTexto" maxlength="400" rows="2"></textarea></label></div>' +
     '<div id="tpConfirma" hidden><p class="cp-bloco">Vamos enviar <b>este local</b> como <b>tentativa de roubo / local perigoso</b>, com o seu nome, para o Rota Liberada conferir.</p>' +
     '<p class="cad-dica">Ele <b>não aparece no mapa na hora</b>: só depois de revisado. Se aprovado, vira um ponto de atenção por 90 dias.</p>' +
     '<p class="cad-dica">🚓 Em perigo agora? Ligue <b>190</b>.</p>' +
@@ -6777,26 +6911,37 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
   var tpLocal = null;
   function escolherTipoProblema(lon, lat, naViagem) {
     tpLocal = { lon: lon, lat: lat, naViagem: naViagem };
-    el("tpEscolha").hidden = false; el("tpConfirma").hidden = true;
+    el("tpEscolha").hidden = false; el("tpConfirma").hidden = true; el("tpTexto").value = "";
+    el("tpDestino").hidden = !(window.RL && RL.ganchos.relatarDestino);
     telaProb.hidden = false;
   }
   function fecharTipoProblema() { telaProb.hidden = true; tpLocal = null; }
+  function textoProblema() { return el("tpTexto").value.replace(/\s+/g, " ").trim().slice(0, 400); }
   el("tpVoltar").addEventListener("click", fecharTipoProblema);
   telaProb.addEventListener("click", function (ev) { if (ev.target === telaProb) fecharTipoProblema(); });
   el("tpRota").addEventListener("click", function () {
-    var t = tpLocal; fecharTipoProblema(); if (!t) return;
-    if (t.naViagem) { marcarProblemaNav(); return; }
-    registrarOcorrencia("marcado", t.lon, t.lat, "", null); vibrar(120);
-    avisoRapido("✅ Problema marcado. Toque em \"Revisar\" na tela inicial para enviar.");
+    var t = tpLocal, txt = textoProblema(); fecharTipoProblema(); if (!t) return;
+    if (t.naViagem) marcarProblemaNav();
+    else {
+      registrarOcorrencia("marcado", t.lon, t.lat, "", null); vibrar(120);
+      avisoRapido("✅ Problema marcado. Toque em \"Revisar\" na tela inicial para enviar.");
+    }
+    if (txt && ocorrencias.length) { ocorrencias[ocorrencias.length - 1].texto = txt; salvarOcorrencias(); }   // aparece na revisão do fim da viagem
+  });
+  el("tpDestino").addEventListener("click", function () {
+    var t = tpLocal, txt = textoProblema(); fecharTipoProblema(); if (!t) return;
+    if (RL.ganchos.relatarDestino) RL.ganchos.relatarDestino({ origem: "marcar", texto: txt, lat: t.lat, lon: t.lon });
   });
   el("tpRisco").addEventListener("click", function () {
     if (nav.ativo && giro.velocidade >= 1) { fecharTipoProblema(); mostrarAlertaNav("🚚 Pare o caminhão para marcar local perigoso.", "info"); return; }
     el("tpEscolha").hidden = true; el("tpConfirma").hidden = false;
   });
   el("tpEnviar").addEventListener("click", function () {
-    var t = tpLocal; fecharTipoProblema(); if (!t) return;
+    var t = tpLocal, txt = textoProblema(); fecharTipoProblema(); if (!t) return;
     if (!window.RotaConta || !window.RotaConta.marcarRisco) { avisoRapido("Não deu para enviar agora. Tente de novo em instantes."); return; }
     vibrar(120);
+    // o que o motorista escreveu vai junto para a aba "Relatos" do painel
+    if (txt && RL.ganchos.enviarRelato) { try { RL.ganchos.enviarRelato({ tipo: "risco", resposta: "Tentativa de roubo / local perigoso", texto: txt, lat: t.lat, lon: t.lon, em: Date.now() }); } catch (e) {} }
     window.RotaConta.marcarRisco(t.lat, t.lon).then(function (enviado) {
       var txt = enviado ? "✅ Local enviado para revisão. Obrigado por avisar!" : "✅ Local guardado. Vai para revisão assim que tiver internet.";
       if (nav.ativo) mostrarAlertaNav(txt, "info"); else avisoRapido(txt);
@@ -6820,6 +6965,9 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
       prepararRota(res); desenharRota(res.coords, true); exibirResultado(res);
       iniciarNavegacao();
     },
+    // chegada, relatos e correções de endereço (chegada.js)
+    atualizarMarcadores: atualizarMarcadores, lerFavoritos: lerFavoritos, gravarFavoritos: gravarFavoritos, semAcento: semAcento, mesmaRua: mesmaRua,
+    metrosEntre: metrosEntre, nomeDoPonto: nomeDoPonto, WHATSAPP_ERROS: WHATSAPP_ERROS, quando: quando, aparelhoId: aparelhoId,
     posicao: function () { if (nav.ativo && nav.ultimaPos) return nav.ultimaPos; if (posInicio) { var l = posInicio.getLatLng(); return { lat: l.lat, lon: l.lng }; } return null; },
     avisoAtual: function (f) { return avisos.fontes[f] || null; },
     registrarAviso: function (fonte, id) { AVISO_EL[fonte] = id; el(id).addEventListener("click", function () { var a = avisos.fontes[fonte]; if (a) { avisos.fechados[fonte + "|" + a.chave] = true; escolherAviso(); } }); },
@@ -6898,6 +7046,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
 <!-- Mapa sem internet (Tarefa 10) e alerta de velocidade (Tarefa 11) -->
 <script src="offline.js"></script>
 <script src="velocidade.js"></script>
+<script src="chegada.js"></script>
 <!-- Conta do motorista: login Google, cadastro, controle de acesso e indicação (Firebase) -->
 <script type="module" src="conta.js"></script>
 </body>
