@@ -1,5 +1,5 @@
 // Faz o celular aceitar instalar o app e guarda a última versão para abrir sem internet.
-const CACHE = "rota-caminhao-v44";
+const CACHE = "rota-caminhao-v45";
 const ARQUIVOS = ["./", "./index.html", "./dados-restricoes.js", "./locais-sp.js", "./zer-sp.js", "./onibus-sp.js", "./bloqueios-sp.js", "./manifest.webmanifest", "./icones/icone-192.png", "./icones/icone-512.png"];
 
 self.addEventListener("install", (e) => {
@@ -25,5 +25,16 @@ self.addEventListener("fetch", (e) => {
         return resp;
       })
       .catch(() => caches.match(req).then((r) => r || caches.match("./index.html")))
+  );
+});
+
+// Tocou no aviso ("Rota liberada!", "Hora de sair!"): abre o app (ou traz para a frente)
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  e.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((lista) => {
+      for (const c of lista) if ("focus" in c) return c.focus();
+      return self.clients.openWindow("./");
+    })
   );
 });

@@ -944,6 +944,86 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
 .ini-rot-txt small { font-size: 12px; opacity: .85; }
 .ini-rot-txt strong { font-family: var(--f-titulo); font-size: 19px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ini-rot-ver { flex: none; width: 58px; border-radius: 16px; border: 1px solid var(--linha); background: var(--papel); font-size: 24px; cursor: pointer; }
+/* ===== 26/11: postos, esperar liberar, horário de saída, entregas, rodízio, opções de rota ===== */
+.ini-espera { display: flex; align-items: center; gap: 10px; min-height: 54px; padding: 6px 14px; border: 2px solid #1d2226; border-radius: 16px; cursor: pointer; background: #ffd400; color: #1d2226; text-align: left; font-size: 20px; }
+.ini-espera[hidden] { display: none; }
+.btn-posto-nav { bottom: calc(270px + env(safe-area-inset-bottom, 0px)); }
+body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-inset-bottom, 0px)); }
+.btn-posto-nav small { font-size: 11px; }
+.pino-posto { width: 30px; height: 30px; border-radius: 9px; border: 2px solid #fff; background: #5f6b73; color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,.45); font: 800 17px/1 var(--f-titulo); }
+.pino-posto.diesel { background: #1b6e3a; }
+.pino-posto.parada { background: #0b5cad; flex-direction: column; gap: 0; font-size: 16px; }
+.pino-posto.parada small { font-size: 9px; line-height: 1; }
+.pino-posto svg { width: 18px; height: 18px; }
+.popup-posto strong { display: block; font-size: 15px; }
+.popup-posto small { display: block; color: #5b6670; margin: 2px 0 6px; }
+.popup-posto .btn-rota { margin-top: 6px; padding: 10px; font-size: 17px; }
+.cartao-posto { position: fixed; z-index: 1500; left: 10px; right: 10px; bottom: calc(108px + env(safe-area-inset-bottom, 0px)); max-width: 460px; margin: 0 auto;
+  display: flex; align-items: center; gap: 8px; padding: 10px 10px 10px 14px; border-radius: 16px; background: var(--papel); color: var(--asfalto); box-shadow: 0 6px 22px rgba(0,0,0,.35); border-left: 6px solid #1b6e3a; }
+.cartao-posto[hidden] { display: none; }
+.cpo-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.cpo-info strong { font-family: var(--f-titulo); font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cpo-info small { font-size: 14px; color: var(--suave); }
+.cpo-ir { flex: none; min-height: 50px; padding: 0 16px; border: 0; border-radius: 12px; background: #1b6e3a; color: #fff; font: 700 18px var(--f-titulo); cursor: pointer; }
+.cpo-fechar { flex: none; width: 40px; height: 40px; border: 0; border-radius: 50%; background: var(--fundo); color: var(--asfalto); font-size: 18px; cursor: pointer; }
+.espera-caixa { background: #fff4b8; color: #1d2226; border: 2px solid #e0b000; border-radius: 14px; padding: 12px; margin: 0 0 10px; }
+.espera-caixa .espera-tit { margin: 0; font-family: var(--f-titulo); font-weight: 700; font-size: 19px; line-height: 1.2; }
+.espera-caixa .espera-txt { margin: 4px 0 0; font-size: 15px; }
+.espera-botoes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.espera-botoes button { min-height: 58px; border-radius: 12px; border: 2px solid #1d2226; background: #fff; color: #1d2226; font: 700 17px/1.15 var(--f-titulo); cursor: pointer; padding: 6px; }
+.espera-botoes button.principal { background: #1d2226; color: #ffd400; }
+.espera-botoes button:disabled { opacity: .55; cursor: wait; }
+.espera-botoes.um { grid-template-columns: 1fr; }
+.pe-lista { display: flex; flex-direction: column; gap: 8px; }
+.pe-item { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 62px; padding: 8px 12px; border: 1px solid var(--linha); border-radius: 14px; background: var(--fundo); color: var(--asfalto); text-align: left; cursor: pointer; }
+.pe-item .pino-posto { flex: none; }
+.pe-item span:last-child { display: flex; flex-direction: column; min-width: 0; }
+.pe-item strong { font-family: var(--f-titulo); font-size: 18px; }
+.pe-item small { font-size: 13px; color: var(--suave); }
+.pe-aqui, .es-linha { display: block; width: 100%; margin-top: 10px; min-height: 46px; }
+.es-area { margin: 0; font-size: 16px; }
+.es-conta { margin: 10px 0 4px; text-align: center; font-family: var(--f-titulo); font-weight: 700; font-size: 40px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.es-continuar { min-height: 64px; font-size: 21px; animation: piscaLiberado 1.2s ease-in-out infinite; }
+@keyframes piscaLiberado { 50% { filter: brightness(1.25); } }
+.chegar { margin: 10px 0 0; border: 1px solid var(--linha); border-radius: 12px; padding: 0 12px; background: var(--fundo); }
+.chegar > summary { cursor: pointer; padding: 12px 0; font-family: var(--f-titulo); font-weight: 700; font-size: 17px; list-style: none; }
+.chegar > summary::-webkit-details-marker { display: none; }
+.chegar-linha { display: flex; gap: 8px; align-items: center; padding-bottom: 10px; }
+.chegar-linha input { flex: 1; min-width: 0; font-size: 20px; padding: 8px 10px; border: 2px solid var(--linha); border-radius: 10px; background: var(--papel); color: var(--asfalto); }
+.chegar-linha .btn-pequeno { flex: none; min-height: 46px; }
+.chegar-res { margin: 0 0 10px; font-size: 16px; }
+.chegar-res b { font-size: 18px; }
+.chegar-res:empty { display: none; }
+.chegar .btn-pequeno.chegar-avisar { display: block; width: 100%; margin: 0 0 8px; min-height: 46px; }
+.chegar-agenda { display: block; margin: 0 0 12px; font-size: 14px; }
+.en-parado { margin: 0 0 10px; padding: 10px; border-radius: 10px; background: #c8102e; color: #fff; font-weight: 700; }
+.en-foto { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; }
+.en-foto-btn { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 48px; cursor: pointer; }
+.en-foto img { width: 64px; height: 64px; object-fit: cover; border-radius: 10px; border: 2px solid var(--linha); }
+.en-botoes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.en-btn { min-height: 92px; border-radius: 18px; border: 0; color: #fff; font: 700 22px/1.15 var(--f-titulo); cursor: pointer; }
+.en-btn:disabled { opacity: .4; cursor: not-allowed; }
+.en-ok { background: #1f7a3d; }
+.en-nao { background: #c8102e; }
+.en-motivos { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.en-motivos > button { min-height: 54px; border-radius: 12px; border: 1px solid var(--linha); background: var(--fundo); color: var(--asfalto); font: 700 18px var(--f-titulo); text-align: left; padding: 0 14px; cursor: pointer; }
+.en-motivos > button[aria-pressed="true"] { border: 2px solid #c8102e; background: var(--proibido-fundo, #fde7ea); }
+.en-motivos .btn-rota { text-align: center; }
+.rd-numeros { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 4px 0 12px; text-align: center; }
+.rd-numeros div { background: var(--fundo); border-radius: 14px; padding: 10px 4px; }
+.rd-numeros strong { display: block; font-family: var(--f-titulo); font-size: 30px; line-height: 1; }
+.rd-numeros span { font-size: 13px; color: var(--suave); }
+.rd-lista { font-size: 15px; }
+.rot-num.nao-entregue { background: #c8102e !important; color: #fff !important; }
+.rot-resumo { list-style: none; margin-top: 6px; }
+.rot-resumo .btn-pequeno { width: 100%; min-height: 46px; }
+.chave-op { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 4px; border-bottom: 1px solid var(--linha); font-size: 17px; font-weight: 600; cursor: pointer; }
+.chave-op input { appearance: none; -webkit-appearance: none; flex: none; width: 54px; height: 30px; border-radius: 999px; background: #9aa4ab; position: relative; cursor: pointer; transition: background .15s; margin: 0; }
+.chave-op input::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.35); transition: left .15s; }
+.chave-op input:checked { background: #1f7a3d; }
+.chave-op input:checked::after { left: 27px; }
+.chave-op input:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+#telaEntrega, #telaResumoDia, #telaAviso, #telaPostosEspera, #telaEspera { z-index: 3300; }
 </style>
 </head>
 <body>
@@ -973,6 +1053,7 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
     <button class="btn-marcar" type="button" id="btnMarcar" hidden aria-label="Marcar problema neste local"><span aria-hidden="true">⚠️</span><small>Problema</small></button>
     <button class="btn-visao nav-so" type="button" id="btnVisao" aria-label="Ver a rota inteira"><span aria-hidden="true">🗺️</span><small>Rota</small></button>
     <button class="btn-visao btn-entregas-mapa" type="button" id="btnEntregasMapa" aria-label="Ver as entregas no mapa"><span aria-hidden="true">📦</span><small>Entregas</small></button>
+    <button class="btn-visao btn-posto-nav nav-so" type="button" id="btnPostoNav" aria-label="Posto mais próximo na rota"><span aria-hidden="true">⛽</span><small>Posto</small></button>
     <div class="velocimetro" id="velocimetro" hidden aria-label="Velocidade atual em quilômetros por hora"><strong id="velNum">0</strong><span>km/h</span></div>
     <button class="btn-bussola" type="button" id="btnBussola" hidden aria-label="Alternar direção para cima ou norte para cima">
       <span class="agulha" id="agulhaBussola" aria-hidden="true"><b>N</b></span>
@@ -992,6 +1073,7 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
         <button type="button" class="ini-rot-ir" id="btnRotProxima"><span class="ini-rot-num" id="iniRotNum">1/3</span><span class="ini-rot-txt"><small>Próxima entrega</small><strong id="iniRotNome"></strong></span><span aria-hidden="true">➜</span></button>
         <button type="button" class="ini-rot-ver" id="btnRotVer" aria-label="Ver o roteiro de entregas">📦</button>
       </div>
+      <button type="button" class="ini-espera" id="iniEspera" hidden><span aria-hidden="true">⏳</span><span class="ini-rot-txt"><small>Esperando liberar</small><strong id="iniEsperaTxt"></strong></span><span aria-hidden="true">➜</span></button>
       <button class="barra-destino" type="button" id="btnParaOnde"><span class="lupa" aria-hidden="true">🔍</span>Para onde?</button>
       <div class="atalhos" id="iniAtalhos"></div>
     </div>
@@ -1371,6 +1453,79 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
       <button type="button" class="fim-btn fim-secundario" id="btnRotMapa">🗺️ Ver no mapa</button>
     </div>
     <button type="button" class="fim-btn fim-principal" id="btnRotComecar">▶ Começar entregas</button>
+  </div>
+</div>
+
+<!-- ===== 26/11: postos, esperar liberar, entregas, rodízio e aviso de saída ===== -->
+<div class="cartao-posto" id="cartaoPosto" role="status" hidden>
+  <div class="cpo-info"><strong id="cpoNome"></strong><small id="cpoDist"></small></div>
+  <button type="button" class="cpo-ir" id="btnCpoIr">Ir para lá</button>
+  <button type="button" class="cpo-fechar" id="btnCpoFechar" aria-label="Fechar">✕</button>
+</div>
+<div class="nav-opcoes" id="telaPostosEspera" role="dialog" aria-modal="true" aria-labelledby="peTitulo" hidden>
+  <div class="nav-opcoes-caixa">
+    <p class="nav-opcoes-titulo" id="peTitulo">⛽ Onde esperar liberar</p>
+    <p class="cad-texto" id="peTexto"></p>
+    <div class="pe-lista" id="peLista"></div>
+    <button type="button" class="btn-pequeno pe-aqui" id="btnEsperarAqui">📍 Esperar onde estou</button>
+    <button type="button" class="btn-pequeno op-fechar" id="btnPeFechar">Voltar</button>
+  </div>
+</div>
+<div class="nav-opcoes" id="telaEspera" role="dialog" aria-modal="true" aria-labelledby="esTitulo" hidden>
+  <div class="nav-opcoes-caixa es-caixa">
+    <p class="nav-opcoes-titulo" id="esTitulo">⏳ Esperando liberar</p>
+    <p class="es-area" id="esArea"></p>
+    <p class="es-conta" id="esConta"></p>
+    <p class="cad-dica" id="esDica">O app avisa com som quando liberar. Deixe o app aberto (pode apagar a tela).</p>
+    <button type="button" class="btn-rota btn-navegar es-continuar" id="btnEsContinuar" hidden>✅ Rota liberada! Toque para continuar</button>
+    <button type="button" class="btn-pequeno es-linha" id="btnEsNotif" hidden>🔔 Avisar também por notificação</button>
+    <button type="button" class="btn-pequeno es-linha" id="btnEsSeguir">Seguir agora mesmo assim</button>
+    <button type="button" class="btn-pequeno es-linha" id="btnEsCancelar">Cancelar a espera</button>
+    <button type="button" class="btn-pequeno op-fechar" id="btnEsFechar">Fechar (continua contando)</button>
+  </div>
+</div>
+<div class="nav-opcoes" id="telaEntrega" role="dialog" aria-modal="true" aria-labelledby="enTitulo" hidden>
+  <div class="nav-opcoes-caixa">
+    <p class="nav-opcoes-titulo" id="enTitulo">📦 Entrega</p>
+    <p class="cad-texto" id="enNome"></p>
+    <p class="en-parado" id="enParado" hidden>🚚 Pare o caminhão para marcar a entrega.</p>
+    <div class="en-foto">
+      <label class="btn-pequeno en-foto-btn" id="enFotoRot">📷 Foto do comprovante (opcional)<input type="file" id="enFoto" accept="image/*" capture="environment" hidden></label>
+      <img id="enFotoMini" alt="Foto do comprovante" hidden>
+    </div>
+    <div class="en-botoes" id="enBotoes">
+      <button type="button" class="en-btn en-ok" id="btnEntregue">✅ Entregue</button>
+      <button type="button" class="en-btn en-nao" id="btnNaoEntregue">❌ Não entregue</button>
+    </div>
+    <div class="en-motivos" id="enMotivos" hidden>
+      <p class="op-nome">Por que não entregou?</p>
+      <button type="button" data-m="Destinatário ausente">🚪 Destinatário ausente</button>
+      <button type="button" data-m="Endereço errado">📍 Endereço errado</button>
+      <button type="button" data-m="Recusado">✋ Recusado</button>
+      <button type="button" data-m="Local fechado">🔒 Local fechado</button>
+      <button type="button" data-m="Outro">✏️ Outro</button>
+      <textarea class="cad-campo" id="enOutro" rows="2" maxlength="200" placeholder="Escreva o motivo" hidden></textarea>
+      <button type="button" class="btn-rota" id="btnEnConfirmar" hidden>Confirmar</button>
+    </div>
+    <button type="button" class="btn-pequeno op-fechar" id="btnEnDepois">Marcar depois</button>
+  </div>
+</div>
+<div class="nav-opcoes" id="telaResumoDia" role="dialog" aria-modal="true" aria-labelledby="rdTitulo" hidden>
+  <div class="nav-opcoes-caixa">
+    <p class="nav-opcoes-titulo" id="rdTitulo">📋 Resumo do dia</p>
+    <div class="rd-numeros"><div><strong id="rdOk">0</strong><span>entregues</span></div><div><strong id="rdNao">0</strong><span>não entregues</span></div><div><strong id="rdFalta">0</strong><span>faltam</span></div></div>
+    <ul class="res-lista rd-lista" id="rdLista"></ul>
+    <button type="button" class="btn-rota btn-chegada" id="btnRdWhats">📲 Enviar pelo WhatsApp</button>
+    <button type="button" class="btn-pequeno es-linha" id="btnRdFotos" hidden>📷 Enviar as fotos dos comprovantes</button>
+    <button type="button" class="btn-rota" id="btnRdFinal" hidden></button>
+    <button type="button" class="btn-pequeno op-fechar" id="btnRdFechar">Fechar</button>
+  </div>
+</div>
+<div class="nav-opcoes" id="telaAviso" role="alertdialog" aria-modal="true" aria-labelledby="avTitulo" hidden>
+  <div class="nav-opcoes-caixa">
+    <p class="nav-opcoes-titulo" id="avTitulo"></p>
+    <p class="cad-texto" id="avTexto"></p>
+    <button type="button" class="btn-rota" id="btnAvOk">Entendi</button>
   </div>
 </div>
 
@@ -3006,6 +3161,11 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
         height: c.altura, width: c.largura, length: c.comprimento, weight: c.peso, axleload: c.eixoPeso, hazmat: !!c.perigosa
       } };
     }
+    // Menu ☰ > Opções de rota: evitar pedágios e balsas (o serviço de rotas aceita os dois)
+    var evitar = [];
+    if (opRota.pedagio) evitar.push("tollways");
+    if (opRota.balsa) evitar.push("ferries");
+    if (evitar.length) corpo.options.avoid_features = evitar;
     var polis = juntarPoligonos(desvios);
     if (polis.length) corpo.options.avoid_polygons = { type: "MultiPolygon", coordinates: polis };
     // Perfil do serviço de rotas: carro ou caminhão
@@ -4480,7 +4640,7 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
      - Cada celular ganha um código sorteado (não diz quem é) para contar quantos usam o app.
      - Nome e WhatsApp: só de quem preencher e aceitar. Pede UMA vez; quem pular vê de novo em 7 dias.
      - Novidades: aparece só a mais recente, uma vez, e nunca durante a navegação. */
-  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v44";
+  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v45";
   var CHAVE_CAD = "rotaCaminhaoSP.cadastro", CHAVE_PULOU = "rotaCaminhaoSP.cadastroPulado", CHAVE_VISTAS = "rotaCaminhaoSP.novidadesVistas";
   var aparelhoId = (function () {
     var id = ler("rotaCaminhaoSP.aparelho") || "";
@@ -5127,15 +5287,22 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
     r.paradas.forEach(function (p, i) {
       var li = document.createElement("li"), partes = p.nome.split(" – ");
       li.className = "rot-item" + (p.feita ? " feita" : "") + (i === prox && r.ativo ? " proxima" : "");
-      li.innerHTML = '<button type="button" class="rot-num" aria-label="' + (p.feita ? "Desmarcar entrega feita" : "Marcar como entregue") + '">' + (p.feita ? "✓" : (i + 1)) + '</button>' +
+      li.innerHTML = '<button type="button" class="rot-num' + (p.status === "nao" ? " nao-entregue" : "") + '" aria-label="' + (p.feita ? "Desmarcar esta entrega" : "Marcar: entregue ou não entregue") + '">' + (p.feita ? (p.status === "nao" ? "✕" : "✓") : (i + 1)) + '</button>' +
         '<span class="rot-txt"><strong></strong><small></small></span>' +
         '<span class="rot-acoes"><button type="button" data-a="sobe" aria-label="Subir"' + (i === 0 ? " disabled" : "") + '>↑</button>' +
         '<button type="button" data-a="desce" aria-label="Descer"' + (i === n - 1 ? " disabled" : "") + '>↓</button>' +
         '<button type="button" data-a="tira" aria-label="Tirar da lista">✕</button></span>';
       li.querySelector("strong").textContent = partes[0];
       var perna = pv.pernas[i];
-      li.querySelector("small").textContent = [i === prox && r.ativo ? "Próxima" : "", perna ? "~" + duracaoTxt(perna.min) + " (" + kmTxt(perna.km) + ")" : "", partes.slice(1).join(" – "), p.aprox ? "número aproximado" : ""].filter(Boolean).join(" · ");
-      li.querySelector(".rot-num").addEventListener("click", function () { var x = lerRoteiro(); x.paradas[i].feita = !x.paradas[i].feita; gravarRoteiro(x); });
+      li.querySelector("small").textContent = [textoStatus(p), i === prox && r.ativo ? "Próxima" : "", perna ? "~" + duracaoTxt(perna.min) + " (" + kmTxt(perna.km) + ")" : "", partes.slice(1).join(" – "), p.aprox ? "número aproximado" : ""].filter(Boolean).join(" · ");
+      // Número: abre "Entregue / Não entregue". Já marcada: pergunta se quer desmarcar.
+      li.querySelector(".rot-num").addEventListener("click", function () {
+        var x = lerRoteiro(), q = x.paradas[i];
+        if (!q.feita) { abrirTelaEntrega(i); return; }
+        if (!window.confirm("Desmarcar esta entrega? Ela volta para a lista do que falta.")) return;
+        q.feita = false; delete q.status; delete q.motivo; delete q.hora; delete q.foto;
+        apagarFoto(q.id); gravarRoteiro(x);
+      });
       li.querySelector(".rot-acoes").addEventListener("click", function (ev) {
         var b = ev.target.closest("button"); if (!b || b.disabled) return;
         var x = lerRoteiro(), a = b.getAttribute("data-a"), item = x.paradas.splice(i, 1)[0];
@@ -5151,9 +5318,16 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
       lim.querySelector("button").addEventListener("click", function () {
         if (!window.confirm("Apagar todas as entregas desta lista?")) return;
         var velho = lerRoteiro();
+        velho.paradas.forEach(function (q) { apagarFoto(q.id); });
         gravarRoteiro({ paradas: [], fim: velho.fim, fimPonto: velho.fimPonto || null, origem: null, ativo: false, atual: -1, voltando: false });
       });
       ul.appendChild(lim);
+      if (r.paradas.some(function (q) { return q.status; })) {
+        var rs = document.createElement("li"); rs.className = "rot-resumo";
+        rs.innerHTML = '<button type="button" class="btn-pequeno">📋 Resumo do dia</button>';
+        rs.querySelector("button").addEventListener("click", function () { mostrarResumoDia(false); });
+        ul.insertBefore(rs, lim);
+      }
     }
     var pend = n - feitas;
     el("btnRotOrdem").disabled = pend < 2;
@@ -5292,8 +5466,10 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
     if (!r.ativo) return;
     var cur = r.atual >= 0 ? r.paradas[r.atual] : null;
     if (chegou && r.voltando) { r.ativo = false; r.voltando = false; gravarRoteiro(r); el("fimNota").textContent += " · 🎉 Roteiro concluído!"; return; }
-    if (chegou && cur && perto(cur, estado.B)) cur.feita = true;
+    // Chegou na entrega: em vez de marcar sozinho, pergunta "Entregue" ou "Não entregue" (só com o caminhão parado)
+    var perguntar = cur && !cur.feita && perto(cur, estado.B) && (chegou || (nav.distB || 1e9) < 200);
     gravarRoteiro(r);
+    if (perguntar) setTimeout(function () { abrirTelaEntrega(r.atual); }, 350);
     el("btnFimVolta").hidden = true;
     var i = proximaParada(r), feitas = r.paradas.filter(function (p) { return p.feita; }).length;
     if (i >= 0) {
@@ -5379,6 +5555,869 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
   })();
   definirModo("inicio");
   desenharAtalhos();
+
+  /* =====================================================================
+     26/11/2026 – 5 etapas novas
+     1) Postos de diesel e paradas de caminhão (OpenStreetMap) + "Esperar liberar"
+     2) Horário ideal de saída ("Quero chegar às…")
+     3) Entregas: Entregue / Não entregue, motivo, foto e resumo do dia
+     4) Lembrete do rodízio (final da placa)
+     5) Opções de rota: evitar pedágios e balsas
+     A regra principal não muda: a rota é calculada fora das áreas restritas. Aqui só se acrescenta o
+     HORÁRIO previsto em cada trecho do caminho (para saber se a área já fechou ou já liberou quando o caminhão chegar lá).
+     ===================================================================== */
+  function maiuscula(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+
+  /* ---------- Hora de São Paulo de qualquer instante (UTC-3 o ano todo: sem horário de verão desde 2019) ---------- */
+  function momentoEm(ms) {
+    var d = new Date(ms - 3 * 3600000);
+    var md = String(d.getUTCMonth() + 1).padStart(2, "0") + "-" + String(d.getUTCDate()).padStart(2, "0");
+    var nf = FERIADOS[d.getUTCFullYear() + "-" + md] || FERIADOS[md] || "";
+    return { dia: d.getUTCDay(), minutos: d.getUTCHours() * 60 + d.getUTCMinutes(), feriado: !!nf, nomeFeriado: nf,
+             texto: md.split("-").reverse().join("/"), veiculo: estado.veiculo, placa: estado.placa };
+  }
+  function horaH(ms) { return hhmm(momentoEm(ms).minutos).replace(":", "h"); }
+  function diaPalavra(ms) {
+    var t = momentoEm(ms).texto;
+    if (t === momentoEm(Date.now()).texto) return "hoje";
+    if (t === momentoEm(Date.now() + 86400000).texto) return "amanhã";
+    return DIAS[momentoEm(ms).dia].toLowerCase() + " (" + t + ")";
+  }
+  function quandoTxt(ms) { var d = diaPalavra(ms); return (d === "hoje" ? "" : d + " ") + "às " + horaH(ms); }
+  function faltaTxt(min) { min = Math.max(0, Math.ceil(min)); var h = Math.floor(min / 60), mm = min % 60; return h ? h + "h" + String(mm).padStart(2, "0") : mm + " min"; }
+  // Instante da saída da rota: agora, ou a próxima vez que chega o dia/hora simulado no menu
+  function partidaDe(res) {
+    var m = res && res.momento;
+    if (!m || m.texto) return Date.now();
+    var a = momentoEm(Date.now()), dif = ((m.dia - a.dia + 7) % 7) * 1440 + m.minutos - a.minutos;
+    if (dif < 0) dif += 7 * 1440;
+    return Date.now() + dif * 60000;
+  }
+
+  /* ---------- Horário previsto em cada trecho restrito da rota ----------
+     Pega todos os trechos da rota que TÊM restrição em algum horário (ZMRC, rodízio, avenidas dos grupos 1 a 4),
+     usando um "momento em que tudo vale" (dia útil, 8h, no dia do rodízio da placa). A zona residencial (ZER)
+     fica de fora: ela é proibida o dia todo, esperar não adianta. */
+  function trechosComHorario(res) {
+    var chave = estado.veiculo + "|" + estado.placa;
+    if (res._th && res._thChave === chave) return res._th;
+    var dia = 1;
+    if (estado.placa) Object.keys(FINAIS_RODIZIO).forEach(function (d) { if (FINAIS_RODIZIO[d].indexOf(estado.placa) >= 0) dia = Number(d); });
+    var mTudo = { dia: dia, minutos: 8 * 60, feriado: false, veiculo: estado.veiculo, placa: estado.placa };
+    var comp = 0; amostrar(res.coords).forEach(function (q) { comp += q.passo; });
+    res._comp = comp || 1; res._thChave = chave;
+    res._th = trechosProibidos({ coords: res.coords }, mTudo).filter(function (t) { return t.tipo !== "zerc"; });
+    return res._th;
+  }
+  // Minutos da saída até o ponto s da rota (o tempo de viagem muda com o horário: pico, noite…)
+  function minAte(res, s, saida) { return res.duracao * (fatorTempo(momentoEm(saida)) / (res.fatorTempo || 1)) * (s / res._comp) / 60; }
+  function durMin(res, saida) { trechosComHorario(res); return minAte(res, res._comp, saida); }
+  // Trechos onde o caminhão chegaria (ou ainda estaria) no horário proibido, saindo no instante "saida"
+  function conflitosHorario(res, saida) {
+    var out = [];
+    trechosComHorario(res).forEach(function (t) {
+      var a = saida + minAte(res, t.ini, saida) * 60000, b = saida + minAte(res, t.fim, saida) * 60000;
+      if (situacao(t.tipo, momentoEm(a)) === "proibido" || situacao(t.tipo, momentoEm(b)) === "proibido")
+        out.push({ t: t, entrada: a, dentroMin: (b - a) / 60000 });
+    });
+    return out;
+  }
+  // Primeiro instante (de 5 em 5 min, até 7 dias) em que dá para entrar e atravessar o trecho sem restrição
+  function liberaEm(tipo, desde, dentroMin) {
+    var passo = 5 * 60000, x = Math.ceil(desde / passo) * passo;
+    for (var i = 0; i < 7 * 288; i++, x += passo)
+      if (situacao(tipo, momentoEm(x)) !== "proibido" && situacao(tipo, momentoEm(x + (dentroMin || 0) * 60000)) !== "proibido") return x;
+    return null;
+  }
+  function nomeTrecho(t) { return t.via ? t.nome : CAMADAS[t.tipo].curto; }
+
+  /* ================= ETAPA 1A: postos de diesel e paradas de caminhão (OpenStreetMap / Overpass) =================
+     Busca por "quadradinhos" de ~5 km e guarda no celular por 7 dias (não consulta o serviço toda hora). */
+  var OVERPASS = ["https://overpass-api.de/api/interpreter", "https://maps.mail.ru/osm/tools/overpass/api/interpreter", "https://overpass.kumi.systems/api/interpreter"];
+  var CEL = 0.05, CHAVE_POSTOS = "rotaCaminhaoSP.postos", POSTOS_VALIDADE = 7 * 86400000, MAX_CEL = 80;
+  var cachePostos = (function () { var c = lerJsonLocal(CHAVE_POSTOS, {}); return c && typeof c === "object" && !Array.isArray(c) ? c : {}; })();
+  function celula(lat, lon) { return Math.floor(lat / CEL) + "_" + Math.floor(lon / CEL); }
+  function celulasDosPontos(pts, margem) {
+    var v = {};
+    pts.forEach(function (p) { [-margem, 0, margem].forEach(function (a) { [-margem, 0, margem].forEach(function (b) { v[celula(p.lat + a, p.lon + b)] = 1; }); }); });
+    return Object.keys(v);
+  }
+  function celulasEmVolta(lat, lon, kmRaio) {
+    var g = kmRaio / 105, l = [];
+    var passos = Math.ceil(2 * g / (CEL / 2));
+    for (var i = 0; i <= passos; i++) for (var j = 0; j <= passos; j++) l.push({ lat: lat - g + 2 * g * i / passos, lon: lon - g + 2 * g * j / passos });
+    return celulasDosPontos(l, 0);
+  }
+  function guardarCachePostos() {
+    var ks = Object.keys(cachePostos);
+    if (ks.length > MAX_CEL) ks.sort(function (a, b) { return cachePostos[a].t - cachePostos[b].t; }).slice(0, ks.length - MAX_CEL).forEach(function (k) { delete cachePostos[k]; });
+    if (!gravar(CHAVE_POSTOS, JSON.stringify(cachePostos))) {   // sem espaço no celular: guarda só os mais novos
+      ks = Object.keys(cachePostos).sort(function (a, b) { return cachePostos[b].t - cachePostos[a].t; });
+      ks.slice(20).forEach(function (k) { delete cachePostos[k]; });
+      gravar(CHAVE_POSTOS, JSON.stringify(cachePostos));
+    }
+  }
+  function classificarPosto(tags) {
+    if (tags.amenity === "fuel") {
+      if (tags["fuel:diesel"] === "no") return null;
+      return (tags["fuel:diesel"] === "yes" || tags.hgv === "yes" || tags["fuel:HGV_diesel"] === "yes") ? "d" : "f";
+    }
+    if (tags.amenity === "parking") return "p";
+    if (tags.amenity === "truck_stop") return "s";
+    // highway=services na cidade costuma ser o pátio sem nome de um posto (repetido) ou outra coisa: só fica se for parada de verdade
+    if (tags.hgv === "yes" || tags.hgv === "designated" || /posto|graal|parada|caminh|truck|rodo|ponto de apoio/i.test(tags.name || "")) return "s";
+    return null;
+  }
+  function nomePosto(tags, t) {
+    if (tags.name) return (t === "d" || t === "f") && tags.name.length < 16 && !/posto|auto|combust/i.test(tags.name) ? "Posto " + tags.name : tags.name;
+    if (tags.brand) return (t === "d" || t === "f" ? "Posto " : "") + tags.brand;
+    return t === "p" ? "Estacionamento de caminhão" : t === "s" ? "Parada de caminhão" : "Posto de combustível";
+  }
+  // Um retângulo só em volta das células do lote (bem mais leve para o serviço do que um pedido por célula)
+  function consultaOverpass(cels) {
+    var s = 99, w = 999, n = -99, e = -999;
+    cels.forEach(function (c) { var p = c.split("_"), a = Number(p[0]) * CEL, b = Number(p[1]) * CEL; s = Math.min(s, a); w = Math.min(w, b); n = Math.max(n, a + CEL); e = Math.max(e, b + CEL); });
+    var bb = "(" + s.toFixed(3) + "," + w.toFixed(3) + "," + n.toFixed(3) + "," + e.toFixed(3) + ")";
+    return '[out:json][timeout:40];(nwr["amenity"~"^(fuel|truck_stop)$"]' + bb + ';nwr["amenity"="parking"]["hgv"~"^(yes|designated)$"]' + bb +
+           ';nwr["highway"="services"]' + bb + ';);out center tags;';
+  }
+  // Pergunta a um servidor; se em 8 s não respondeu, pergunta também ao próximo. Fica com a primeira resposta boa.
+  function pedirOverpass(q) {
+    return new Promise(function (ok, erro) {
+      var acabou = false, falhas = 0, ctls = [], iniciados = {};
+      function tentar(i) {
+        while (iniciados[i]) i++;
+        if (acabou || i >= OVERPASS.length) return;
+        iniciados[i] = true;
+        var ctl = window.AbortController ? new AbortController() : null; ctls.push(ctl);
+        var proximo = setTimeout(function () { tentar(i + 1); }, 8000);
+        var t = setTimeout(function () { if (ctl) ctl.abort(); }, 45000);
+        fetch(OVERPASS[i], { method: "POST", body: "data=" + encodeURIComponent(q), headers: { "Content-Type": "application/x-www-form-urlencoded" }, signal: ctl ? ctl.signal : undefined })
+          .then(function (r) { if (!r.ok) throw new Error("Overpass " + r.status); return r.json(); })
+          .then(function (j) {
+            clearTimeout(t); if (acabou) return;
+            acabou = true; ctls.forEach(function (c) { if (c && c !== ctl) try { c.abort(); } catch (x) {} });
+            ok(j);
+          }, function (x) {
+            clearTimeout(t); clearTimeout(proximo);
+            if (acabou) return;
+            if (++falhas >= OVERPASS.length) { acabou = true; erro(x); } else tentar(i + 1);
+          });
+      }
+      tentar(0);
+    });
+  }
+  function postosNasCelulas(cels) {
+    var agora = Date.now(), falhou = false;
+    var faltam = cels.filter(function (c) { return !cachePostos[c] || agora - cachePostos[c].t > POSTOS_VALIDADE; });
+    faltam.sort();   // células vizinhas no mesmo lote (o retângulo do pedido fica pequeno)
+    var lotes = []; for (var i = 0; i < faltam.length; i += 12) lotes.push(faltam.slice(i, i + 12));
+    return Promise.all(lotes.map(function (lote) {
+      return pedirOverpass(consultaOverpass(lote)).then(function (j) {
+        var novo = {}; lote.forEach(function (c) { novo[c] = []; });
+        (j.elements || []).forEach(function (e) {
+          var lat = e.lat !== undefined ? e.lat : (e.center && e.center.lat), lon = e.lon !== undefined ? e.lon : (e.center && e.center.lon);
+          if (lat === undefined || lon === undefined) return;
+          var tags = e.tags || {}, t = classificarPosto(tags), c = celula(lat, lon);
+          if (!t || !novo[c]) return;
+          novo[c].push([Number(lat.toFixed(5)), Number(lon.toFixed(5)), t, nomePosto(tags, t).slice(0, 50)]);
+        });
+        Object.keys(novo).forEach(function (c) { cachePostos[c] = { t: agora, l: novo[c] }; });
+      }, function () { falhou = true; });   // sem internet: usa o que já estava guardado (mesmo velho)
+    })).then(function () {
+      if (lotes.length && !falhou) guardarCachePostos(); else if (lotes.length) guardarCachePostos();
+      var out = [];
+      cels.forEach(function (c) { (cachePostos[c] ? cachePostos[c].l : []).forEach(function (a) { out.push({ lat: a[0], lon: a[1], t: a[2], nome: a[3] }); }); });
+      if (!out.length && falhou) throw new Error("Não consegui buscar os postos agora.");
+      return out;
+    });
+  }
+  // Posto que fica em área proibida para este veículo agora (ZER para caminhão; ZMRC/rodízio no horário): não serve para esperar
+  function postoProibido(o) {
+    var m = momentoAtual();
+    if (estado.veiculo === "caminhao" && zerEm(o.lon, o.lat)) return true;
+    return ["zmrc", "rodizio"].some(function (t) { return situacao(t, m) === "proibido" && dentroDe(t, o.lon, o.lat); });
+  }
+  var SVG_BOMBA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 3.5A1.5 1.5 0 0 1 5.5 2h7A1.5 1.5 0 0 1 14 3.5V11h.5a2 2 0 0 1 2 2v4a.75.75 0 0 0 1.5 0V9.6l-2.3-2.3 1.06-1.06 2.6 2.6c.24.24.36.55.36.88V17a2.25 2.25 0 0 1-4.5 0v-4a.5.5 0 0 0-.5-.5H14V20h1v2H3v-2h1V3.5zM6 4.5V10h6V4.5H6z"/></svg>';
+  function htmlPino(t) { return t === "p" ? '<div class="pino-posto parada">P<small>🚚</small></div>' : '<div class="pino-posto' + (t === "f" ? "" : " diesel") + '">' + SVG_BOMBA + '</div>'; }
+  function rotuloPosto(t) { return { d: "Posto com diesel", f: "Posto (diesel não confirmado no mapa)", p: "Estacionamento de caminhão", s: "Parada de caminhão" }[t] || "Posto"; }
+  var camadaPostos = L.layerGroup().addTo(mapa), postosVisiveis = false;
+  function desenharPostos(lista) {
+    camadaPostos.clearLayers();
+    lista.forEach(function (p) {
+      L.marker([p.lat, p.lon], { icon: L.divIcon({ className: "", html: htmlPino(p.t), iconSize: [30, 30], iconAnchor: [15, 15] }), keyboard: false, zIndexOffset: 300, title: p.nome })
+        .on("click", function () { abrirPopupPosto(p); }).addTo(camadaPostos);
+    });
+  }
+  function distLinhaReta(p) {
+    var o = nav.ativo && nav.ultimaPos ? nav.ultimaPos : (posInicio ? { lat: posInicio.getLatLng().lat, lon: posInicio.getLatLng().lng } : null);
+    if (!o) return "";
+    var a = xy(o.lon, o.lat), b = xy(p.lon, p.lat);
+    return "a " + km(Math.hypot(a[0] - b[0], a[1] - b[1])) + " em linha reta";
+  }
+  function abrirPopupPosto(p) {
+    var div = document.createElement("div"); div.className = "popup-posto";
+    div.innerHTML = '<strong></strong><small></small><button type="button" class="btn-rota">🚚 Ir para cá</button>';
+    div.querySelector("strong").textContent = p.nome;
+    var dist = p.distRota || distLinhaReta(p);
+    div.querySelector("small").textContent = rotuloPosto(p.t) + (dist ? " · " + dist : "");
+    var pop = L.popup({ maxWidth: 260, autoPan: !nav.ativo }).setLatLng([p.lat, p.lon]).setContent(div).openOn(mapa);
+    div.querySelector("button").addEventListener("click", function () { mapa.closePopup(pop); irParaPosto(p); });
+  }
+  // "Ir para cá": fora da navegação traça a rota; durante a navegação troca o destino e guarda o antigo para continuar depois
+  estado.retomar = null;
+  function irParaPosto(p) {
+    el("cartaoPosto").hidden = true;
+    if (nav.ativo) {
+      if (estado.B && !estado.retomar) estado.retomar = { lat: estado.B.lat, lon: estado.B.lon, nome: estado.B.nome, aprox: !!estado.B.aproximado };
+      definirPonto("B", p.lat, p.lon, p.nome);
+      nav.chegou = false; nav.ultimaRecalc = 0; nav.precisaRecalc = true;
+      if (nav.ultimaPos) recalcular("Indo para " + p.nome + "…", nav.ultimaPos.lon, nav.ultimaPos.lat);
+      return;
+    }
+    if (estado.B && document.body.classList.contains("tem-rota") && !estado.retomar && !perto(estado.B, p))
+      estado.retomar = { lat: estado.B.lat, lon: estado.B.lon, nome: estado.B.nome, aprox: !!estado.B.aproximado };
+    estado.A = null; el("txtA").value = "";
+    definirPonto("B", p.lat, p.lon, p.nome);
+    mapa.setView([p.lat, p.lon], Math.max(mapa.getZoom(), 15));
+    tracarAteDestino();
+  }
+  // Menu ☰ > Postos de diesel: mostra os postos e paradas perto de onde o motorista está
+  function mostrarPostosPerto() {
+    fecharMenu();
+    if (postosVisiveis) { camadaPostos.clearLayers(); postosVisiveis = false; atualizarItemPostos(); avisoRapido("Postos tirados do mapa."); return; }
+    var o = posInicio ? posInicio.getLatLng() : mapa.getCenter(), lat = o.lat, lon = o.lng;
+    avisoRapido("⛽ Procurando postos de diesel perto de você…");
+    postosNasCelulas(celulasEmVolta(lat, lon, 5)).then(function (l) {
+      var a = xy(lon, lat);
+      l.forEach(function (p) { var b = xy(p.lon, p.lat); p.dist = Math.hypot(a[0] - b[0], a[1] - b[1]); p.distRota = ""; });
+      l = l.filter(function (p) { return p.dist <= 8000; })
+        .sort(function (x, y) { return (x.dist + (x.t === "f" ? 800 : 0)) - (y.dist + (y.t === "f" ? 800 : 0)); }).slice(0, 40);
+      if (!l.length) { avisoRapido("Não achei postos no mapa perto daqui."); return; }
+      desenharPostos(l); postosVisiveis = true; atualizarItemPostos();
+      var pertos = l.slice().sort(function (x, y) { return x.dist - y.dist; }).slice(0, 6).map(function (p) { return [p.lat, p.lon]; });
+      pertos.push([lat, lon]);
+      mapa.fitBounds(L.latLngBounds(pertos), { padding: [50, 50], maxZoom: 15 });
+      var nd = l.filter(function (p) { return p.t !== "f"; }).length;
+      avisoRapido("⛽ " + l.length + " postos e paradas perto de você" + (nd ? " (" + nd + " com diesel ou para caminhão, em verde e azul)" : "") + ". Toque num ícone.");
+    }).catch(function () { avisoRapido("Não consegui buscar os postos agora (sem internet ou serviço do mapa ocupado). Tente de novo em instantes."); });
+  }
+  var itemPostos = document.createElement("button");
+  itemPostos.type = "button"; itemPostos.className = "menu-item"; itemPostos.id = "btnPostosMenu";
+  function atualizarItemPostos() {
+    itemPostos.innerHTML = '<span class="mi-icone" aria-hidden="true">⛽</span><span class="mi-texto">' + (postosVisiveis ? "Tirar os postos do mapa" : "Postos de diesel") +
+      '<small>' + (postosVisiveis ? "Esconde os ícones de posto" : "Postos e paradas de caminhão perto de você") + '</small></span>';
+  }
+  atualizarItemPostos();
+  itemPostos.addEventListener("click", mostrarPostosPerto);
+  el("menuCorpo").insertBefore(itemPostos, el("secVeiculo"));
+
+  // Navegação: botão "Posto" = posto mais próximo À FRENTE na rota (nos próximos 30 km)
+  function mostrarCartaoPosto(p) {
+    el("cpoNome").textContent = p.nome;
+    el("cpoDist").textContent = rotuloPosto(p.t) + " · a " + km(p.frente) + " na rota";
+    el("cartaoPosto").hidden = false;
+    el("btnCpoIr").onclick = function () { irParaPosto(p); };
+    falar("Posto mais próximo na rota: " + p.nome + ", a " + arredondar(p.frente) + ".", "manobra");
+    clearTimeout(mostrarCartaoPosto.t);
+    mostrarCartaoPosto.t = setTimeout(function () { el("cartaoPosto").hidden = true; }, 25000);
+  }
+  el("btnCpoFechar").addEventListener("click", function () { el("cartaoPosto").hidden = true; });
+  el("btnPostoNav").addEventListener("click", function () {
+    if (!nav.ativo || !estado.rota) return;
+    var r = estado.rota, s0 = nav.sAtual || 0, s = 0, cand = [];
+    amostrar(r.coords).forEach(function (q, i) { if (i % 10 === 0 && s >= s0 && s <= s0 + 30000) cand.push({ lon: q.lon, lat: q.lat, s: s, p: q.p }); s += q.passo; });
+    if (cand.length < 2) { avisoRapido("Você está quase chegando: não há mais trecho de rota para procurar posto."); return; }
+    avisoRapido("⛽ Procurando posto na rota…");
+    postosNasCelulas(celulasDosPontos(cand, 0.01)).then(function (todos) {
+      var l = [];
+      todos.forEach(function (o) {
+        var p = xy(o.lon, o.lat), m = null;
+        cand.forEach(function (c) { var d = Math.hypot(p[0] - c.p[0], p[1] - c.p[1]); if (!m || d < m.d) m = { d: d, s: c.s }; });
+        if (m && m.d <= 300 && m.s >= s0 + 150 && !postoProibido(o)) l.push(Object.assign({}, o, { frente: m.s - s0, d: m.d }));
+      });
+      if (!l.length) { avisoRapido("Não achei posto perto da rota nos próximos 30 km."); return; }
+      l.sort(function (a, b) { return a.frente - b.frente; });
+      l.forEach(function (o) { o.distRota = "a " + km(o.frente) + " na rota"; });
+      // prefere diesel confirmado (ou parada de caminhão) se estiver até 2 km depois do mais perto
+      var esc = l[0];
+      for (var i = 1; i < l.length && esc.t === "f"; i++) if (l[i].t !== "f" && l[i].frente - l[0].frente < 2000) esc = l[i];
+      desenharPostos(l.slice(0, 15));
+      mostrarCartaoPosto(esc);
+    }).catch(function () { avisoRapido("Não consegui buscar os postos agora. Tente de novo em instantes."); });
+  });
+
+  /* ================= ETAPA 1B: "Esperar liberar" =================
+     Com a rota pronta, confere pelo horário PREVISTO de chegada em cada trecho se o caminhão vai entrar em área
+     ou via restrita fora do horário permitido. Se sim: aviso amarelo, "Esperar num posto" e "Rota sem restrição". */
+  function analisarEspera(res) {
+    if (!res || res.saida || !res.coords) return null;
+    var saida = partidaDe(res);
+    var l = conflitosHorario(res, saida).filter(function (c) { return c.t.ini >= 150; });   // já dentro na saída: a rota de saída cuida disso
+    if (!l.length) return null;
+    var c = l[0], libera = liberaEm(c.t.tipo, c.entrada, c.dentroMin);
+    if (!libera) return null;
+    return { c: c, libera: libera, partida: saida, nome: nomeTrecho(c.t), tipo: c.t.tipo, via: !!c.t.via,
+             comecaNaViagem: situacao(c.t.tipo, momentoEm(saida)) !== "proibido" };
+  }
+  function mostrarCaixaEspera(res) {
+    var r = el("resultado"), info = analisarEspera(res);
+    estado.esperaInfo = info;
+    if (!info) return;
+    var box = document.createElement("div"); box.className = "espera-caixa"; box.id = "caixaEspera"; box.setAttribute("role", "alert");
+    var outroDia = diaPalavra(info.libera) !== "hoje" ? " de " + diaPalavra(info.libera) : "";
+    box.innerHTML = '<p class="espera-tit">⚠️ Esta área libera às ' + horaH(info.libera) + escapar(outroDia) + '. Você chegaria às ' + horaH(info.c.entrada) + '.</p>' +
+      '<p class="espera-txt">' + escapar(maiuscula(info.nome)) + (info.via ? " (" + escapar(CAMADAS[info.tipo].curto) + ")" : "") + ': proibida para ' + (estado.veiculo === "carro" ? "este carro" : "caminhão") + ' nesse horário (' + escapar(CAMADAS[info.tipo].hora) + ').' +
+      (info.comecaNaViagem ? "" : " Não existe caminho sem passar por ela agora.") + '</p>' +
+      '<div class="espera-botoes' + (info.comecaNaViagem ? "" : " um") + '"><button type="button" class="principal" data-a="posto">⛽ Esperar num posto</button>' +
+      (info.comecaNaViagem ? '<button type="button" data-a="alt">🔀 Rota sem restrição</button>' : "") + '</div>';
+    r.insertBefore(box, r.children[1] || null);
+    box.querySelector('[data-a="posto"]').addEventListener("click", function () { abrirPostosEspera(info); });
+    var alt = box.querySelector('[data-a="alt"]');
+    if (alt) alt.addEventListener("click", function () { rotaSemRestricao(info, alt); });
+  }
+  // "Rota sem restrição": pede a rota com as regras do horário em que o caminhão chegaria na área
+  function rotaSemRestricao(info, btn) {
+    var base = estado.rota;
+    if (!estado.A || !estado.B || !base) return;
+    btn.disabled = true; btn.textContent = "Procurando…";
+    calcularRota(estado.A, estado.B, momentoEm(info.c.entrada), null, { alternativas: false, preferencia: base.preferencia }).then(function (lista) {
+      var r = lista[0], m0 = base.momento;
+      r.momento = m0; r.fatorTempo = base.fatorTempo; r.duracao = r.duracaoServico * r.fatorTempo; r.chegada = somarMinutos(m0, r.duracao / 60);
+      r.problemas = conferir(r.coords, m0, r.ignorar);
+      r.restrito = medirRestrito(r.coords, m0, r.distancia, r.duracao);
+      r.horarioLivre = r.restrito.metros > 0 ? proximoHorarioLivre(r.restrito.itens.map(function (o) { return o.tipo; }), m0, r.duracao / 60) : null;
+      r.avisos = r.avisos.filter(function (a) { return a.indexOf("Durante a viagem") !== 0; });
+      var piora = r.problemas.length > (base.problemas || []).length || r.restrito.metros > ((base.restrito && base.restrito.metros) || 0) + 50;
+      if (piora || conflitosHorario(r, info.partida).some(function (c) { return c.t.ini >= 150; })) throw new Error("ainda passa");
+      estado.opcoes = [r]; estado.escolhida = 0;
+      prepararRota(r); desenharOpcoes([r], 0); exibirResultado(r);
+      mostrarMsg("Rota nova sem a área que fecha no caminho: " + km(r.distancia) + ", " + tempo(r.duracao) + ". Confira e toque em Iniciar navegação.");
+    }).catch(function () {
+      btn.textContent = "Sem rota livre"; btn.disabled = true;
+      avisoRapido("Não achei caminho sem restrição. O melhor é esperar num posto.");
+    });
+  }
+  // Postos e paradas ANTES da entrada da área (até 20 km antes, no máximo 1,5 km fora da rota)
+  function postosAntesDe(res, info) {
+    var ini = info.c.t.ini, s = 0, cand = [];
+    amostrar(res.coords).forEach(function (q, i) { if (i % 10 === 0 && s <= ini && s >= ini - 20000) cand.push({ lon: q.lon, lat: q.lat, s: s, p: q.p }); s += q.passo; });
+    if (!cand.length) return Promise.resolve([]);
+    return postosNasCelulas(celulasDosPontos(cand, 0.015)).then(function (todos) {
+      var out = [];
+      todos.forEach(function (o) {
+        var p = xy(o.lon, o.lat), m = null;
+        cand.forEach(function (c) { var d = Math.hypot(p[0] - c.p[0], p[1] - c.p[1]); if (!m || d < m.d) m = { d: d, s: c.s }; });
+        if (!m || m.d > 1500 || m.s > ini - 100) return;
+        if (postoProibido(o) || (!info.via && dentroDe(info.tipo, o.lon, o.lat))) return;
+        out.push(Object.assign({}, o, { d: m.d, antes: ini - m.s, nota: (ini - m.s) + m.d * 2 - (o.t === "f" ? 0 : 600) }));
+      });
+      out.sort(function (a, b) { return a.nota - b.nota; });
+      return out.slice(0, 3);
+    });
+  }
+  function abrirPostosEspera(info) {
+    var tela = el("telaPostosEspera"), lista = el("peLista");
+    el("peTexto").textContent = "Postos e paradas antes da entrada (" + maiuscula(info.nome) + " libera às " + horaH(info.libera) + "). Toque num deles: o app leva você até lá e avisa quando liberar.";
+    lista.innerHTML = '<p class="cad-dica">Procurando postos no caminho…</p>';
+    tela.hidden = false;
+    el("btnEsperarAqui").onclick = function () { tela.hidden = true; comecarEspera(info, null); };
+    postosAntesDe(estado.rota, info).then(function (l) {
+      lista.innerHTML = "";
+      if (!l.length) { lista.innerHTML = '<p class="cad-dica">Não achei posto nem parada de caminhão no mapa antes da área. Espere num lugar seguro e permitido, fora da área, e toque em "Esperar onde estou".</p>'; return; }
+      l.forEach(function (p) {
+        var b = document.createElement("button"); b.type = "button"; b.className = "pe-item";
+        b.innerHTML = htmlPino(p.t) + '<span><strong></strong><small></small></span>';
+        b.querySelector("strong").textContent = p.nome;
+        b.querySelector("small").textContent = rotuloPosto(p.t) + " · " + km(p.antes) + " antes da área" + (p.d > 150 ? " · " + km(p.d) + " fora da rota" : " · na rota");
+        b.addEventListener("click", function () { tela.hidden = true; comecarEspera(info, p); });
+        lista.appendChild(b);
+      });
+    }).catch(function () { lista.innerHTML = '<p class="cad-dica">Não consegui buscar os postos agora (sem internet ou serviço do mapa ocupado). Tente de novo em instantes.</p>'; });
+  }
+  el("btnPeFechar").addEventListener("click", function () { el("telaPostosEspera").hidden = true; });
+
+  // Avisos com som e notificação (a notificação só funciona com o app aberto ou em segundo plano)
+  function pedirPermissaoNotificacao() {
+    if (!("Notification" in window) || Notification.permission !== "default") return Promise.resolve();
+    try { return Promise.resolve(Notification.requestPermission()).catch(function () {}); } catch (e) { return Promise.resolve(); }
+  }
+  function notificar(titulo, corpo) {
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
+    var op = { body: corpo, icon: "icones/icone-192.png", badge: "icones/icone-192.png", vibrate: [300, 150, 300], tag: "rota-liberada", renotify: true };
+    function direto() { try { new Notification(titulo, op); } catch (e) {} }
+    if (navigator.serviceWorker && navigator.serviceWorker.getRegistration)
+      navigator.serviceWorker.getRegistration().then(function (reg) { if (reg) reg.showNotification(titulo, op); else direto(); }).catch(direto);
+    else direto();
+  }
+  function alarmeSonoro() {
+    bip(); setTimeout(bip, 350); setTimeout(bip, 700); setTimeout(bip, 1400); setTimeout(bip, 1750);
+    if (navigator.vibrate) { try { navigator.vibrate([400, 200, 400, 200, 400]); } catch (e) {} }
+  }
+
+  var CHAVE_ESPERA = "rotaCaminhaoSP.espera";
+  var espera = lerJsonLocal(CHAVE_ESPERA, null);
+  if (espera && (!espera.libera || !espera.destino || Date.now() - espera.libera > 6 * 3600000)) { espera = null; gravar(CHAVE_ESPERA, null); }   // espera velha: descarta
+  function gravarEspera() { gravar(CHAVE_ESPERA, espera ? JSON.stringify(espera) : null); atualizarBannerEspera(); }
+  function comecarEspera(info, posto) {
+    var B = estado.B; if (!B) return;
+    espera = { destino: { lat: B.lat, lon: B.lon, nome: B.nome, aprox: !!B.aproximado }, libera: info.libera, tipo: info.tipo, nome: info.nome, via: info.via,
+               posto: posto ? { lat: posto.lat, lon: posto.lon, nome: posto.nome } : null, fase: posto ? "indo" : "esperando", avisou: false };
+    gravarEspera();
+    pedirPermissaoNotificacao();
+    if (posto) {
+      estado.retomar = null; estado.A = null; el("txtA").value = "";
+      definirPonto("B", posto.lat, posto.lon, posto.nome);
+      tracarAteDestino();
+      avisoRapido("⛽ Rota até " + posto.nome + ". Toque em Iniciar navegação. Lá, o app conta o tempo até liberar.");
+    } else abrirTelaEspera();
+  }
+  function liberou() { return !!espera && Date.now() >= espera.libera && situacao(espera.tipo, momentoEm(Date.now())) !== "proibido"; }
+  function abrirTelaEspera() { if (!espera) return; el("fimViagem").hidden = true; atualizarEspera(); el("telaEspera").hidden = false; }
+  function atualizarEspera() {
+    if (!espera) return;
+    if (Date.now() >= espera.libera && !liberou()) { var nl = liberaEm(espera.tipo, Date.now(), 0); if (nl) { espera.libera = nl; gravarEspera(); } }
+    var ok = liberou(), outroDia = diaPalavra(espera.libera) !== "hoje" ? " de " + diaPalavra(espera.libera) : "";
+    el("esTitulo").textContent = ok ? "✅ Rota liberada!" : "⏳ Esperando liberar";
+    el("esArea").textContent = maiuscula(espera.nome) + (ok ? " liberou às " : " libera às ") + horaH(espera.libera) + outroDia + ". Destino: " + nomeCurto(espera.destino.nome) + ".";
+    el("esConta").textContent = ok ? "Pode seguir" : "Libera em " + faltaTxt((espera.libera - Date.now()) / 60000);
+    el("btnEsContinuar").hidden = !ok;
+    el("btnEsSeguir").hidden = ok; el("esDica").hidden = ok;
+    el("btnEsNotif").hidden = ok || !("Notification" in window) || Notification.permission !== "default";
+    atualizarBannerEspera();
+    if (ok && !espera.avisou) {
+      espera.avisou = true; gravarEspera();
+      if (!nav.ativo) { el("fimViagem").hidden = true; el("telaEspera").hidden = false; }
+      alarmeSonoro();
+      falar("Rota liberada! Toque para continuar.", "manobra");
+      notificar("Rota liberada! ✅", maiuscula(espera.nome) + " já liberou. Toque para continuar até o destino.");
+    }
+  }
+  function atualizarBannerEspera() {
+    var b = el("iniEspera");
+    b.hidden = !espera;
+    if (espera) el("iniEsperaTxt").textContent = liberou() ? "✅ Liberou! Toque para continuar" : "Libera em " + faltaTxt((espera.libera - Date.now()) / 60000) + " (às " + horaH(espera.libera) + ")";
+    if (document.body.classList.contains("modo-inicio")) medirBase();
+  }
+  function seguirDepoisDaEspera() {
+    var d = espera && espera.destino; espera = null; gravarEspera();
+    el("telaEspera").hidden = true;
+    if (!d) return;
+    estado.retomar = null; estado.A = null; el("txtA").value = "";
+    definirPonto("B", d.lat, d.lon, d.nome, { aproximado: d.aprox });
+    tracarAteDestino();   // recalcula até o destino com as regras de agora
+  }
+  el("iniEspera").addEventListener("click", abrirTelaEspera);
+  el("btnEsContinuar").addEventListener("click", seguirDepoisDaEspera);
+  el("btnEsSeguir").addEventListener("click", function () {
+    if (!window.confirm("A área ainda está proibida. Seguir agora mesmo assim? A rota vai desviar dela se houver caminho.")) return;
+    seguirDepoisDaEspera();
+  });
+  el("btnEsCancelar").addEventListener("click", function () { espera = null; gravarEspera(); el("telaEspera").hidden = true; avisoRapido("Espera cancelada."); });
+  el("btnEsFechar").addEventListener("click", function () { el("telaEspera").hidden = true; });
+  el("btnEsNotif").addEventListener("click", function () { pedirPermissaoNotificacao().then(atualizarEspera); });
+  setInterval(function () { if (espera) atualizarEspera(); }, 15000);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden && espera) atualizarEspera(); });
+  atualizarBannerEspera();
+
+  // Fim de uma navegação: chegou no posto da espera? Abre a contagem. Também limpa o cartão de posto.
+  (function () {
+    var antes = false;
+    new MutationObserver(function () {
+      var agora = document.body.classList.contains("navegando");
+      if (antes && !agora) {
+        el("cartaoPosto").hidden = true;
+        if (!postosVisiveis) camadaPostos.clearLayers();
+        if (espera && espera.fase === "indo" && espera.posto && estado.B && perto(estado.B, espera.posto) && (nav.chegou || (nav.distB || 1e9) < 300)) {
+          espera.fase = "esperando"; gravarEspera();
+          setTimeout(abrirTelaEspera, 450);   // por cima da tela de fim de viagem
+        }
+      }
+      antes = agora;
+    }).observe(document.body, { attributes: true, attributeFilter: ["class"] });
+  })();
+  // Tela de fim de viagem: "Continuar para <destino>" depois de parar num posto
+  (function () {
+    var b = document.createElement("button"); b.type = "button"; b.id = "btnFimRetomar"; b.className = "fim-btn fim-principal"; b.hidden = true;
+    el("btnFimProxima").parentNode.insertBefore(b, el("btnFimProxima"));
+    new MutationObserver(function () {
+      if (el("fimViagem").hidden) return;
+      var mostra = !!estado.retomar && !lerRoteiro().ativo && !espera;
+      b.hidden = !mostra;
+      if (mostra) { b.textContent = "▶ Continuar para " + nomeCurto(estado.retomar.nome); el("btnFimInicio").textContent = "Parar por aqui"; el("btnFimInicio").className = "fim-btn fim-secundario"; }
+    }).observe(el("fimViagem"), { attributes: true, attributeFilter: ["hidden"] });
+    b.addEventListener("click", function () {
+      var p = estado.retomar; estado.retomar = null; el("fimViagem").hidden = true;
+      if (!p) return;
+      estado.A = null; el("txtA").value = "";
+      definirPonto("B", p.lat, p.lon, p.nome, { aproximado: p.aprox });
+      tracarAteDestino();
+    });
+    el("btnFimInicio").addEventListener("click", function () { estado.retomar = null; });
+  })();
+
+  /* ================= ETAPA 2: horário ideal de saída ("Quero chegar às ___") =================
+     Usa a rota escolhida e o horário previsto em cada trecho: procura a saída mais tarde que chega até o horário
+     pedido sem cair em nenhuma restrição. */
+  function horarioDeSaida(res, alvo) {
+    trechosComHorario(res);
+    var passo = 5 * 60000, agora = Date.now(), inicioDia = alvo - momentoEm(alvo).minutos * 60000;
+    var D = alvo - durMin(res, alvo - durMin(res, alvo) * 60000) * 60000;
+    var tarde = D < agora;
+    D = Math.floor(D / passo) * passo;
+    var limite = Math.max(inicioDia, Math.ceil(agora / passo) * passo);
+    for (; D >= limite; D -= passo) {
+      if (D + durMin(res, D) * 60000 > alvo + 60000) continue;
+      if (!conflitosHorario(res, D).length) return { ok: true, saida: D, chegada: D + durMin(res, D) * 60000, alvo: alvo };
+    }
+    // Sem horário possível naquele dia: o primeiro horário livre a partir de agora (até 7 dias)
+    var x = Math.ceil(Math.max(agora, inicioDia) / passo) * passo;
+    for (var i = 0; i < 7 * 288; i++, x += passo) if (!conflitosHorario(res, x).length) return { ok: false, tarde: tarde, saida: x, chegada: x + durMin(res, x) * 60000, alvo: alvo };
+    return { ok: false, tarde: tarde, alvo: alvo };
+  }
+  function passaNoRodizio(res) {
+    var pts = amostrar(res.coords);
+    for (var i = 0; i < pts.length; i += 15) if (dentroDe("rodizio", pts[i].lon, pts[i].lat)) return true;
+    return false;
+  }
+  function calcularChegada(res) {
+    var saidaEl = el("chegarRes"), v = el("chegarHora").value;
+    estado.saidaCalc = null;
+    if (!/^\d\d:\d\d$/.test(v)) { saidaEl.textContent = "Escolha o horário em que quer chegar."; atualizarBotaoAlarme(); return; }
+    var hm = v.split(":"), agora = Date.now(), alvo = agora + (Number(hm[0]) * 60 + Number(hm[1]) - momentoEm(agora).minutos) * 60000;
+    alvo = Math.round(alvo / 60000) * 60000;
+    if (alvo <= agora + 60000) alvo += 86400000;   // horário que já passou hoje: é amanhã
+    var h = horarioDeSaida(res, alvo), txt, alvoTxt = quandoTxt(alvo);
+    var notaPlaca = !estado.placa && estado.veiculo !== "vuc" && passaNoRodizio(res) ? '<br><small>Sem o final da placa, o rodízio não entra na conta (☰ Menu › Meu caminhão).</small>' : "";
+    if (h.ok) {
+      var antes = h.alvo - h.chegada > 10 * 60000, depois = null;
+      if (h.alvo - h.chegada > 60 * 60000) {   // bem antes do pedido: mostra também a primeira saída livre que chega depois
+        var passo = 5 * 60000, x = Math.ceil((h.alvo - durMin(res, h.alvo) * 60000) / passo) * passo;
+        for (var k = 0; k < 288; k++, x += passo) if (!conflitosHorario(res, x).length) { depois = { saida: x, chegada: x + durMin(res, x) * 60000 }; break; }
+      }
+      txt = "✅ Saia <b>" + quandoTxt(h.saida) + "</b> para chegar " + (antes ? "<b>" + quandoTxt(h.chegada) + "</b>" : "às <b>" + horaH(h.alvo) + "</b>") + " sem cair em nenhuma restrição." +
+        (antes ? "<br><small>Chega antes das " + horaH(h.alvo) + ": saindo mais tarde, o caminhão cairia em restrição.</small>" : "") +
+        (depois ? "<br>Ou saia <b>" + quandoTxt(depois.saida) + "</b> e chegue <b>" + quandoTxt(depois.chegada) + "</b>, quando a área já liberou." : "");
+      estado.saidaCalc = { saida: h.saida, chegada: h.chegada };
+    } else if (h.saida) {
+      txt = (h.tarde ? "⏱️ Não dá mais tempo de chegar " + alvoTxt + ": a viagem leva cerca de " + faltaTxt(durMin(res, agora)) + "." : "⚠️ Não há horário de saída sem restrição para chegar " + alvoTxt + ".") +
+        "<br>Primeiro horário livre: saia <b>" + quandoTxt(h.saida) + "</b> e chegue <b>" + quandoTxt(h.chegada) + "</b>.";
+      estado.saidaCalc = { saida: h.saida, chegada: h.chegada };
+    } else txt = "⚠️ Não achei horário sem restrição nos próximos 7 dias para esta rota.";
+    saidaEl.innerHTML = txt + notaPlaca + '<br><small>Estimativa: o trânsito pode mudar o tempo de viagem.</small>';
+    atualizarBotaoAlarme();
+  }
+  function mostrarCaixaChegar(res) {
+    if (!res || res.saida) return;
+    var r = el("resultado"), d = document.createElement("details");
+    d.className = "chegar"; d.id = "caixaChegar"; d.open = !!estado.chegarAberto;
+    d.innerHTML = '<summary>🕘 Quero chegar às… <small>(o app diz a hora de sair)</small></summary>' +
+      '<div class="chegar-linha"><input type="time" id="chegarHora" step="300" aria-label="Horário em que quer chegar"><button type="button" class="btn-pequeno" id="btnChegarCalc">Calcular</button></div>' +
+      '<p class="chegar-res" id="chegarRes" role="status"></p>' +
+      '<button type="button" class="btn-pequeno chegar-avisar" id="btnAvisarSaida" hidden></button>' +
+      '<a class="chegar-agenda" id="lnkAgenda" target="_blank" rel="noopener" hidden>📅 Pôr também na agenda do celular (avisa mesmo com o app fechado)</a>';
+    r.insertBefore(d, r.querySelector("details.passos"));
+    var inp = d.querySelector("#chegarHora");
+    inp.value = estado.chegarHora || "";
+    estado.saidaCalc = null;
+    d.addEventListener("toggle", function () { estado.chegarAberto = d.open; if (d.open && !inp.value) inp.focus(); });
+    d.querySelector("#btnChegarCalc").addEventListener("click", function () { estado.chegarHora = inp.value; calcularChegada(res); });
+    inp.addEventListener("keydown", function (ev) { if (ev.key === "Enter") { estado.chegarHora = inp.value; calcularChegada(res); } });
+    d.querySelector("#btnAvisarSaida").addEventListener("click", alternarAlarme);
+    if (estado.chegarHora && d.open) calcularChegada(res); else atualizarBotaoAlarme();
+  }
+  // "Me avisar na hora de sair": alarme do próprio app (som, voz, vibração e notificação, se o celular deixar)
+  var CHAVE_ALARME = "rotaCaminhaoSP.alarmeSaida";
+  var alarme = lerJsonLocal(CHAVE_ALARME, null);
+  if (alarme && (!alarme.quando || Date.now() - alarme.quando > 3600000)) { alarme = null; gravar(CHAVE_ALARME, null); }
+  function dataGoogle(ms) { return new Date(ms).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, ""); }
+  function atualizarBotaoAlarme() {
+    var b = el("btnAvisarSaida"), lnk = el("lnkAgenda"); if (!b) return;
+    var c = estado.saidaCalc, futuro = c && c.saida > Date.now() + 60000;
+    if (alarme && !alarme.tocou && (!c || Math.abs(alarme.quando - c.saida) < 60000)) { b.hidden = false; b.textContent = "🔔 Aviso marcado para " + quandoTxt(alarme.quando) + " (toque para tirar)"; }
+    else if (futuro) { b.hidden = false; b.textContent = "🔔 Me avisar na hora de sair (" + quandoTxt(c.saida) + ")"; }
+    else b.hidden = true;
+    lnk.hidden = !futuro;
+    if (futuro) lnk.href = "https://calendar.google.com/calendar/render?action=TEMPLATE&text=" + encodeURIComponent("🚚 Hora de sair (Rota Liberada)") +
+      "&dates=" + dataGoogle(c.saida) + "/" + dataGoogle(c.saida + 15 * 60000) +
+      "&details=" + encodeURIComponent("Sair às " + horaH(c.saida) + " para chegar às " + horaH(c.chegada) + " sem cair em restrição.");
+  }
+  function alternarAlarme() {
+    var c = estado.saidaCalc;
+    if (alarme && !alarme.tocou && (!c || Math.abs(alarme.quando - c.saida) < 60000)) { alarme = null; gravar(CHAVE_ALARME, null); avisoRapido("Aviso de saída tirado."); atualizarBotaoAlarme(); return; }
+    if (!c || c.saida <= Date.now() + 60000) return;
+    alarme = { quando: c.saida, chegada: c.chegada, destino: estado.B ? nomeCurto(estado.B.nome) : "" };
+    gravar(CHAVE_ALARME, JSON.stringify(alarme));
+    pedirPermissaoNotificacao();
+    avisoRapido("🔔 Combinado: aviso " + quandoTxt(alarme.quando) + ". Deixe o app aberto (pode ficar em segundo plano).");
+    atualizarBotaoAlarme();
+  }
+  function mostrarAviso(titulo, texto) {
+    el("avTitulo").textContent = titulo; el("avTexto").textContent = texto;
+    el("telaAviso").hidden = false;
+  }
+  el("btnAvOk").addEventListener("click", function () { el("telaAviso").hidden = true; });
+  function vigiarAlarme() {
+    if (!alarme || alarme.tocou || Date.now() < alarme.quando - 1000) return;
+    alarme.tocou = true; gravar(CHAVE_ALARME, JSON.stringify(alarme));
+    var t = "Saia agora para chegar às " + horaH(alarme.chegada) + (alarme.destino ? " em " + alarme.destino : "") + " sem cair em restrição.";
+    if (!nav.ativo) mostrarAviso("⏰ Hora de sair!", t);
+    alarmeSonoro();
+    falar("Hora de sair. " + t, "manobra");
+    notificar("⏰ Hora de sair!", t);
+    atualizarBotaoAlarme();
+  }
+  setInterval(vigiarAlarme, 15000);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) vigiarAlarme(); });
+  setTimeout(vigiarAlarme, 3000);
+
+  // A tela da rota ganha o aviso "Esperar liberar" e o "Quero chegar às…" (a função de sempre continua igual)
+  var exibirResultadoBase = exibirResultado;
+  exibirResultado = function (res) {
+    exibirResultadoBase(res);
+    if (nav.ativo || !res) return;
+    try { mostrarCaixaEspera(res); } catch (e) { if (window.console) console.warn("espera", e); }
+    try { mostrarCaixaChegar(res); } catch (e) { if (window.console) console.warn("chegar", e); }
+  };
+
+  /* ================= ETAPA 3: entregas – Entregue / Não entregue =================
+     Ao chegar em cada parada do roteiro: 2 botões grandes, motivo, foto opcional (fica só no celular)
+     e resumo do dia pelo WhatsApp. Só deixa marcar com o caminhão parado. */
+  function textoStatus(p) {
+    if (p.status === "entregue") return "✅ Entregue" + (p.hora ? " às " + p.hora : "") + (p.foto ? " 📷" : "");
+    if (p.status === "nao") return "❌ Não entregue: " + (p.motivo || "") + (p.foto ? " 📷" : "");
+    return p.feita ? "✅ Feita" : "";
+  }
+  // Fotos dos comprovantes: guardadas no próprio celular (IndexedDB), nunca enviadas sozinhas
+  var bancoFotos = null;
+  function abrirBanco() {
+    if (bancoFotos) return bancoFotos;
+    bancoFotos = new Promise(function (ok, erro) {
+      if (!window.indexedDB) { erro(new Error("sem banco")); return; }
+      var rq = indexedDB.open("rotaLiberadaFotos", 1);
+      rq.onupgradeneeded = function () { rq.result.createObjectStore("fotos"); };
+      rq.onsuccess = function () { ok(rq.result); };
+      rq.onerror = function () { erro(rq.error); };
+    });
+    bancoFotos.catch(function () { bancoFotos = null; });
+    return bancoFotos;
+  }
+  function guardarFoto(id, blob) {
+    return abrirBanco().then(function (db) { return new Promise(function (ok, erro) {
+      var tx = db.transaction("fotos", "readwrite"); tx.objectStore("fotos").put(blob, id);
+      tx.oncomplete = function () { ok(); }; tx.onerror = function () { erro(tx.error); };
+    }); });
+  }
+  function lerFoto(id) {
+    return abrirBanco().then(function (db) { return new Promise(function (ok) {
+      var rq = db.transaction("fotos").objectStore("fotos").get(id);
+      rq.onsuccess = function () { ok(rq.result || null); }; rq.onerror = function () { ok(null); };
+    }); }).catch(function () { return null; });
+  }
+  function apagarFoto(id) { if (id) abrirBanco().then(function (db) { db.transaction("fotos", "readwrite").objectStore("fotos").delete(id); }).catch(function () {}); }
+  function reduzirFoto(arquivo) {
+    return new Promise(function (ok, erro) {
+      var url = URL.createObjectURL(arquivo), img = new Image();
+      img.onload = function () {
+        var w = img.naturalWidth, h = img.naturalHeight, f = Math.min(1, 1280 / Math.max(w, h)), cv = document.createElement("canvas");
+        cv.width = Math.round(w * f); cv.height = Math.round(h * f);
+        cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+        URL.revokeObjectURL(url);
+        cv.toBlob(function (b) { if (b) ok(b); else erro(new Error("foto")); }, "image/jpeg", 0.72);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); erro(new Error("foto")); };
+      img.src = url;
+    });
+  }
+  var entregaAtual = null, urlMini = null, vigiaParado = null, velEntrega = 0;
+  function mostrarMiniFoto(b) {
+    if (urlMini) URL.revokeObjectURL(urlMini);
+    urlMini = URL.createObjectURL(b);
+    el("enFotoMini").src = urlMini; el("enFotoMini").hidden = false;
+    el("enFotoRot").firstChild.textContent = "📷 Trocar a foto do comprovante";
+  }
+  function vigiarParado(ligar) {
+    if (vigiaParado !== null) { navigator.geolocation.clearWatch(vigiaParado); vigiaParado = null; }
+    velEntrega = nav.ativo ? (giro.velocidade || 0) : 0;
+    if (ligar && navigator.geolocation) vigiaParado = navigator.geolocation.watchPosition(function (p) {
+      var v = p.coords.speed; if (typeof v === "number" && !isNaN(v)) velEntrega = v;
+      atualizarParado();
+    }, function () {}, { enableHighAccuracy: true, maximumAge: 3000, timeout: 20000 });
+    atualizarParado();
+  }
+  function andandoAgora() { return velEntrega > 10 / 3.6; }   // acima de 10 km/h não deixa marcar
+  function atualizarParado() {
+    var andando = andandoAgora();
+    el("enParado").hidden = !andando;
+    ["btnEntregue", "btnNaoEntregue", "btnEnConfirmar"].forEach(function (id) { el(id).disabled = andando; });
+    [].forEach.call(el("enMotivos").querySelectorAll("button[data-m]"), function (b) { b.disabled = andando; });
+  }
+  function abrirTelaEntrega(i) {
+    var r = lerRoteiro(), p = r.paradas[i];
+    if (!p || p.feita) return;
+    entregaAtual = { i: i, id: p.id, motivo: "", fotoGuardada: false };
+    el("enTitulo").textContent = "📦 Entrega " + (i + 1) + " de " + r.paradas.length;
+    el("enNome").textContent = nomeCurto(p.nome);
+    el("enMotivos").hidden = true; el("enBotoes").hidden = false;
+    el("enOutro").hidden = true; el("enOutro").value = ""; el("btnEnConfirmar").hidden = true;
+    [].forEach.call(el("enMotivos").querySelectorAll("button[data-m]"), function (b) { b.setAttribute("aria-pressed", "false"); });
+    el("enFotoMini").hidden = true; el("enFoto").value = "";
+    el("enFotoRot").firstChild.textContent = "📷 Foto do comprovante (opcional)";
+    lerFoto(p.id).then(function (b) { if (b && entregaAtual && entregaAtual.id === p.id) { entregaAtual.fotoGuardada = true; mostrarMiniFoto(b); } });
+    el("telaEntrega").hidden = false;
+    vigiarParado(true);
+  }
+  function fecharTelaEntrega() { el("telaEntrega").hidden = true; vigiarParado(false); entregaAtual = null; }
+  function marcarEntrega(status, motivo) {
+    if (!entregaAtual) return;
+    if (andandoAgora()) { avisoRapido("🚚 Pare o caminhão para marcar a entrega."); return; }
+    var r = lerRoteiro(), p = r.paradas[entregaAtual.i];
+    if (!p || p.id !== entregaAtual.id) { fecharTelaEntrega(); return; }
+    p.feita = true; p.status = status; p.motivo = motivo || ""; p.hora = hhmm(momentoEm(Date.now()).minutos); p.quando = Date.now();
+    if (entregaAtual.fotoGuardada) p.foto = true;
+    gravarRoteiro(r);
+    fecharTelaEntrega();
+    vibrar(120);
+    if (proximaParada(r) >= 0) {
+      avisoRapido(status === "entregue" ? "✅ Entregue! Indo para a próxima entrega." : "❌ Anotado: " + p.motivo + ". Indo para a próxima entrega.");
+      irParaProxima();   // já traça a rota até a próxima
+    } else mostrarResumoDia(true);
+  }
+  el("enFoto").addEventListener("change", function () {
+    var f = this.files && this.files[0], alvo = entregaAtual;
+    if (!f || !alvo) return;
+    el("enFotoRot").firstChild.textContent = "⏳ Guardando a foto…";
+    reduzirFoto(f).then(function (b) { return guardarFoto(alvo.id, b).then(function () { alvo.fotoGuardada = true; if (entregaAtual === alvo) mostrarMiniFoto(b); avisoRapido("📷 Foto guardada no celular."); }); })
+      .catch(function () { avisoRapido("Não consegui guardar a foto."); el("enFotoRot").firstChild.textContent = "📷 Foto do comprovante (opcional)"; });
+  });
+  el("btnEntregue").addEventListener("click", function () { marcarEntrega("entregue", ""); });
+  el("btnNaoEntregue").addEventListener("click", function () {
+    if (andandoAgora()) return;
+    el("enBotoes").hidden = true; el("enMotivos").hidden = false;
+  });
+  el("enMotivos").addEventListener("click", function (ev) {
+    var b = ev.target.closest("button[data-m]"); if (!b || b.disabled) return;
+    var m = b.getAttribute("data-m");
+    if (m !== "Outro") { marcarEntrega("nao", m); return; }
+    [].forEach.call(el("enMotivos").querySelectorAll("button[data-m]"), function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+    el("enOutro").hidden = false; el("btnEnConfirmar").hidden = false; el("enOutro").focus();
+  });
+  el("btnEnConfirmar").addEventListener("click", function () {
+    var t = el("enOutro").value.trim().replace(/\s+/g, " ");
+    if (!t) { el("enOutro").focus(); avisoRapido("Escreva o motivo."); return; }
+    marcarEntrega("nao", "Outro – " + t.slice(0, 200));
+  });
+  el("btnEnDepois").addEventListener("click", fecharTelaEntrega);
+
+  // Resumo do dia
+  var resumoNoFim = false;
+  function contarEntregas(r) {
+    var c = { ok: 0, nao: 0, falta: 0, motivos: {} };
+    r.paradas.forEach(function (p) {
+      if (p.status === "nao") { c.nao++; var k = (p.motivo || "").split(" – ")[0]; c.motivos[k] = (c.motivos[k] || 0) + 1; }
+      else if (p.feita) c.ok++; else c.falta++;
+    });
+    return c;
+  }
+  function mostrarResumoDia(noFim) {
+    var r = lerRoteiro(), c = contarEntregas(r);
+    resumoNoFim = !!noFim;
+    el("rdOk").textContent = c.ok; el("rdNao").textContent = c.nao; el("rdFalta").textContent = c.falta;
+    el("rdLista").innerHTML = r.paradas.map(function (p) {
+      return "<li>" + (p.status === "nao" ? "❌ " : p.feita ? "✅ " : "⏳ ") + "<b>" + escapar(nomeCurto(p.nome)) + "</b>" +
+        (p.status === "nao" ? " — " + escapar(p.motivo) : "") + (p.hora ? " <small>(" + p.hora + ")</small>" : "") + (p.foto ? " 📷" : "") + "</li>";
+    }).join("") + (c.nao ? "<li><b>Motivos:</b> " + Object.keys(c.motivos).map(function (k) { return escapar(k) + " (" + c.motivos[k] + ")"; }).join(", ") + "</li>" : "");
+    var pf = pontoFinal(r), comFoto = r.paradas.some(function (p) { return p.foto; });
+    el("btnRdFinal").hidden = !(noFim && pf);
+    if (pf) el("btnRdFinal").textContent = (pf.tipo === "saida" ? "↩️ " : "🏁 ") + nomeFinal(pf);
+    el("btnRdFotos").hidden = !(comFoto && navigator.canShare);
+    if (noFim && !pf) { r.ativo = false; gravarRoteiro(r); }
+    el("telaResumoDia").hidden = false;
+  }
+  function textoResumoDia() {
+    var r = lerRoteiro(), c = contarEntregas(r), linhas = r.paradas.map(function (p, i) {
+      return (i + 1) + ". " + (p.status === "nao" ? "❌" : p.feita ? "✅" : "⏳") + " " + nomeCurto(p.nome) + (p.status === "nao" ? " – " + p.motivo : "") + (p.hora ? " (" + p.hora + ")" : "");
+    });
+    return "📦 Resumo das entregas – " + momentoEm(Date.now()).texto + "\n✅ Entregues: " + c.ok + "\n❌ Não entregues: " + c.nao + (c.falta ? "\n⏳ Faltam: " + c.falta : "") +
+      (c.nao ? "\nMotivos: " + Object.keys(c.motivos).map(function (k) { return k + " (" + c.motivos[k] + ")"; }).join(", ") : "") +
+      "\n\n" + linhas.join("\n") + "\n\nEnviado pelo app Rota Liberada";
+  }
+  el("btnRdWhats").addEventListener("click", function () { window.open("https://wa.me/?text=" + encodeURIComponent(textoResumoDia()), "_blank"); });
+  el("btnRdFotos").addEventListener("click", function () {
+    var r = lerRoteiro(), lista = [];
+    Promise.all(r.paradas.map(function (p, i) {
+      if (!p.foto) return null;
+      return lerFoto(p.id).then(function (b) { if (b) lista.push(new File([b], "entrega-" + (i + 1) + ".jpg", { type: "image/jpeg" })); });
+    })).then(function () {
+      if (!lista.length) { avisoRapido("Não achei as fotos guardadas."); return; }
+      if (!navigator.canShare || !navigator.canShare({ files: lista })) { avisoRapido("Este celular não deixa enviar as fotos direto daqui."); return; }
+      navigator.share({ files: lista, title: "Comprovantes das entregas", text: "Comprovantes das entregas – " + momentoEm(Date.now()).texto }).catch(function () {});
+    });
+  });
+  el("btnRdFinal").addEventListener("click", function () { el("telaResumoDia").hidden = true; irParaProxima(); });
+  el("btnRdFechar").addEventListener("click", function () {
+    el("telaResumoDia").hidden = true;
+    if (resumoNoFim && !lerRoteiro().ativo) { el("fimViagem").hidden = true; telaRoteiro.hidden = true; el("btnInicio").click(); }
+  });
+
+  /* ================= ETAPA 4: lembrete do rodízio =================
+     "Final da placa" também no cadastro do caminhão. Avisa na véspera e no dia (ao abrir o app). */
+  (function campoPlaca() {
+    var grade = el("gradeMedidas"), lab = document.createElement("label");
+    lab.className = "campo"; lab.id = "linhaPlaca";
+    lab.innerHTML = 'Final da placa (rodízio)<select id="vPlaca">' + el("selPlaca").innerHTML + '</select>';
+    grade.parentNode.insertBefore(lab, grade.nextSibling);
+    var vp = el("vPlaca");
+    vp.value = estado.placa;
+    el("btnEditarVeiculo").addEventListener("click", function () { vp.value = estado.placa; });
+    vp.addEventListener("change", function () { estado.placa = vp.value; el("selPlaca").value = vp.value; atualizar(); avisoRodizio(true); });
+    el("selPlaca").addEventListener("change", function () { vp.value = estado.placa; avisoRodizio(true); });
+  })();
+  var CHAVE_ROD = "rotaCaminhaoSP.avisoRodizio";
+  function rodizioNoDia(ms) { var m = momentoEm(ms); m.minutos = 8 * 60; return situacao("rodizio", m) === "proibido"; }
+  function avisoRodizio(forcar) {
+    if (!estado.placa || estado.veiculo === "vuc" || nav.ativo) return;
+    var agora = Date.now(), m = momentoEm(agora), tipo = null;
+    if (rodizioNoDia(agora) && m.minutos < 20 * 60) tipo = "hoje";
+    else if (rodizioNoDia(agora + 86400000)) tipo = "amanha";
+    if (!tipo) return;
+    var chave = m.texto + "|" + tipo + "|" + estado.placa;
+    if (!forcar && ler(CHAVE_ROD) === chave) return;
+    var ocupado = janelaAberta() || ["telaAviso", "telaEspera", "telaEntrega", "telaResumoDia", "telaPostosEspera", "fimViagem"].some(function (id) { return !el(id).hidden; });
+    if (ocupado) { clearTimeout(avisoRodizio.t); avisoRodizio.t = setTimeout(function () { avisoRodizio(forcar); }, 8000); return; }
+    gravar(CHAVE_ROD, chave);
+    var veic = estado.veiculo === "carro" ? "seu carro" : "seu caminhão";
+    var quem = tipo === "hoje" ? "Hoje" : "Amanhã (" + DIAS[(m.dia + 1) % 7].toLowerCase() + ")";
+    mostrarAviso("🚫 Rodízio " + (tipo === "hoje" ? "hoje" : "amanhã"),
+      quem + " " + veic + " está no rodízio das 7h às 10h e das 17h às 20h. Final da placa " + estado.placa + ", no Centro Expandido. Nesses horários o app desvia da área do rodízio.");
+  }
+  setTimeout(function () { avisoRodizio(false); }, 5000);
+  setInterval(function () { avisoRodizio(false); }, 10 * 60000);
+
+  /* ================= ETAPA 5: Opções de rota – evitar pedágios e balsas =================
+     O serviço de rotas (OpenRouteService) aceita os dois ("tollways" e "ferries"); fica salvo no celular. */
+  var CHAVE_OPROTA = "rotaCaminhaoSP.opcoesRota";
+  var opRota = (function () { var o = lerJsonLocal(CHAVE_OPROTA, {}); return o && typeof o === "object" ? o : {}; })();
+  (function opcoesDeRota() {
+    var corpo = el("menuCorpo"), d = document.createElement("details");
+    d.className = "menu-grupo sem-rotulo"; d.id = "secOpcoesRota";
+    d.innerHTML = '<summary class="menu-item"><span class="mi-icone" aria-hidden="true">🛣️</span><span class="mi-texto">Opções de rota<small>Evitar pedágios e balsas</small></span></summary>' +
+      '<div class="menu-conteudo"><label class="chave-op"><span>💰 Evitar pedágios</span><input type="checkbox" id="opPedagio"></label>' +
+      '<label class="chave-op"><span>⛴️ Evitar balsas</span><input type="checkbox" id="opBalsa"></label>' +
+      '<p class="nota">Fica salvo neste celular e vale para as próximas rotas. Na cidade de São Paulo quase não há pedágio nem balsa: serve mais para as estradas e o litoral.</p></div>';
+    corpo.insertBefore(d, el("secCamadas"));
+    d.addEventListener("toggle", function () {
+      if (!d.open) return;
+      [].forEach.call(corpo.querySelectorAll("details.menu-grupo[open]"), function (o) { if (o !== d) o.open = false; });
+    });
+    [["opPedagio", "pedagio"], ["opBalsa", "balsa"]].forEach(function (par) {
+      var c = el(par[0]); c.checked = !!opRota[par[1]];
+      c.addEventListener("change", function () {
+        opRota[par[1]] = c.checked; gravar(CHAVE_OPROTA, JSON.stringify(opRota));
+        avisoRapido((c.checked ? "✅ Ligado: " : "Desligado: ") + (par[1] === "pedagio" ? "evitar pedágios" : "evitar balsas") + ". Vale para a próxima rota.");
+      });
+    });
+  })();
 
   // Só para testes (abrir o app com ?teste=1 no endereço): deixa conferir as rotas pelo console
   if (/[?&]teste=1/.test(location.search)) window._teste = { fraseMotorista: fraseMotorista, calcularRota: calcularRota, manobrasRuins: manobrasRuins, momentoAtual: momentoAtual, bloqueios: BLOQ, nav: nav, atualizarBannerRoteiro: atualizarBannerRoteiro };
