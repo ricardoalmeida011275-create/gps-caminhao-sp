@@ -870,6 +870,7 @@ body.navegando .btn-centro:active { transform: translateX(-50%) scale(.96); }
 .menu-item .mi-icone { flex: none; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--fundo); font-size: 21px; }
 .menu-item .mi-texto { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; text-align: left; }
 .menu-item { justify-content: flex-start; }
+a.menu-item { text-decoration: none; color: inherit; }
 .menu-item .mi-texto small { font-family: var(--f-texto); font-weight: 500; font-size: 13px; color: var(--suave); letter-spacing: 0; }
 .menu-grupo { border-radius: 14px; }
 .menu-grupo > summary { list-style: none; }
@@ -4806,7 +4807,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
      - Cada celular ganha um código sorteado (não diz quem é) para contar quantos usam o app.
      - Nome e WhatsApp: só de quem preencher e aceitar. Pede UMA vez; quem pular vê de novo em 7 dias.
      - Novidades: aparece só a mais recente, uma vez, e nunca durante a navegação. */
-  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v49";
+  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v50";
   var CHAVE_CAD = "rotaCaminhaoSP.cadastro", CHAVE_PULOU = "rotaCaminhaoSP.cadastroPulado", CHAVE_VISTAS = "rotaCaminhaoSP.novidadesVistas";
   var aparelhoId = (function () {
     var id = ler("rotaCaminhaoSP.aparelho") || "";
@@ -5237,6 +5238,10 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
     acao(el("btnTempos"), ["📊", "Minhas viagens", "Tempo previsto x real"]);
     rotulo("App");
     acao(el("btnNovidades"), ["📢", "Novidades"]);
+    // Canal do YouTube: só no menu (abre numa aba nova ou no app do YouTube)
+    var yt = document.createElement("a"); yt.id = "btnYoutube"; yt.href = "https://youtube.com/@rotaliberada"; yt.target = "_blank"; yt.rel = "noopener";
+    acao(yt, ["▶️", "Acompanhe no YouTube", "Dicas e novidades do Rota Liberada"]);
+    yt.addEventListener("click", function () { fecharMenu(); });
     acao(el("btnMeuCadastro"), ["👤", "Meu cadastro"]);
     grupo("secConfig", ["🌙", "Aparência", "Modo claro ou escuro"], [sTema]);
     grupo("secConvite", ["📲", "Convidar motoristas"], [sConvite]);

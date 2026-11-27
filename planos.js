@@ -32,6 +32,7 @@
     relatos:           { plano: "gratis", nome: "Relatar problema com texto livre (destino ou entrada errada)" },
     ajustarChegada:    { plano: "gratis", nome: "Ajustar ponto de chegada (correção pelos motoristas)" },
     entradaCerta:      { plano: "gratis", nome: "Chegar pela entrada certa em postos e lugares" },
+    youtube:           { plano: "gratis", nome: "Acompanhe no YouTube (item do menu)" },
     // ---------- PLUS ----------
     rotaCaminhao:      { plano: "plus", nome: "Rota de caminhão que desvia das restrições (ZMRC, horários, vias proibidas, tipo de caminhão)" },
     avisosRestricao:   { plano: "plus", nome: "Avisos de área restrita durante a viagem" },
