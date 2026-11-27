@@ -1371,7 +1371,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
         <p class="rotulo" id="tituloConvite">Indique para outros motoristas</p>
         <div id="caixaConvite" class="convite">
           <button class="btn-rota btn-convidar" type="button" id="btnConvidar">📲 Convidar motoristas</button>
-          <p class="nota" style="margin:0">Manda pelo WhatsApp (ou outro app) um texto pronto com o link do GPS e o passo a passo. Quem receber não precisa criar conta nem senha.</p>
+          <p class="nota" style="margin:0">Manda pelo WhatsApp (ou outro app) um texto pronto com o link do GPS e o passo a passo. Quem receber entra com a conta Google, sem senha nova. Para ganhar dias de bônus, use "🎁 Indique e ganhe 7 dias".</p>
           <textarea id="txtConvite" class="campo-texto" rows="8" hidden aria-label="Texto do convite"></textarea>
           <button class="btn-pequeno" type="button" id="btnCopiarConvite" hidden>Copiar texto</button>
         </div>
@@ -1961,7 +1961,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
       "Ele traça a rota respeitando as restrições da CET (ZMRC, rodízio e avenidas proibidas por horário), de acordo com o tipo de veículo.\n\n" +
       "É uma versão de teste: ainda vai melhorar bastante, inclusive o visual. Se der certo, a ideia é lançar no mercado, então a sua opinião vale muito.\n\n" +
       "Como usar:\n" +
-      "1. Abra este link no Chrome (não precisa criar conta nem chave): " + linkConvite() + "\n" +
+      "1. Abra este link no Chrome e entre com a sua conta Google (sem senha nova; 7 dias grátis para testar): " + linkConvite() + "\n" +
       "2. Para deixar como app: toque no botão azul \"Instalar o GPS\" no alto da tela e confirme. No iPhone, o botão mostra o passo a passo.\n" +
       "3. Toque em \"Cadastrar caminhão\" e coloque o tipo e as medidas do seu caminhão (altura, peso...). Depois escolha o final da placa, a saída (\"Minha localização\") e o destino, e toque em \"Traçar rota\".\n" +
       "4. Toque em \"Iniciar navegação\" ANTES de sair. Não mexa no celular dirigindo e deixe a tela ligada.\n\n" +
@@ -4366,6 +4366,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
     nav.pertoParadoDesde = null; nav.chegadaBloqueada = false; pararContagem();
     nav.proib = {}; nav.restritoLog = []; nav.problemaFalado = ""; nav.saidaFalada = false; nav.foraZonaDesde = null; zerarAvisos();
     centralApp({ acao: "sinal", evento: "viagem", versao: VERSAO_APP }).catch(function () {});   // conta a viagem (sem localização)
+    try { if (window.RotaConta) window.RotaConta.viagem(); } catch (e) {}   // 1ª viagem: libera o bônus de quem indicou
     ["telaCadastro", "telaNovidade"].forEach(function (id) { document.getElementById(id).hidden = true; });
     document.getElementById("viagemConcluida").hidden = true;
     document.getElementById("btnMarcar").hidden = false; document.getElementById("btnRevisarPendentes").hidden = true;
@@ -4640,7 +4641,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
      - Cada celular ganha um código sorteado (não diz quem é) para contar quantos usam o app.
      - Nome e WhatsApp: só de quem preencher e aceitar. Pede UMA vez; quem pular vê de novo em 7 dias.
      - Novidades: aparece só a mais recente, uma vez, e nunca durante a navegação. */
-  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v45";
+  var CENTRAL_APP = "https://gps.topvtrine.com/app.php", VERSAO_APP = "v46";
   var CHAVE_CAD = "rotaCaminhaoSP.cadastro", CHAVE_PULOU = "rotaCaminhaoSP.cadastroPulado", CHAVE_VISTAS = "rotaCaminhaoSP.novidadesVistas";
   var aparelhoId = (function () {
     var id = ler("rotaCaminhaoSP.aparelho") || "";
@@ -4661,6 +4662,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
   function cadastroLocal() { return lerJsonLocal(CHAVE_CAD, null); }
   function precisaCadastro() {
     if (cadastroLocal()) return false;
+    if (window.RotaConta || ler("rotaCaminhaoSP.conta")) return false;   // o cadastro novo (conta Google) já pede nome e telefone
     var pulou = +(ler(CHAVE_PULOU) || 0);
     return !pulou || Date.now() - pulou > 7 * 86400000;
   }
@@ -6485,5 +6487,7 @@ body.navegando.com-roteiro .btn-posto-nav { bottom: calc(346px + env(safe-area-i
   window.addEventListener("appinstalled", function () { btn.style.display = "none"; });
 })();
 </script>
+<!-- Conta do motorista: login Google, cadastro, controle de acesso e indicação (Firebase) -->
+<script type="module" src="conta.js"></script>
 </body>
 </html>
